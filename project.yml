@@ -1,0 +1,31 @@
+name: WinterShot
+options:
+  bundleIdPrefix: com.winterzxzz
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+targets:
+  WinterShot:
+    type: application
+    platform: macOS
+    sources:
+      - WinterShot
+    info:
+      path: WinterShot/Info.plist
+      properties:
+        CFBundleDisplayName: WinterShot
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        LSUIElement: true
+        LSMinimumSystemVersion: "14.0"
+        NSHumanReadableCopyright: "MIT License"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.winterzxzz.WinterShot
+        SWIFT_VERSION: "5.0"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_HARDENED_RUNTIME: NO
+        COMBINE_HIDPI_IMAGES: YES

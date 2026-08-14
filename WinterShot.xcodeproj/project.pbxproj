@@ -1,0 +1,533 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0896CCE91C388FBB08EFBDDD /* RecognizeTextUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F0D6CA0AA37132847DC6F05 /* RecognizeTextUseCase.swift */; };
+		0D4ABB33D0BB8B5971A74744 /* LoadAnnotationsUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E667FD01FD84A910203159 /* LoadAnnotationsUseCase.swift */; };
+		0F25C1799EEF4C49197F0B94 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8AFCD52F989FAC9612D7DA1 /* MenuBarView.swift */; };
+		155D92684D223C7B7E3BA0F6 /* OCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F85EC6544D33B3801E3926E /* OCRService.swift */; };
+		1A40527CEE0D31E9199A9858 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30D8CBF0579066097AE9BA1 /* HistoryView.swift */; };
+		1FD8EF4777DD8BA0A8D27F96 /* FlattenedImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F242610EABE851DAD7B2B0F6 /* FlattenedImageView.swift */; };
+		30436D41AC0C57AF39999121 /* CaptureScreenshotUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A79594107D38D7B3313B305 /* CaptureScreenshotUseCase.swift */; };
+		3C8FF4279883AE9B6B05C29C /* AnnotationRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C243ED87E2218E99CDE35A32 /* AnnotationRenderer.swift */; };
+		57242771BFDA3142FEEC473E /* PinWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5C70BAAD5A3AE9B44697E8D /* PinWindowManager.swift */; };
+		5B404C483E8691805D2074DB /* AnnotationRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = B75CDB7C41A5522626CB93F6 /* AnnotationRepositoryImpl.swift */; };
+		5F3907C271B4A39097055848 /* HistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37D31F549419C37C053D426F /* HistoryViewModel.swift */; };
+		663B2FE4F15A390BA4F3C9A1 /* EditorInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2431E59D97AE89C716E53C0 /* EditorInspectorView.swift */; };
+		683B6C8B29B0684CFAFA62F3 /* AnnotationRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64B8ECFD5280F45D47A4624C /* AnnotationRepository.swift */; };
+		6D727EDBFB38FA842318B79E /* ScreenshotRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9CFB5EDD683675FF9F3B857 /* ScreenshotRepositoryImpl.swift */; };
+		7844646A77126DAFA0308CA8 /* Screenshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0BF92C15C182F672F1599E3 /* Screenshot.swift */; };
+		79275690A86833FA965D95D8 /* EditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 141BA95984926C8A3F5A1AE6 /* EditorView.swift */; };
+		7BAD339EC928E0DA062C7B31 /* FileScreenshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE90A5F13F739D1C3992B078 /* FileScreenshotStore.swift */; };
+		804CDC953F188AE1DC151962 /* DIContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ABA7C765089FB3689351F3D /* DIContainer.swift */; };
+		87DCCC0E1E1EB623145CEA09 /* DeleteScreenshotUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6109FEE881F3A698BE5CC951 /* DeleteScreenshotUseCase.swift */; };
+		8C4049F99FF6D689F78C1499 /* Annotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BF7610B72022C543758A9D9 /* Annotation.swift */; };
+		8DA8FA2E84B23910E06608DC /* FetchHistoryUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2CD20FA5CBD44CC3A6809F8 /* FetchHistoryUseCase.swift */; };
+		987D7A70E31E21D2DDEF3FD2 /* EditorCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9369660D42EEB5E5D478F835 /* EditorCanvasView.swift */; };
+		9BA1C90F55DADE80DE784454 /* SystemScreenCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036BF601111B474D5B59C780 /* SystemScreenCaptureService.swift */; };
+		9CCBE6E68F7606DA2637D778 /* SaveAnnotationsUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1111D96E824C5F5EAC8FF70 /* SaveAnnotationsUseCase.swift */; };
+		9E2CA98C71F97958DBE5254D /* CaptureMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = B216D6352B84AEF5F5186AE9 /* CaptureMode.swift */; };
+		AA14A4CB3BA0E380680E0BFD /* VisionOCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09D9E79352A4F3D535132EA2 /* VisionOCRService.swift */; };
+		B4DB1872752D120E6EC4822E /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED5C33AA9B4830D5EEA38A7E /* EditorViewModel.swift */; };
+		B7B41AB0A463529F210EFA81 /* MenuBarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B096EA1F71BFCB77833929C /* MenuBarViewModel.swift */; };
+		D076F868B1781BAB4E1211D6 /* WinterShotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9096208A2FBF0271F06E0C /* WinterShotApp.swift */; };
+		E00B8108EA40EEB90C382281 /* AnnotationColor+SwiftUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A61C6A0175A2C34DD0D543 /* AnnotationColor+SwiftUI.swift */; };
+		FCA4153F12E778A939457E93 /* ScreenshotRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = F961ED0267218D7171A5DB27 /* ScreenshotRepository.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		036BF601111B474D5B59C780 /* SystemScreenCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemScreenCaptureService.swift; sourceTree = "<group>"; };
+		03E667FD01FD84A910203159 /* LoadAnnotationsUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadAnnotationsUseCase.swift; sourceTree = "<group>"; };
+		09D9E79352A4F3D535132EA2 /* VisionOCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisionOCRService.swift; sourceTree = "<group>"; };
+		0A79594107D38D7B3313B305 /* CaptureScreenshotUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureScreenshotUseCase.swift; sourceTree = "<group>"; };
+		0A9096208A2FBF0271F06E0C /* WinterShotApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WinterShotApp.swift; sourceTree = "<group>"; };
+		0B096EA1F71BFCB77833929C /* MenuBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarViewModel.swift; sourceTree = "<group>"; };
+		0BF7610B72022C543758A9D9 /* Annotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Annotation.swift; sourceTree = "<group>"; };
+		141BA95984926C8A3F5A1AE6 /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
+		37D31F549419C37C053D426F /* HistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewModel.swift; sourceTree = "<group>"; };
+		3ABA7C765089FB3689351F3D /* DIContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DIContainer.swift; sourceTree = "<group>"; };
+		3F85EC6544D33B3801E3926E /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
+		50AAB6A814BD2D36D7E533FA /* WinterShot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WinterShot.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6109FEE881F3A698BE5CC951 /* DeleteScreenshotUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeleteScreenshotUseCase.swift; sourceTree = "<group>"; };
+		64B8ECFD5280F45D47A4624C /* AnnotationRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationRepository.swift; sourceTree = "<group>"; };
+		6F0D6CA0AA37132847DC6F05 /* RecognizeTextUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecognizeTextUseCase.swift; sourceTree = "<group>"; };
+		9369660D42EEB5E5D478F835 /* EditorCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorCanvasView.swift; sourceTree = "<group>"; };
+		AE90A5F13F739D1C3992B078 /* FileScreenshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileScreenshotStore.swift; sourceTree = "<group>"; };
+		B216D6352B84AEF5F5186AE9 /* CaptureMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureMode.swift; sourceTree = "<group>"; };
+		B5C70BAAD5A3AE9B44697E8D /* PinWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinWindowManager.swift; sourceTree = "<group>"; };
+		B75CDB7C41A5522626CB93F6 /* AnnotationRepositoryImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationRepositoryImpl.swift; sourceTree = "<group>"; };
+		C2431E59D97AE89C716E53C0 /* EditorInspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorInspectorView.swift; sourceTree = "<group>"; };
+		C243ED87E2218E99CDE35A32 /* AnnotationRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationRenderer.swift; sourceTree = "<group>"; };
+		C30D8CBF0579066097AE9BA1 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		D0BF92C15C182F672F1599E3 /* Screenshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Screenshot.swift; sourceTree = "<group>"; };
+		D7A61C6A0175A2C34DD0D543 /* AnnotationColor+SwiftUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AnnotationColor+SwiftUI.swift"; sourceTree = "<group>"; };
+		D8AFCD52F989FAC9612D7DA1 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		E1111D96E824C5F5EAC8FF70 /* SaveAnnotationsUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveAnnotationsUseCase.swift; sourceTree = "<group>"; };
+		E9CFB5EDD683675FF9F3B857 /* ScreenshotRepositoryImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotRepositoryImpl.swift; sourceTree = "<group>"; };
+		ED5C33AA9B4830D5EEA38A7E /* EditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorViewModel.swift; sourceTree = "<group>"; };
+		F242610EABE851DAD7B2B0F6 /* FlattenedImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlattenedImageView.swift; sourceTree = "<group>"; };
+		F2CD20FA5CBD44CC3A6809F8 /* FetchHistoryUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetchHistoryUseCase.swift; sourceTree = "<group>"; };
+		F846C2824B12988EBE9A3941 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		F961ED0267218D7171A5DB27 /* ScreenshotRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotRepository.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0218620BF36D844F372626C3 /* WinterShot */ = {
+			isa = PBXGroup;
+			children = (
+				F846C2824B12988EBE9A3941 /* Info.plist */,
+				71AED235468F042585A10242 /* App */,
+				95D1FAED48947B5731789761 /* Data */,
+				75C3E46F84EB83F22FB180E9 /* Domain */,
+				9A7F4B1C6AB8C74561926B3F /* Presentation */,
+			);
+			path = WinterShot;
+			sourceTree = "<group>";
+		};
+		1EADD10A71F317F3B104B8B5 = {
+			isa = PBXGroup;
+			children = (
+				0218620BF36D844F372626C3 /* WinterShot */,
+				D4C424AB6A483F9EB424B35E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		2B40377390E07BDF24F1113B /* Editor */ = {
+			isa = PBXGroup;
+			children = (
+				9369660D42EEB5E5D478F835 /* EditorCanvasView.swift */,
+				C2431E59D97AE89C716E53C0 /* EditorInspectorView.swift */,
+				141BA95984926C8A3F5A1AE6 /* EditorView.swift */,
+				ED5C33AA9B4830D5EEA38A7E /* EditorViewModel.swift */,
+			);
+			path = Editor;
+			sourceTree = "<group>";
+		};
+		2B74C019C4D11ADDC1644F1E /* Entities */ = {
+			isa = PBXGroup;
+			children = (
+				0BF7610B72022C543758A9D9 /* Annotation.swift */,
+				B216D6352B84AEF5F5186AE9 /* CaptureMode.swift */,
+				D0BF92C15C182F672F1599E3 /* Screenshot.swift */,
+			);
+			path = Entities;
+			sourceTree = "<group>";
+		};
+		39C7334B49E769CCF9D46904 /* Storage */ = {
+			isa = PBXGroup;
+			children = (
+				AE90A5F13F739D1C3992B078 /* FileScreenshotStore.swift */,
+			);
+			path = Storage;
+			sourceTree = "<group>";
+		};
+		4338F57E8D7C32C450DDF681 /* MenuBar */ = {
+			isa = PBXGroup;
+			children = (
+				D8AFCD52F989FAC9612D7DA1 /* MenuBarView.swift */,
+				0B096EA1F71BFCB77833929C /* MenuBarViewModel.swift */,
+			);
+			path = MenuBar;
+			sourceTree = "<group>";
+		};
+		4B7F68E42CD88DA2D6213757 /* Common */ = {
+			isa = PBXGroup;
+			children = (
+				D7A61C6A0175A2C34DD0D543 /* AnnotationColor+SwiftUI.swift */,
+				C243ED87E2218E99CDE35A32 /* AnnotationRenderer.swift */,
+				F242610EABE851DAD7B2B0F6 /* FlattenedImageView.swift */,
+			);
+			path = Common;
+			sourceTree = "<group>";
+		};
+		4FBC788F1FC22DB42002BD9F /* History */ = {
+			isa = PBXGroup;
+			children = (
+				C30D8CBF0579066097AE9BA1 /* HistoryView.swift */,
+				37D31F549419C37C053D426F /* HistoryViewModel.swift */,
+			);
+			path = History;
+			sourceTree = "<group>";
+		};
+		5800BE7650CF5B392F37106E /* Repositories */ = {
+			isa = PBXGroup;
+			children = (
+				B75CDB7C41A5522626CB93F6 /* AnnotationRepositoryImpl.swift */,
+				E9CFB5EDD683675FF9F3B857 /* ScreenshotRepositoryImpl.swift */,
+			);
+			path = Repositories;
+			sourceTree = "<group>";
+		};
+		67831A3FC4E7FC33B6A35F6C /* UseCases */ = {
+			isa = PBXGroup;
+			children = (
+				0A79594107D38D7B3313B305 /* CaptureScreenshotUseCase.swift */,
+				6109FEE881F3A698BE5CC951 /* DeleteScreenshotUseCase.swift */,
+				F2CD20FA5CBD44CC3A6809F8 /* FetchHistoryUseCase.swift */,
+				03E667FD01FD84A910203159 /* LoadAnnotationsUseCase.swift */,
+				6F0D6CA0AA37132847DC6F05 /* RecognizeTextUseCase.swift */,
+				E1111D96E824C5F5EAC8FF70 /* SaveAnnotationsUseCase.swift */,
+			);
+			path = UseCases;
+			sourceTree = "<group>";
+		};
+		71AED235468F042585A10242 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				3ABA7C765089FB3689351F3D /* DIContainer.swift */,
+				0A9096208A2FBF0271F06E0C /* WinterShotApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		75C3E46F84EB83F22FB180E9 /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+				2B74C019C4D11ADDC1644F1E /* Entities */,
+				8D367DC6DCFDF14FF3A4B93B /* Repositories */,
+				67831A3FC4E7FC33B6A35F6C /* UseCases */,
+			);
+			path = Domain;
+			sourceTree = "<group>";
+		};
+		8D367DC6DCFDF14FF3A4B93B /* Repositories */ = {
+			isa = PBXGroup;
+			children = (
+				64B8ECFD5280F45D47A4624C /* AnnotationRepository.swift */,
+				3F85EC6544D33B3801E3926E /* OCRService.swift */,
+				F961ED0267218D7171A5DB27 /* ScreenshotRepository.swift */,
+			);
+			path = Repositories;
+			sourceTree = "<group>";
+		};
+		95D1FAED48947B5731789761 /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				5800BE7650CF5B392F37106E /* Repositories */,
+				F648F0F3CB067B1206F71713 /* Services */,
+				39C7334B49E769CCF9D46904 /* Storage */,
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
+		9A7F4B1C6AB8C74561926B3F /* Presentation */ = {
+			isa = PBXGroup;
+			children = (
+				4B7F68E42CD88DA2D6213757 /* Common */,
+				2B40377390E07BDF24F1113B /* Editor */,
+				4FBC788F1FC22DB42002BD9F /* History */,
+				4338F57E8D7C32C450DDF681 /* MenuBar */,
+				D91A44B86CAE883185B59A42 /* Pin */,
+			);
+			path = Presentation;
+			sourceTree = "<group>";
+		};
+		D4C424AB6A483F9EB424B35E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				50AAB6A814BD2D36D7E533FA /* WinterShot.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D91A44B86CAE883185B59A42 /* Pin */ = {
+			isa = PBXGroup;
+			children = (
+				B5C70BAAD5A3AE9B44697E8D /* PinWindowManager.swift */,
+			);
+			path = Pin;
+			sourceTree = "<group>";
+		};
+		F648F0F3CB067B1206F71713 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				036BF601111B474D5B59C780 /* SystemScreenCaptureService.swift */,
+				09D9E79352A4F3D535132EA2 /* VisionOCRService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		73E739B9C72F3EDDE6CEB305 /* WinterShot */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0A2355858D450595253D105C /* Build configuration list for PBXNativeTarget "WinterShot" */;
+			buildPhases = (
+				922565884DAD5D050879FA97 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = WinterShot;
+			packageProductDependencies = (
+			);
+			productName = WinterShot;
+			productReference = 50AAB6A814BD2D36D7E533FA /* WinterShot.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		2F1920E5BB1073BE8D2EB9DB /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					73E739B9C72F3EDDE6CEB305 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 1B0881F9D3A09D7189546ACA /* Build configuration list for PBXProject "WinterShot" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 1EADD10A71F317F3B104B8B5;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = D4C424AB6A483F9EB424B35E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				73E739B9C72F3EDDE6CEB305 /* WinterShot */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		922565884DAD5D050879FA97 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8C4049F99FF6D689F78C1499 /* Annotation.swift in Sources */,
+				E00B8108EA40EEB90C382281 /* AnnotationColor+SwiftUI.swift in Sources */,
+				3C8FF4279883AE9B6B05C29C /* AnnotationRenderer.swift in Sources */,
+				683B6C8B29B0684CFAFA62F3 /* AnnotationRepository.swift in Sources */,
+				5B404C483E8691805D2074DB /* AnnotationRepositoryImpl.swift in Sources */,
+				9E2CA98C71F97958DBE5254D /* CaptureMode.swift in Sources */,
+				30436D41AC0C57AF39999121 /* CaptureScreenshotUseCase.swift in Sources */,
+				804CDC953F188AE1DC151962 /* DIContainer.swift in Sources */,
+				87DCCC0E1E1EB623145CEA09 /* DeleteScreenshotUseCase.swift in Sources */,
+				987D7A70E31E21D2DDEF3FD2 /* EditorCanvasView.swift in Sources */,
+				663B2FE4F15A390BA4F3C9A1 /* EditorInspectorView.swift in Sources */,
+				79275690A86833FA965D95D8 /* EditorView.swift in Sources */,
+				B4DB1872752D120E6EC4822E /* EditorViewModel.swift in Sources */,
+				8DA8FA2E84B23910E06608DC /* FetchHistoryUseCase.swift in Sources */,
+				7BAD339EC928E0DA062C7B31 /* FileScreenshotStore.swift in Sources */,
+				1FD8EF4777DD8BA0A8D27F96 /* FlattenedImageView.swift in Sources */,
+				1A40527CEE0D31E9199A9858 /* HistoryView.swift in Sources */,
+				5F3907C271B4A39097055848 /* HistoryViewModel.swift in Sources */,
+				0D4ABB33D0BB8B5971A74744 /* LoadAnnotationsUseCase.swift in Sources */,
+				0F25C1799EEF4C49197F0B94 /* MenuBarView.swift in Sources */,
+				B7B41AB0A463529F210EFA81 /* MenuBarViewModel.swift in Sources */,
+				155D92684D223C7B7E3BA0F6 /* OCRService.swift in Sources */,
+				57242771BFDA3142FEEC473E /* PinWindowManager.swift in Sources */,
+				0896CCE91C388FBB08EFBDDD /* RecognizeTextUseCase.swift in Sources */,
+				9CCBE6E68F7606DA2637D778 /* SaveAnnotationsUseCase.swift in Sources */,
+				7844646A77126DAFA0308CA8 /* Screenshot.swift in Sources */,
+				FCA4153F12E778A939457E93 /* ScreenshotRepository.swift in Sources */,
+				6D727EDBFB38FA842318B79E /* ScreenshotRepositoryImpl.swift in Sources */,
+				9BA1C90F55DADE80DE784454 /* SystemScreenCaptureService.swift in Sources */,
+				AA14A4CB3BA0E380680E0BFD /* VisionOCRService.swift in Sources */,
+				D076F868B1781BAB4E1211D6 /* WinterShotApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0FE50987328F2D6B2E119B8D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		2A4CFD556F832FF432EB5F2F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = WinterShot/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.winterzxzz.WinterShot;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		45BBF718670BF486DA00C36C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		75736ACE313FE00F4526FC68 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = WinterShot/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.winterzxzz.WinterShot;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0A2355858D450595253D105C /* Build configuration list for PBXNativeTarget "WinterShot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2A4CFD556F832FF432EB5F2F /* Debug */,
+				75736ACE313FE00F4526FC68 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		1B0881F9D3A09D7189546ACA /* Build configuration list for PBXProject "WinterShot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				45BBF718670BF486DA00C36C /* Debug */,
+				0FE50987328F2D6B2E119B8D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 2F1920E5BB1073BE8D2EB9DB /* Project object */;
+}
