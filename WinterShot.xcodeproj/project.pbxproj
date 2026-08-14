@@ -15,6 +15,8 @@
 		1FD8EF4777DD8BA0A8D27F96 /* FlattenedImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F242610EABE851DAD7B2B0F6 /* FlattenedImageView.swift */; };
 		30436D41AC0C57AF39999121 /* CaptureScreenshotUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A79594107D38D7B3313B305 /* CaptureScreenshotUseCase.swift */; };
 		3C8FF4279883AE9B6B05C29C /* AnnotationRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C243ED87E2218E99CDE35A32 /* AnnotationRenderer.swift */; };
+		443539E55EA4D09183F330B8 /* WindowPickerOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969FBD8818DD7B02683B8D7B /* WindowPickerOverlay.swift */; };
+		49985723090FC67B79A365B3 /* WindowCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20EDBC135B97FBE45E8D9774 /* WindowCaptureService.swift */; };
 		57242771BFDA3142FEEC473E /* PinWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5C70BAAD5A3AE9B44697E8D /* PinWindowManager.swift */; };
 		5B404C483E8691805D2074DB /* AnnotationRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = B75CDB7C41A5522626CB93F6 /* AnnotationRepositoryImpl.swift */; };
 		5F3907C271B4A39097055848 /* HistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37D31F549419C37C053D426F /* HistoryViewModel.swift */; };
@@ -49,6 +51,7 @@
 		0B096EA1F71BFCB77833929C /* MenuBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarViewModel.swift; sourceTree = "<group>"; };
 		0BF7610B72022C543758A9D9 /* Annotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Annotation.swift; sourceTree = "<group>"; };
 		141BA95984926C8A3F5A1AE6 /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
+		20EDBC135B97FBE45E8D9774 /* WindowCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowCaptureService.swift; sourceTree = "<group>"; };
 		37D31F549419C37C053D426F /* HistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewModel.swift; sourceTree = "<group>"; };
 		3ABA7C765089FB3689351F3D /* DIContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DIContainer.swift; sourceTree = "<group>"; };
 		3F85EC6544D33B3801E3926E /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
@@ -57,6 +60,7 @@
 		64B8ECFD5280F45D47A4624C /* AnnotationRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationRepository.swift; sourceTree = "<group>"; };
 		6F0D6CA0AA37132847DC6F05 /* RecognizeTextUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecognizeTextUseCase.swift; sourceTree = "<group>"; };
 		9369660D42EEB5E5D478F835 /* EditorCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorCanvasView.swift; sourceTree = "<group>"; };
+		969FBD8818DD7B02683B8D7B /* WindowPickerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPickerOverlay.swift; sourceTree = "<group>"; };
 		AE90A5F13F739D1C3992B078 /* FileScreenshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileScreenshotStore.swift; sourceTree = "<group>"; };
 		B216D6352B84AEF5F5186AE9 /* CaptureMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureMode.swift; sourceTree = "<group>"; };
 		B5C70BAAD5A3AE9B44697E8D /* PinWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinWindowManager.swift; sourceTree = "<group>"; };
@@ -205,6 +209,14 @@
 			path = Repositories;
 			sourceTree = "<group>";
 		};
+		8E886F59711B6F9AEDC33713 /* WindowPicker */ = {
+			isa = PBXGroup;
+			children = (
+				969FBD8818DD7B02683B8D7B /* WindowPickerOverlay.swift */,
+			);
+			path = WindowPicker;
+			sourceTree = "<group>";
+		};
 		95D1FAED48947B5731789761 /* Data */ = {
 			isa = PBXGroup;
 			children = (
@@ -223,6 +235,7 @@
 				4FBC788F1FC22DB42002BD9F /* History */,
 				4338F57E8D7C32C450DDF681 /* MenuBar */,
 				D91A44B86CAE883185B59A42 /* Pin */,
+				8E886F59711B6F9AEDC33713 /* WindowPicker */,
 			);
 			path = Presentation;
 			sourceTree = "<group>";
@@ -248,6 +261,7 @@
 			children = (
 				036BF601111B474D5B59C780 /* SystemScreenCaptureService.swift */,
 				09D9E79352A4F3D535132EA2 /* VisionOCRService.swift */,
+				20EDBC135B97FBE45E8D9774 /* WindowCaptureService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -340,6 +354,8 @@
 				6D727EDBFB38FA842318B79E /* ScreenshotRepositoryImpl.swift in Sources */,
 				9BA1C90F55DADE80DE784454 /* SystemScreenCaptureService.swift in Sources */,
 				AA14A4CB3BA0E380680E0BFD /* VisionOCRService.swift in Sources */,
+				49985723090FC67B79A365B3 /* WindowCaptureService.swift in Sources */,
+				443539E55EA4D09183F330B8 /* WindowPickerOverlay.swift in Sources */,
 				D076F868B1781BAB4E1211D6 /* WinterShotApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

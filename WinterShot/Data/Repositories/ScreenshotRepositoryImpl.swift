@@ -1,15 +1,21 @@
+import AppKit
 import Foundation
 
-/// Default ScreenshotRepository backed by the system capture tool
-/// and the file-based library store.
+/// Default ScreenshotRepository backed by the file-based library store.
+/// Window capture uses the ScreenCaptureKit frozen-screen picker; area and
+/// fullscreen use the system capture tool.
 final class ScreenshotRepositoryImpl: ScreenshotRepository {
     private let captureService: SystemScreenCaptureService
+    private let windowCaptureService: WindowCaptureService
     private let store: FileScreenshotStore
 
     var storageDirectory: URL { store.directory }
 
-    init(captureService: SystemScreenCaptureService, store: FileScreenshotStore) {
+    init(captureService: SystemScreenCaptureService,
+         windowCaptureService: WindowCaptureService,
+         store: FileScreenshotStore) {
         self.captureService = captureService
+        self.windowCaptureService = windowCaptureService
         self.store = store
     }
 
@@ -17,7 +23,13 @@ final class ScreenshotRepositoryImpl: ScreenshotRepository {
         let createdAt = Date()
         let imageURL = store.newImageURL(date: createdAt)
 
-        guard try await captureService.capture(mode: mode, to: imageURL) else {
+        let captured: Bool
+        if mode == .window {
+            captured = try await captureWindow(to: imageURL)
+        } else {
+            captured = try await captureService.capture(mode: mode, to: imageURL)
+        }
+        guard captured else {
             return nil // user cancelled
         }
 
@@ -30,6 +42,24 @@ final class ScreenshotRepositoryImpl: ScreenshotRepository {
         )
         try store.writeSidecar(sidecar, for: imageURL)
         return screenshot
+    }
+
+    /// Frozen-screen picker capture; falls back to the system window picker
+    /// when ScreenCaptureKit is unavailable. Returns false on cancel.
+    private func captureWindow(to url: URL) async throws -> Bool {
+        do {
+            guard let cgImage = try await windowCaptureService.captureWindow() else {
+                return false
+            }
+            let rep = NSBitmapImageRep(cgImage: cgImage)
+            guard let data = rep.representation(using: .png, properties: [:]) else {
+                return false
+            }
+            try data.write(to: url)
+            return true
+        } catch WindowCaptureService.WindowCaptureError.screenCaptureUnavailable {
+            return try await captureService.capture(mode: .window, to: url)
+        }
     }
 
     func history() throws -> [Screenshot] {

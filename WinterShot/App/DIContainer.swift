@@ -18,7 +18,10 @@ final class DIContainer {
     private init() {
         store = FileScreenshotStore()
         captureService = SystemScreenCaptureService()
-        screenshotRepository = ScreenshotRepositoryImpl(captureService: captureService, store: store)
+        let windowCaptureService = WindowCaptureService(picker: WindowPickerOverlayPresenter())
+        screenshotRepository = ScreenshotRepositoryImpl(captureService: captureService,
+                                                        windowCaptureService: windowCaptureService,
+                                                        store: store)
         annotationRepository = AnnotationRepositoryImpl(store: store)
         ocrService = VisionOCRService()
     }

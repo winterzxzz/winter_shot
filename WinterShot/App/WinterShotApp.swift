@@ -40,9 +40,13 @@ private struct MenuBarIconView: View {
     var body: some View {
         Image(systemName: "camera.viewfinder")
             .onAppear {
-                guard let mode = Self.launchCaptureMode() else { return }
-                NSLog("WinterShot: launch-argument capture requested (%@)", mode.rawValue)
-                perform(mode)
+                if let mode = Self.launchCaptureMode() {
+                    NSLog("WinterShot: launch-argument capture requested (%@)", mode.rawValue)
+                    perform(mode)
+                }
+                if let filename = Self.launchEditFilename() {
+                    openEditor(filename: filename)
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: .winterShotPerformCapture)) { note in
                 guard let raw = note.userInfo?["mode"] as? String,
@@ -55,6 +59,26 @@ private struct MenuBarIconView: View {
         guard let index = CommandLine.arguments.firstIndex(of: "--capture"),
               CommandLine.arguments.indices.contains(index + 1) else { return nil }
         return CaptureMode(rawValue: CommandLine.arguments[index + 1])
+    }
+
+    private static func launchEditFilename() -> String? {
+        guard let index = CommandLine.arguments.firstIndex(of: "--edit"),
+              CommandLine.arguments.indices.contains(index + 1) else { return nil }
+        return CommandLine.arguments[index + 1]
+    }
+
+    /// Opens the editor for an existing capture by filename (`--edit <name>.png`).
+    private func openEditor(filename: String) {
+        Task { @MainActor in
+            guard let screenshot = try? DIContainer.shared.fetchHistoryUseCase.execute()
+                .first(where: { $0.filename == filename }) else {
+                NSLog("WinterShot: --edit found no capture named %@", filename)
+                return
+            }
+            NSLog("WinterShot: opening editor for %@", filename)
+            NSApp.activate(ignoringOtherApps: true)
+            openWindow(value: screenshot)
+        }
     }
 
     private func perform(_ mode: CaptureMode) {
