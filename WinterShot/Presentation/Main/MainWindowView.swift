@@ -81,7 +81,22 @@ struct MainWindowView: View {
                     .background(Color.green, in: Capsule())
             }
             .buttonStyle(.plain)
-            .help("A newer version is on GitHub — click to open the release")
+            .help("A newer version is on GitHub — click to download and install it")
+        }
+
+        if case .updating(let status) = updateChecker.state {
+            HStack(spacing: 5) {
+                ProgressView()
+                    .controlSize(.small)
+                Text(status)
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            .fixedSize()
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(.white.opacity(0.08), in: Capsule())
+            .help("Installing the update — the app restarts when it's done")
         }
     }
 

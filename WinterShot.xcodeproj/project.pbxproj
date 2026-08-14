@@ -18,6 +18,7 @@
 		3A441895771A52FEE6DA155D /* AreaPickerOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C824D020078A357B3B4CFFA /* AreaPickerOverlay.swift */; };
 		3AF43CE26B1F5036E8E0ADE7 /* CapturePreviewManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44A30B804B90627C25BA56 /* CapturePreviewManager.swift */; };
 		3C8FF4279883AE9B6B05C29C /* AnnotationRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C243ED87E2218E99CDE35A32 /* AnnotationRenderer.swift */; };
+		3FC0FB281DA223CA40AB8518 /* UpdateInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C22DBA2EA5FB10EB3FEAF22 /* UpdateInstaller.swift */; };
 		443539E55EA4D09183F330B8 /* WindowPickerOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969FBD8818DD7B02683B8D7B /* WindowPickerOverlay.swift */; };
 		49985723090FC67B79A365B3 /* WindowCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20EDBC135B97FBE45E8D9774 /* WindowCaptureService.swift */; };
 		52C2E7B5EE9C939D67AB5D05 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6A941AB037116E966856D9F /* SettingsView.swift */; };
@@ -94,6 +95,7 @@
 		8B2EC158E240E8357D2E75A2 /* SetCropUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetCropUseCase.swift; sourceTree = "<group>"; };
 		9369660D42EEB5E5D478F835 /* EditorCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorCanvasView.swift; sourceTree = "<group>"; };
 		969FBD8818DD7B02683B8D7B /* WindowPickerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPickerOverlay.swift; sourceTree = "<group>"; };
+		9C22DBA2EA5FB10EB3FEAF22 /* UpdateInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateInstaller.swift; sourceTree = "<group>"; };
 		9F44A30B804B90627C25BA56 /* CapturePreviewManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturePreviewManager.swift; sourceTree = "<group>"; };
 		AE90A5F13F739D1C3992B078 /* FileScreenshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileScreenshotStore.swift; sourceTree = "<group>"; };
 		B216D6352B84AEF5F5186AE9 /* CaptureMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureMode.swift; sourceTree = "<group>"; };
@@ -338,6 +340,7 @@
 				FBDADA3A9CC5BD28C982EBFC /* GitHubUpdateService.swift */,
 				D68C1EB5C4AB5BC9260D1BC5 /* GlobalHotkeyService.swift */,
 				036BF601111B474D5B59C780 /* SystemScreenCaptureService.swift */,
+				9C22DBA2EA5FB10EB3FEAF22 /* UpdateInstaller.swift */,
 				09D9E79352A4F3D535132EA2 /* VisionOCRService.swift */,
 				20EDBC135B97FBE45E8D9774 /* WindowCaptureService.swift */,
 			);
@@ -459,6 +462,7 @@
 				52C2E7B5EE9C939D67AB5D05 /* SettingsView.swift in Sources */,
 				9BA1C90F55DADE80DE784454 /* SystemScreenCaptureService.swift in Sources */,
 				7B94C47F0C3A3FACEC9F5432 /* UpdateChecker.swift in Sources */,
+				3FC0FB281DA223CA40AB8518 /* UpdateInstaller.swift in Sources */,
 				AA14A4CB3BA0E380680E0BFD /* VisionOCRService.swift in Sources */,
 				49985723090FC67B79A365B3 /* WindowCaptureService.swift in Sources */,
 				66F076040B797CC955E11F77 /* WindowOpener.swift in Sources */,

@@ -152,8 +152,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
         if let window = NSApp.windows.first(where: { $0.identifier?.rawValue.hasPrefix("main") == true }) {
             window.makeKeyAndOrderFront(nil)
+        } else if let opener = WindowOpener.openMainWindow {
+            opener()
         } else {
-            WindowOpener.openMainWindow?()
+            // The bridge hasn't donated openWindow yet (early launch, e.g.
+            // --edit) — retry until it has. Any pending selection is already
+            // parked on the selection bus.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                self?.openMain()
+            }
         }
     }
 
