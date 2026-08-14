@@ -32,6 +32,9 @@ final class EditorViewModel: ObservableObject {
     @Published var cropDraft: CGRect?
     private var cropDragStart: CGPoint?
 
+    /// Non-destructive background beautify (backdrop, padding, corners, shadow).
+    @Published var backdrop: BackdropStyle = .none
+
     let image: NSImage?
     let imagePixelSize: CGSize
 
@@ -44,6 +47,8 @@ final class EditorViewModel: ObservableObject {
     private let recognizeTextUseCase: RecognizeTextUseCase
     private let setCropUseCase: SetCropUseCase
     private let loadCropUseCase: LoadCropUseCase
+    private let setBackgroundUseCase: SetBackgroundUseCase
+    private let loadBackgroundUseCase: LoadBackgroundUseCase
 
     private static let zoomSteps: [CGFloat] = [0.1, 0.25, 0.33, 0.5, 0.67, 0.75, 0.9, 1, 1.25, 1.5, 2, 3, 4]
 
@@ -65,6 +70,8 @@ final class EditorViewModel: ObservableObject {
         self.recognizeTextUseCase = container.recognizeTextUseCase
         self.setCropUseCase = container.setCropUseCase
         self.loadCropUseCase = container.loadCropUseCase
+        self.setBackgroundUseCase = container.setBackgroundUseCase
+        self.loadBackgroundUseCase = container.loadBackgroundUseCase
 
         let nsImage = NSImage(contentsOf: screenshot.imageURL)
         self.image = nsImage
@@ -77,6 +84,23 @@ final class EditorViewModel: ObservableObject {
 
         self.annotations = (try? loadAnnotationsUseCase.execute(for: screenshot)) ?? []
         self.crop = (try? loadCropUseCase.execute(for: screenshot)) ?? nil
+        self.backdrop = (try? loadBackgroundUseCase.execute(for: screenshot)) ?? .none
+    }
+
+    // MARK: - Background beautify
+
+    /// The backdrop the canvas should render — hidden while cropping.
+    var displayBackdrop: BackdropStyle {
+        isCropping ? .none : backdrop
+    }
+
+    func updateBackdrop(_ style: BackdropStyle) {
+        backdrop = style
+        do {
+            try setBackgroundUseCase.execute(style.isEnabled ? style : nil, for: screenshot)
+        } catch {
+            statusMessage = "Could not save background: \(error.localizedDescription)"
+        }
     }
 
     // MARK: - Crop
@@ -145,7 +169,7 @@ final class EditorViewModel: ObservableObject {
     // MARK: - Zoom
 
     func effectiveScale(fitting available: CGSize) -> CGFloat {
-        let content = visibleRect.size
+        let content = BeautifyRenderer.outputSize(visible: visibleRect, style: displayBackdrop)
         switch zoomMode {
         case .percent(let value):
             return value
@@ -383,16 +407,17 @@ final class EditorViewModel: ObservableObject {
     /// and it only ever touches the exported copy.
     func flattenedImage() -> NSImage? {
         guard let image else { return nil }
-        let visible = crop ?? fullImageRect
-        let renderer = ImageRenderer(content: FlattenedImageView(
+        let content = FlattenedImageView(
             image: image,
             imageSize: imagePixelSize,
             annotations: annotations,
-            crop: crop
-        ))
+            crop: crop,
+            background: backdrop
+        )
+        let renderer = ImageRenderer(content: content)
         renderer.scale = 1
         guard let cgImage = renderer.cgImage else { return nil }
-        return NSImage(cgImage: cgImage, size: visible.size)
+        return NSImage(cgImage: cgImage, size: content.outputSize)
     }
 
     func copyFlattenedToPasteboard() {

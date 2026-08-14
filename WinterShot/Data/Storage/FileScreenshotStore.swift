@@ -9,6 +9,8 @@ struct ScreenshotSidecar: Codable {
     var annotations: [Annotation]
     /// Non-destructive crop in image pixel space; nil shows the full capture.
     var crop: CGRect?
+    /// Non-destructive background beautify; nil renders the bare capture.
+    var background: BackdropStyle?
 }
 
 /// Owns the on-disk layout of the screenshot library:

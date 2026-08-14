@@ -13,8 +13,9 @@ struct EditorCanvasView: View {
         GeometryReader { proxy in
             let visible = viewModel.visibleRect
             let scale = viewModel.effectiveScale(fitting: proxy.size)
-            let contentSize = CGSize(width: visible.width * scale,
-                                     height: visible.height * scale)
+            let outputSize = BeautifyRenderer.outputSize(visible: visible, style: viewModel.displayBackdrop)
+            let contentSize = CGSize(width: outputSize.width * scale,
+                                     height: outputSize.height * scale)
             let canvasSize = CGSize(width: max(contentSize.width, proxy.size.width),
                                     height: max(contentSize.height, proxy.size.height))
             let origin = CGPoint(x: (canvasSize.width - contentSize.width) / 2,
@@ -32,17 +33,22 @@ struct EditorCanvasView: View {
 
     private func canvas(scale: CGFloat, origin: CGPoint, visible: CGRect) -> some View {
         Canvas { context, _ in
+            let style = viewModel.displayBackdrop
+            let pad = BeautifyRenderer.padding(for: style, content: visible.size)
+
             context.translateBy(x: origin.x, y: origin.y)
             context.scaleBy(x: scale, y: scale)
-            context.translateBy(x: -visible.origin.x, y: -visible.origin.y)
 
-            if let image = viewModel.image {
-                context.draw(Image(nsImage: image),
-                             in: CGRect(origin: .zero, size: viewModel.imagePixelSize))
-            }
-            for annotation in viewModel.annotations {
-                AnnotationRenderer.draw(annotation, in: &context)
-            }
+            // Backdrop + clipped image and committed annotations.
+            BeautifyRenderer.drawContent(in: &context,
+                                         image: viewModel.image,
+                                         imageSize: viewModel.imagePixelSize,
+                                         annotations: viewModel.annotations,
+                                         visible: visible,
+                                         style: style)
+
+            // Live overlays in the same content space.
+            context.translateBy(x: pad - visible.origin.x, y: pad - visible.origin.y)
             if let draft = viewModel.draft {
                 AnnotationRenderer.draw(draft, in: &context)
             }
@@ -109,8 +115,9 @@ struct EditorCanvasView: View {
     private func imagePoint(_ location: CGPoint, scale: CGFloat, origin: CGPoint,
                             visible: CGRect) -> CGPoint {
         let size = viewModel.imagePixelSize
-        let x = (location.x - origin.x) / scale + visible.origin.x
-        let y = (location.y - origin.y) / scale + visible.origin.y
+        let pad = BeautifyRenderer.padding(for: viewModel.displayBackdrop, content: visible.size)
+        let x = (location.x - origin.x) / scale - pad + visible.origin.x
+        let y = (location.y - origin.y) / scale - pad + visible.origin.y
         return CGPoint(x: min(max(x, 0), size.width),
                        y: min(max(y, 0), size.height))
     }

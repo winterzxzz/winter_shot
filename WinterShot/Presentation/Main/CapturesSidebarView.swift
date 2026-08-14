@@ -59,7 +59,8 @@ struct CapturesSidebarView: View {
                         isSelected: viewModel.selected?.id == screenshot.id,
                         onOpen: { viewModel.select(screenshot) },
                         onCopy: { viewModel.copyFlattened(screenshot) },
-                        onPin: { viewModel.pin(screenshot) }
+                        onPin: { viewModel.pin(screenshot) },
+                        onDelete: { viewModel.delete(screenshot) }
                     )
                     .contextMenu {
                         Button("Open in Editor") { viewModel.select(screenshot) }
@@ -109,6 +110,7 @@ private struct CaptureCard: View {
     let onOpen: () -> Void
     let onCopy: () -> Void
     let onPin: () -> Void
+    let onDelete: () -> Void
 
     @State private var hovering = false
     @State private var thumbnail: NSImage?
@@ -133,18 +135,40 @@ private struct CaptureCard: View {
                         .strokeBorder(isSelected ? Color.accentColor : .white.opacity(0.12),
                                       lineWidth: isSelected ? 2 : 1)
                 )
-
-                if hovering {
-                    HStack(spacing: 14) {
-                        quickAction(icon: "rectangle.and.pencil.and.ellipsis", help: "Annotate", action: onOpen)
-                        quickAction(icon: "doc.on.doc", help: "Copy", action: onCopy)
-                        quickAction(icon: "pin", help: "Pin to screen", action: onPin)
+                .overlay(alignment: .topTrailing) {
+                    if hovering || isSelected {
+                        Button(action: onDelete) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 20, height: 20)
+                                .background(.black.opacity(0.72), in: Circle())
+                                .overlay(Circle().strokeBorder(.white.opacity(0.25), lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                        .help("Delete")
+                        .padding(6)
+                        .transition(.opacity)
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(.black.opacity(0.72), in: Capsule())
+                }
+                .overlay(alignment: .bottom) {
+                    if hovering || isSelected {
+                        HStack(spacing: 14) {
+                            quickAction(icon: "rectangle.and.pencil.and.ellipsis", help: "Annotate", action: onOpen)
+                            quickAction(icon: "doc.on.doc", help: "Copy", action: onCopy)
+                            quickAction(icon: "pin", help: "Pin to screen", action: onPin)
+                            quickAction(icon: "trash", help: "Delete", action: onDelete)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(.black.opacity(0.72), in: Capsule())
+                        .overlay(Capsule().strokeBorder(.white.opacity(0.18), lineWidth: 1))
+                        .padding(.bottom, 8)
+                        .transition(.opacity)
+                    }
                 }
             }
+            .animation(.easeInOut(duration: 0.12), value: hovering)
 
             Text(title)
                 .font(.system(size: 12, weight: .semibold))
@@ -164,6 +188,7 @@ private struct CaptureCard: View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 13))
+                .foregroundStyle(.white)
         }
         .buttonStyle(.plain)
         .help(help)

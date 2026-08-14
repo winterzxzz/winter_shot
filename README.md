@@ -8,6 +8,7 @@ A native macOS menu-bar screenshot tool inspired by [BridgeShot](https://www.bri
 - **Nine annotation tools** — arrow, rectangle, ellipse, line, freehand, text, numbered counters, highlighter, and redact.
 - **Non-destructive by design** — annotations and the crop live in a `.wshot.json` sidecar next to the image. Reopen any screenshot later and every arrow is still editable and the crop reversible; pixels are flattened only on export.
 - **Crop** — drag a rect with rule-of-thirds guides and a live size readout; the crop applies to the canvas, exports, copies, and pins, and can be reset at any time.
+- **Background beautify** — pad the shot on a gradient backdrop with rounded corners and a soft shadow, ready for posts and docs. Seven presets plus padding, corner, and shadow controls; non-destructive and live in the editor.
 - **On-device OCR** — recognize and copy text from any screenshot via Apple Vision. Nothing leaves your Mac.
 - **Pin to screen** — float a shot above every window; drag to move, double-click to dismiss.
 - **History** — a searchable library of every capture, reopenable in the editor with annotations intact.

@@ -9,4 +9,6 @@ protocol AnnotationRepository {
     func saveAnnotations(_ annotations: [Annotation], for screenshot: Screenshot) throws
     func loadCrop(for screenshot: Screenshot) throws -> CGRect?
     func saveCrop(_ crop: CGRect?, for screenshot: Screenshot) throws
+    func loadBackground(for screenshot: Screenshot) throws -> BackdropStyle?
+    func saveBackground(_ background: BackdropStyle?, for screenshot: Screenshot) throws
 }

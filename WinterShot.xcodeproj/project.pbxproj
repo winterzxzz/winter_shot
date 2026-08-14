@@ -14,6 +14,7 @@
 		1A0676CDE9AE59651B0E0249 /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E7B5C4F2B2E0D3EB57C3144 /* MainWindowView.swift */; };
 		1FD8EF4777DD8BA0A8D27F96 /* FlattenedImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F242610EABE851DAD7B2B0F6 /* FlattenedImageView.swift */; };
 		30436D41AC0C57AF39999121 /* CaptureScreenshotUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A79594107D38D7B3313B305 /* CaptureScreenshotUseCase.swift */; };
+		39C642B6AA5F669211FE6704 /* BeautifyRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70353DD99D620482667A4220 /* BeautifyRenderer.swift */; };
 		3A441895771A52FEE6DA155D /* AreaPickerOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C824D020078A357B3B4CFFA /* AreaPickerOverlay.swift */; };
 		3AF43CE26B1F5036E8E0ADE7 /* CapturePreviewManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44A30B804B90627C25BA56 /* CapturePreviewManager.swift */; };
 		3C8FF4279883AE9B6B05C29C /* AnnotationRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C243ED87E2218E99CDE35A32 /* AnnotationRenderer.swift */; };
@@ -24,6 +25,7 @@
 		5B404C483E8691805D2074DB /* AnnotationRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = B75CDB7C41A5522626CB93F6 /* AnnotationRepositoryImpl.swift */; };
 		683B6C8B29B0684CFAFA62F3 /* AnnotationRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64B8ECFD5280F45D47A4624C /* AnnotationRepository.swift */; };
 		6D727EDBFB38FA842318B79E /* ScreenshotRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9CFB5EDD683675FF9F3B857 /* ScreenshotRepositoryImpl.swift */; };
+		75ADB67BD8077A76A83A844A /* BackdropStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB228CB4C25E75D1A301D11 /* BackdropStyle.swift */; };
 		7844646A77126DAFA0308CA8 /* Screenshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0BF92C15C182F672F1599E3 /* Screenshot.swift */; };
 		79275690A86833FA965D95D8 /* EditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 141BA95984926C8A3F5A1AE6 /* EditorView.swift */; };
 		7BAD339EC928E0DA062C7B31 /* FileScreenshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE90A5F13F739D1C3992B078 /* FileScreenshotStore.swift */; };
@@ -42,6 +44,7 @@
 		B4E5D81DE3706141A32AE02B /* OverlayPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 553C36A68D428AF2967AFAB2 /* OverlayPanel.swift */; };
 		B53C3632DC94BC2E86731E8C /* EditorToolbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E87518271AD19E7877A3F49 /* EditorToolbarView.swift */; };
 		B7B41AB0A463529F210EFA81 /* MenuBarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B096EA1F71BFCB77833929C /* MenuBarViewModel.swift */; };
+		BBE1528808F70A2DBC6C3A36 /* SetBackgroundUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 410B4F55604E2E005A588A98 /* SetBackgroundUseCase.swift */; };
 		D076F868B1781BAB4E1211D6 /* WinterShotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9096208A2FBF0271F06E0C /* WinterShotApp.swift */; };
 		DEBE62A7779E90ADBA4A323C /* MainViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CAE2E95F28A951A7115C3C /* MainViewModel.swift */; };
 		E00B8108EA40EEB90C382281 /* AnnotationColor+SwiftUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A61C6A0175A2C34DD0D543 /* AnnotationColor+SwiftUI.swift */; };
@@ -63,12 +66,15 @@
 		2F0A25D68246DF430D50A5DE /* CapturesSidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturesSidebarView.swift; sourceTree = "<group>"; };
 		33CAE2E95F28A951A7115C3C /* MainViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewModel.swift; sourceTree = "<group>"; };
 		3ABA7C765089FB3689351F3D /* DIContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DIContainer.swift; sourceTree = "<group>"; };
+		3CB228CB4C25E75D1A301D11 /* BackdropStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackdropStyle.swift; sourceTree = "<group>"; };
 		3F85EC6544D33B3801E3926E /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
+		410B4F55604E2E005A588A98 /* SetBackgroundUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetBackgroundUseCase.swift; sourceTree = "<group>"; };
 		50AAB6A814BD2D36D7E533FA /* WinterShot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WinterShot.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		553C36A68D428AF2967AFAB2 /* OverlayPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayPanel.swift; sourceTree = "<group>"; };
 		6109FEE881F3A698BE5CC951 /* DeleteScreenshotUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeleteScreenshotUseCase.swift; sourceTree = "<group>"; };
 		64B8ECFD5280F45D47A4624C /* AnnotationRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationRepository.swift; sourceTree = "<group>"; };
 		6F0D6CA0AA37132847DC6F05 /* RecognizeTextUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecognizeTextUseCase.swift; sourceTree = "<group>"; };
+		70353DD99D620482667A4220 /* BeautifyRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeautifyRenderer.swift; sourceTree = "<group>"; };
 		7C824D020078A357B3B4CFFA /* AreaPickerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaPickerOverlay.swift; sourceTree = "<group>"; };
 		7E87518271AD19E7877A3F49 /* EditorToolbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorToolbarView.swift; sourceTree = "<group>"; };
 		8B2EC158E240E8357D2E75A2 /* SetCropUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetCropUseCase.swift; sourceTree = "<group>"; };
@@ -130,6 +136,7 @@
 			isa = PBXGroup;
 			children = (
 				0BF7610B72022C543758A9D9 /* Annotation.swift */,
+				3CB228CB4C25E75D1A301D11 /* BackdropStyle.swift */,
 				B216D6352B84AEF5F5186AE9 /* CaptureMode.swift */,
 				D0BF92C15C182F672F1599E3 /* Screenshot.swift */,
 			);
@@ -168,6 +175,7 @@
 			children = (
 				D7A61C6A0175A2C34DD0D543 /* AnnotationColor+SwiftUI.swift */,
 				C243ED87E2218E99CDE35A32 /* AnnotationRenderer.swift */,
+				70353DD99D620482667A4220 /* BeautifyRenderer.swift */,
 				F242610EABE851DAD7B2B0F6 /* FlattenedImageView.swift */,
 				553C36A68D428AF2967AFAB2 /* OverlayPanel.swift */,
 			);
@@ -192,6 +200,7 @@
 				03E667FD01FD84A910203159 /* LoadAnnotationsUseCase.swift */,
 				6F0D6CA0AA37132847DC6F05 /* RecognizeTextUseCase.swift */,
 				E1111D96E824C5F5EAC8FF70 /* SaveAnnotationsUseCase.swift */,
+				410B4F55604E2E005A588A98 /* SetBackgroundUseCase.swift */,
 				8B2EC158E240E8357D2E75A2 /* SetCropUseCase.swift */,
 			);
 			path = UseCases;
@@ -368,6 +377,8 @@
 				5B404C483E8691805D2074DB /* AnnotationRepositoryImpl.swift in Sources */,
 				A0A94F5C6DEAD8DFC82A9668 /* AreaCaptureService.swift in Sources */,
 				3A441895771A52FEE6DA155D /* AreaPickerOverlay.swift in Sources */,
+				75ADB67BD8077A76A83A844A /* BackdropStyle.swift in Sources */,
+				39C642B6AA5F669211FE6704 /* BeautifyRenderer.swift in Sources */,
 				9E2CA98C71F97958DBE5254D /* CaptureMode.swift in Sources */,
 				3AF43CE26B1F5036E8E0ADE7 /* CapturePreviewManager.swift in Sources */,
 				30436D41AC0C57AF39999121 /* CaptureScreenshotUseCase.swift in Sources */,
@@ -395,6 +406,7 @@
 				7844646A77126DAFA0308CA8 /* Screenshot.swift in Sources */,
 				FCA4153F12E778A939457E93 /* ScreenshotRepository.swift in Sources */,
 				6D727EDBFB38FA842318B79E /* ScreenshotRepositoryImpl.swift in Sources */,
+				BBE1528808F70A2DBC6C3A36 /* SetBackgroundUseCase.swift in Sources */,
 				56B9B5A4E3988FA975655241 /* SetCropUseCase.swift in Sources */,
 				9BA1C90F55DADE80DE784454 /* SystemScreenCaptureService.swift in Sources */,
 				AA14A4CB3BA0E380680E0BFD /* VisionOCRService.swift in Sources */,

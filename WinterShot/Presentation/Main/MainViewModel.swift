@@ -101,11 +101,14 @@ final class MainViewModel: ObservableObject {
         }
         let annotations = (try? container.loadAnnotationsUseCase.execute(for: screenshot)) ?? []
         let crop = (try? container.loadCropUseCase.execute(for: screenshot)) ?? nil
-        let renderer = ImageRenderer(content: FlattenedImageView(
-            image: image, imageSize: pixelSize, annotations: annotations, crop: crop
-        ))
+        let backdrop = (try? container.loadBackgroundUseCase.execute(for: screenshot)) ?? nil
+        let content = FlattenedImageView(
+            image: image, imageSize: pixelSize, annotations: annotations,
+            crop: crop, background: backdrop ?? .none
+        )
+        let renderer = ImageRenderer(content: content)
         renderer.scale = 1
         guard let cgImage = renderer.cgImage else { return nil }
-        return NSImage(cgImage: cgImage, size: crop?.size ?? pixelSize)
+        return NSImage(cgImage: cgImage, size: content.outputSize)
     }
 }

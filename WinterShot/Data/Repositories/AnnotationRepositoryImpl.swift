@@ -29,13 +29,24 @@ final class AnnotationRepositoryImpl: AnnotationRepository {
         try store.writeSidecar(sidecar, for: screenshot.imageURL)
     }
 
+    func loadBackground(for screenshot: Screenshot) throws -> BackdropStyle? {
+        store.readSidecar(for: screenshot.imageURL)?.background
+    }
+
+    func saveBackground(_ background: BackdropStyle?, for screenshot: Screenshot) throws {
+        var sidecar = sidecar(for: screenshot)
+        sidecar.background = background
+        try store.writeSidecar(sidecar, for: screenshot.imageURL)
+    }
+
     private func sidecar(for screenshot: Screenshot) -> ScreenshotSidecar {
         store.readSidecar(for: screenshot.imageURL) ?? ScreenshotSidecar(
             screenshotID: screenshot.id,
             mode: screenshot.mode,
             createdAt: screenshot.createdAt,
             annotations: [],
-            crop: nil
+            crop: nil,
+            background: nil
         )
     }
 }

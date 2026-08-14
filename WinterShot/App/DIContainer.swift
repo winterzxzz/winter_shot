@@ -56,4 +56,10 @@ final class DIContainer {
     var loadCropUseCase: LoadCropUseCase {
         LoadCropUseCase(repository: annotationRepository)
     }
+    var setBackgroundUseCase: SetBackgroundUseCase {
+        SetBackgroundUseCase(repository: annotationRepository)
+    }
+    var loadBackgroundUseCase: LoadBackgroundUseCase {
+        LoadBackgroundUseCase(repository: annotationRepository)
+    }
 }

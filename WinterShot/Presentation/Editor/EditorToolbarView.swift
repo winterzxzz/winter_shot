@@ -6,6 +6,7 @@ struct EditorToolbarView: View {
     @ObservedObject var viewModel: EditorViewModel
     let onDone: () -> Void
     @State private var showColorPopover = false
+    @State private var showBeautifyPopover = false
 
     var body: some View {
         HStack(spacing: 4) {
@@ -45,6 +46,14 @@ struct EditorToolbarView: View {
                 } else {
                     viewModel.enterCropMode()
                 }
+            }
+
+            toolButton(icon: "wand.and.stars", label: "Background Beautify",
+                       isActive: viewModel.backdrop.isEnabled) {
+                showBeautifyPopover.toggle()
+            }
+            .popover(isPresented: $showBeautifyPopover, arrowEdge: .bottom) {
+                BeautifyPopover(viewModel: viewModel)
             }
 
             pillDivider
@@ -178,5 +187,86 @@ struct EditorToolbarView: View {
             .fill(.white.opacity(0.15))
             .frame(width: 1, height: 18)
             .padding(.horizontal, 4)
+    }
+}
+
+/// Background beautify settings: backdrop preset, padding, corners, shadow.
+private struct BeautifyPopover: View {
+    @ObservedObject var viewModel: EditorViewModel
+
+    private var style: Binding<BackdropStyle> {
+        Binding(get: { viewModel.backdrop }, set: { viewModel.updateBackdrop($0) })
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Background")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 8) {
+                ForEach(BackgroundPreset.allCases) { preset in
+                    presetSwatch(preset)
+                }
+            }
+
+            HStack {
+                Text("Padding")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 52, alignment: .leading)
+                Slider(value: style.padding, in: 0.02...0.2)
+                    .frame(width: 150)
+            }
+            .disabled(!viewModel.backdrop.isEnabled)
+
+            HStack {
+                Text("Corners")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 52, alignment: .leading)
+                Slider(value: style.cornerRadius, in: 0...120)
+                    .frame(width: 150)
+            }
+            .disabled(!viewModel.backdrop.isEnabled)
+
+            Toggle("Shadow", isOn: style.shadow)
+                .font(.caption)
+                .toggleStyle(.checkbox)
+                .disabled(!viewModel.backdrop.isEnabled)
+        }
+        .padding(14)
+    }
+
+    private func presetSwatch(_ preset: BackgroundPreset) -> some View {
+        Button {
+            var next = viewModel.backdrop
+            next.preset = preset
+            viewModel.updateBackdrop(next)
+        } label: {
+            Group {
+                if preset == .none {
+                    Circle()
+                        .fill(.white.opacity(0.08))
+                        .overlay(Image(systemName: "slash.circle")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary))
+                } else {
+                    Circle()
+                        .fill(LinearGradient(colors: preset.gradientColors,
+                                             startPoint: .topLeading,
+                                             endPoint: .bottomTrailing))
+                }
+            }
+            .frame(width: 24, height: 24)
+            .overlay(
+                Circle().strokeBorder(
+                    viewModel.backdrop.preset == preset ? Color.accentColor : .white.opacity(0.2),
+                    lineWidth: viewModel.backdrop.preset == preset ? 2 : 1
+                )
+            )
+        }
+        .buttonStyle(.plain)
+        .help(preset.rawValue.capitalized)
     }
 }
