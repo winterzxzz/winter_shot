@@ -42,11 +42,11 @@ final class NotchHistoryViewModel: ObservableObject {
 
 // MARK: - Shape
 
-/// The hanging-from-the-notch silhouette: flared top corners (mirroring the
-/// hardware notch) and rounded bottom corners.
+/// The hanging-from-the-notch silhouette: small flared top corners
+/// (mirroring the hardware notch) and large rounded bottom corners.
 struct NotchShape: InsettableShape {
-    var topRadius: CGFloat = 12
-    var bottomRadius: CGFloat = 26
+    var topRadius: CGFloat = 10
+    var bottomRadius: CGFloat = 30
     var insetAmount: CGFloat = 0
 
     var animatableData: AnimatablePair<CGFloat, CGFloat> {
@@ -87,9 +87,10 @@ struct NotchShape: InsettableShape {
 
 // MARK: - Panel content
 
-/// The notch dropdown itself: header with capture actions, a horizontally
-/// scrolling capture history, and a small utility footer. Dark glass over
-/// pure black so it reads as an extension of the notch.
+/// The notch dropdown, MacNotch-style: seamless deep black extending the
+/// notch, header row living at menu-bar height on either side of the
+/// hardware notch, then the capture history strip. No hard borders — just
+/// black, hairline dividers, and soft shadow.
 struct NotchHistoryView: View {
     @ObservedObject var state: NotchPanelState
     @ObservedObject var viewModel: NotchHistoryViewModel
@@ -98,8 +99,11 @@ struct NotchHistoryView: View {
     let onCapture: (CaptureMode) -> Void
     let onClose: () -> Void
 
-    private var collapsedSize: CGSize { CGSize(width: 220, height: max(state.topInset, 34)) }
-    private static let expandedSize = CGSize(width: 720, height: 440)
+    private static let expandedSize = CGSize(width: 860, height: 296)
+
+    /// The strip at menu-bar height; the hardware notch sits in its middle.
+    private var headerHeight: CGFloat { max(state.topInset, 34) + 10 }
+    private var collapsedSize: CGSize { CGSize(width: 250, height: max(state.topInset, 32)) }
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -118,112 +122,98 @@ struct NotchHistoryView: View {
                    height: state.expanded ? Self.expandedSize.height : collapsedSize.height,
                    alignment: .top)
             .background {
-                ZStack {
-                    Color.black
-                    LinearGradient(
-                        colors: [Color.white.opacity(0.07), .clear],
-                        startPoint: .top, endPoint: .init(x: 0.5, y: 0.55)
-                    )
-                    LinearGradient(
-                        colors: [Color(red: 0.35, green: 0.55, blue: 1).opacity(0.10),
-                                 Color(red: 0.65, green: 0.35, blue: 1).opacity(0.06),
-                                 .clear],
-                        startPoint: .bottom, endPoint: .init(x: 0.5, y: 0.4)
-                    )
-                }
+                // Seamless with the hardware notch: pure black, easing into a
+                // barely-lifted charcoal at the bottom.
+                LinearGradient(
+                    stops: [
+                        .init(color: .black, location: 0),
+                        .init(color: .black, location: 0.45),
+                        .init(color: Color(white: 0.055), location: 1),
+                    ],
+                    startPoint: .top, endPoint: .bottom
+                )
             }
-            .clipShape(NotchShape(topRadius: 12, bottomRadius: state.expanded ? 28 : 16))
-            .overlay {
-                NotchShape(topRadius: 12, bottomRadius: state.expanded ? 28 : 16)
-                    .strokeBorder(
-                        LinearGradient(colors: [Color.white.opacity(0.16),
-                                                Color.white.opacity(0.04)],
-                                       startPoint: .top, endPoint: .bottom),
-                        lineWidth: 1
-                    )
-            }
-            .shadow(color: .black.opacity(0.55), radius: 26, y: 12)
-            .shadow(color: Color(red: 0.4, green: 0.5, blue: 1).opacity(state.expanded ? 0.16 : 0),
-                    radius: 40, y: 18)
-            .animation(.spring(response: 0.42, dampingFraction: 0.8), value: state.expanded)
+            .clipShape(NotchShape(topRadius: 10, bottomRadius: state.expanded ? 30 : 14))
+            .shadow(color: .black.opacity(0.65), radius: 28, y: 14)
+            .animation(.spring(response: 0.42, dampingFraction: 0.82), value: state.expanded)
     }
 
     private var content: some View {
         VStack(spacing: 0) {
-            // Dead zone behind the hardware notch / menu bar.
-            Color.clear.frame(height: state.topInset)
-
+            header
+                .frame(height: headerHeight)
             Group {
-                header
+                divider
                 if viewModel.screenshots.isEmpty {
                     emptyState
                 } else {
                     historyStrip
                 }
-                footer
+                bottomRow
             }
             .opacity(state.expanded ? 1 : 0)
             .animation(state.expanded
-                       ? .easeOut(duration: 0.24).delay(0.10)
+                       ? .easeOut(duration: 0.22).delay(0.10)
                        : .easeIn(duration: 0.08),
                        value: state.expanded)
         }
-        .padding(.horizontal, 12)   // clear the shape's flared top corners
+        .padding(.horizontal, 10)   // clear the shape's flared top corners
     }
 
-    // MARK: Header
+    private var divider: some View {
+        Rectangle()
+            .fill(.white.opacity(0.07))
+            .frame(height: 1)
+            .padding(.horizontal, 6)
+    }
+
+    // MARK: Header — lives at menu-bar height, split around the notch
 
     private var header: some View {
-        HStack(spacing: 10) {
-            Image(nsImage: AppIcon.full)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 24, height: 24)
-
-            Text("WinterShot")
-                .font(.system(size: 15, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-
-            Text("\(viewModel.screenshots.count)")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.7))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 2)
-                .background(.white.opacity(0.10), in: Capsule())
-
-            Spacer()
-
+        HStack(spacing: 8) {
+            // Left of the notch: identity.
             HStack(spacing: 8) {
+                Image(nsImage: AppIcon.full)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 18, height: 18)
+                Text("WinterShot")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text("\(viewModel.screenshots.count)")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.45))
+            }
+            .opacity(state.expanded ? 1 : 0)
+
+            Spacer(minLength: state.hasNotch ? 230 : 20)
+
+            // Right of the notch: actions.
+            HStack(spacing: 7) {
                 ForEach(CaptureMode.allCases) { mode in
-                    GlassIconButton(icon: mode.systemImage,
-                                    help: "\(mode.label)  ⌘⇧\(mode.hotkeyNumber)") {
+                    HeaderButton(icon: mode.systemImage,
+                                 help: "\(mode.label)  ⌘⇧\(mode.hotkeyNumber)") {
                         onCapture(mode)
                     }
                 }
+                HeaderButton(icon: "photo.on.rectangle.angled", help: "Open Library") {
+                    onOpenLibrary()
+                }
+                HeaderButton(icon: "xmark", help: "Close") {
+                    onClose()
+                }
             }
-
-            Capsule()
-                .fill(.white.opacity(0.12))
-                .frame(width: 1, height: 18)
-                .padding(.horizontal, 4)
-
-            GlassIconButton(icon: "photo.on.rectangle.angled", help: "Open Library") {
-                onOpenLibrary()
-            }
-            GlassIconButton(icon: "xmark", help: "Close") {
-                onClose()
-            }
+            .opacity(state.expanded ? 1 : 0)
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 12)
-        .padding(.bottom, 10)
+        .padding(.horizontal, 14)
+        .padding(.top, 2)
     }
 
     // MARK: History
 
     private var historyStrip: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            LazyHStack(alignment: .top, spacing: 14) {
+            LazyHStack(alignment: .center, spacing: 12) {
                 ForEach(viewModel.screenshots.prefix(30)) { screenshot in
                     NotchCaptureCard(
                         screenshot: screenshot,
@@ -235,53 +225,52 @@ struct NotchHistoryView: View {
                 }
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, 6)
+            .padding(.vertical, 12)
         }
         .frame(maxHeight: .infinity)
     }
 
     private var emptyState: some View {
-        VStack(spacing: 10) {
-            Image(nsImage: AppIcon.full)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 44, height: 44)
-                .opacity(0.65)
+        VStack(spacing: 8) {
+            Image(systemName: "camera.viewfinder")
+                .font(.system(size: 26, weight: .light))
+                .foregroundStyle(.white.opacity(0.3))
             Text("No captures yet")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.85))
-            Text("Press ⌘⇧4 to capture an area")
-                .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.45))
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.white.opacity(0.65))
+            Text("⌘⇧4 area · ⌘⇧8 window · ⌘⇧9 screen")
+                .font(.system(size: 10.5))
+                .foregroundStyle(.white.opacity(0.35))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    // MARK: Footer
+    // MARK: Bottom row
 
-    private var footer: some View {
-        HStack(spacing: 16) {
-            FooterButton(icon: "folder", title: "Captures Folder") {
+    private var bottomRow: some View {
+        HStack(spacing: 4) {
+            GhostButton(icon: "folder", title: "Captures Folder") {
                 viewModel.openCapturesFolder()
                 onClose()
             }
-            FooterButton(icon: "arrow.clockwise", title: "Refresh") {
+            GhostButton(icon: "arrow.clockwise", title: "Refresh") {
                 viewModel.reload()
             }
             Spacer()
-            FooterButton(icon: "power", title: "Quit") {
+            GhostButton(icon: "power", title: "Quit") {
                 NSApp.terminate(nil)
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.top, 6)
-        .padding(.bottom, 14)
+        .padding(.horizontal, 12)
+        .padding(.bottom, 10)
     }
 }
 
 // MARK: - Building blocks
 
-private struct GlassIconButton: View {
+/// Small round dark button for the header strip — no borders, just a soft
+/// fill that brightens on hover.
+private struct HeaderButton: View {
     let icon: String
     let help: String
     let action: () -> Void
@@ -291,21 +280,19 @@ private struct GlassIconButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.white.opacity(hovering ? 1 : 0.8))
-                .frame(width: 30, height: 30)
-                .background(.white.opacity(hovering ? 0.18 : 0.08), in: Circle())
-                .overlay(Circle().strokeBorder(.white.opacity(hovering ? 0.3 : 0.12), lineWidth: 1))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.white.opacity(hovering ? 1 : 0.75))
+                .frame(width: 26, height: 26)
+                .background(.white.opacity(hovering ? 0.16 : 0.07), in: Circle())
         }
         .buttonStyle(.plain)
         .help(help)
-        .scaleEffect(hovering ? 1.08 : 1)
         .animation(.easeOut(duration: 0.12), value: hovering)
         .onHover { hovering = $0 }
     }
 }
 
-private struct FooterButton: View {
+private struct GhostButton: View {
     let icon: String
     let title: String
     let action: () -> Void
@@ -314,16 +301,16 @@ private struct FooterButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
+            HStack(spacing: 5) {
                 Image(systemName: icon)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 10, weight: .medium))
                 Text(title)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 10.5, weight: .medium))
             }
-            .foregroundStyle(.white.opacity(hovering ? 0.95 : 0.55))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(.white.opacity(hovering ? 0.10 : 0), in: Capsule())
+            .foregroundStyle(.white.opacity(hovering ? 0.9 : 0.4))
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
+            .background(.white.opacity(hovering ? 0.08 : 0), in: Capsule())
         }
         .buttonStyle(.plain)
         .animation(.easeOut(duration: 0.12), value: hovering)
@@ -331,8 +318,8 @@ private struct FooterButton: View {
     }
 }
 
-/// One capture in the strip: thumbnail with hover quick actions, then the
-/// capture's age underneath. Draggable into other apps.
+/// One capture in the strip: borderless thumbnail with the capture's age on
+/// a bottom scrim, quick actions on hover. Draggable into other apps.
 private struct NotchCaptureCard: View {
     let screenshot: Screenshot
     let onOpen: () -> Void
@@ -343,60 +330,62 @@ private struct NotchCaptureCard: View {
     @State private var hovering = false
     @State private var thumbnail: NSImage?
 
-    private static let thumbSize = CGSize(width: 250, height: 168)
+    private static let thumbSize = CGSize(width: 236, height: 156)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            ZStack {
-                Color.white.opacity(0.06)
-                    .frame(width: Self.thumbSize.width, height: Self.thumbSize.height)
-                    .overlay {
-                        if let thumbnail {
-                            Image(nsImage: thumbnail)
-                                .resizable()
-                                .scaledToFill()
-                        } else {
-                            Image(systemName: "photo")
-                                .font(.system(size: 22))
-                                .foregroundStyle(.white.opacity(0.25))
-                        }
+        ZStack {
+            Color(white: 0.09)
+                .frame(width: Self.thumbSize.width, height: Self.thumbSize.height)
+                .overlay {
+                    if let thumbnail {
+                        Image(nsImage: thumbnail)
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        Image(systemName: "photo")
+                            .font(.system(size: 20))
+                            .foregroundStyle(.white.opacity(0.2))
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .strokeBorder(.white.opacity(hovering ? 0.45 : 0.12),
-                                          lineWidth: 1)
-                    )
-                    .overlay(alignment: .bottom) {
-                        if hovering {
-                            HStack(spacing: 13) {
+                }
+                .overlay(alignment: .bottom) {
+                    // Caption scrim: capture age over a soft fade.
+                    HStack(spacing: 5) {
+                        Image(systemName: screenshot.mode.systemImage)
+                            .font(.system(size: 9, weight: .semibold))
+                        Text(age)
+                            .font(.system(size: 10.5, weight: .medium))
+                        Spacer()
+                    }
+                    .foregroundStyle(.white.opacity(0.85))
+                    .padding(.horizontal, 10)
+                    .padding(.top, 18)
+                    .padding(.bottom, 7)
+                    .background {
+                        LinearGradient(colors: [.clear, .black.opacity(0.75)],
+                                       startPoint: .top, endPoint: .bottom)
+                    }
+                    .opacity(hovering ? 0 : 1)
+                }
+                .overlay {
+                    if hovering {
+                        ZStack {
+                            Color.black.opacity(0.45)
+                            HStack(spacing: 14) {
                                 quickAction(icon: "rectangle.and.pencil.and.ellipsis",
                                             help: "Annotate", action: onOpen)
                                 quickAction(icon: "doc.on.doc", help: "Copy", action: onCopy)
                                 quickAction(icon: "pin", help: "Pin to screen", action: onPin)
                                 quickAction(icon: "trash", help: "Delete", action: onDelete)
                             }
-                            .padding(.horizontal, 13)
-                            .padding(.vertical, 7)
-                            .background(.black.opacity(0.72), in: Capsule())
-                            .overlay(Capsule().strokeBorder(.white.opacity(0.18), lineWidth: 1))
-                            .padding(.bottom, 8)
-                            .transition(.opacity.combined(with: .move(edge: .bottom)))
                         }
+                        .transition(.opacity)
                     }
-            }
-            .scaleEffect(hovering ? 1.03 : 1)
-
-            HStack(spacing: 6) {
-                Image(systemName: screenshot.mode.systemImage)
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.4))
-                Text(age)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.6))
-            }
-            .padding(.leading, 4)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .shadow(color: .black.opacity(hovering ? 0.5 : 0.25),
+                        radius: hovering ? 14 : 8, y: 4)
         }
+        .scaleEffect(hovering ? 1.04 : 1)
         .contentShape(Rectangle())
         .animation(.spring(response: 0.28, dampingFraction: 0.85), value: hovering)
         .onHover { hovering = $0 }
@@ -409,8 +398,10 @@ private struct NotchCaptureCard: View {
     private func quickAction(icon: String, help: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 12))
+                .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.white)
+                .frame(width: 30, height: 30)
+                .background(.white.opacity(0.14), in: Circle())
         }
         .buttonStyle(.plain)
         .help(help)

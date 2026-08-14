@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        WindowOpener.install()
         setUpStatusItem()
         DIContainer.shared.startGlobalHotkeys()
         NotificationCenter.default.addObserver(
@@ -142,8 +143,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Main window
 
     /// Opens (or focuses) the main window from AppKit. When the SwiftUI
-    /// window doesn't exist yet, the `wintershot://main` URL routes through
-    /// the Window scene's `handlesExternalEvents` and creates it.
+    /// window doesn't exist yet, the donated openWindow action (see
+    /// WindowOpener) creates it.
     func openMain(with screenshot: Screenshot? = nil) {
         if let screenshot {
             DIContainer.shared.selectionBus.pending = screenshot
@@ -151,8 +152,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
         if let window = NSApp.windows.first(where: { $0.identifier?.rawValue.hasPrefix("main") == true }) {
             window.makeKeyAndOrderFront(nil)
-        } else if let url = URL(string: "wintershot://main") {
-            NSWorkspace.shared.open(url)
+        } else {
+            WindowOpener.openMainWindow?()
         }
     }
 
@@ -165,6 +166,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if let filename = Self.launchEditFilename() {
             openEditor(filename: filename)
+        }
+        if CommandLine.arguments.contains("--history") {
+            NotchPanelManager.shared.show(on: NSScreen.main)
+        }
+        if CommandLine.arguments.contains("--open-main") {
+            // Next runloop turn so the WindowOpener bridge has appeared.
+            DispatchQueue.main.async { [weak self] in self?.openMain() }
         }
     }
 

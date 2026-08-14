@@ -19,10 +19,6 @@ targets:
         CFBundleVersion: "1"
         LSUIElement: true
         LSMinimumSystemVersion: "14.0"
-        CFBundleURLTypes:
-          - CFBundleURLName: com.winterzxzz.WinterShot
-            CFBundleURLSchemes:
-              - wintershot
         NSHumanReadableCopyright: "MIT License"
     settings:
       base:

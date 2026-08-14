@@ -20,12 +20,11 @@ struct WinterShotApp: App {
         }
 
         // The main window: captures library + editor. Opened from AppKit via
-        // the wintershot://main URL (see AppDelegate.openMain).
+        // the donated openWindow action (see WindowOpener).
         Window("WinterShot", id: "main") {
             MainWindowView(container: .shared)
         }
         .defaultSize(width: 1280, height: 800)
-        .handlesExternalEvents(matching: ["main"])
 
         Settings {
             SettingsView()

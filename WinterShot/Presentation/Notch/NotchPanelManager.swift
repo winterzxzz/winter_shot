@@ -24,7 +24,7 @@ final class NotchPanelManager {
     private var globalMonitor: Any?
     private var hiddenAt: Date = .distantPast
 
-    private static let panelSize = NSSize(width: 760, height: 470)
+    private static let panelSize = NSSize(width: 920, height: 350)
     private static let collapseDuration: TimeInterval = 0.30
 
     func toggle(on screen: NSScreen?) {
