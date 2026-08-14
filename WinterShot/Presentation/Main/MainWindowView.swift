@@ -72,6 +72,8 @@ struct MainWindowView: View {
                 updateChecker.update()
             } label: {
                 Label("Update to \(release.tagName)", systemImage: "arrow.down.circle.fill")
+                    .labelStyle(.titleAndIcon)
+                    .fixedSize()
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.black)
                     .padding(.horizontal, 8)

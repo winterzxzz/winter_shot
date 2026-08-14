@@ -54,6 +54,7 @@
 		DEBE62A7779E90ADBA4A323C /* MainViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CAE2E95F28A951A7115C3C /* MainViewModel.swift */; };
 		E00B8108EA40EEB90C382281 /* AnnotationColor+SwiftUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A61C6A0175A2C34DD0D543 /* AnnotationColor+SwiftUI.swift */; };
 		F228065A0E5808839AB8AB33 /* DisplayFreezer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDAFC25C044A66DF7219D653 /* DisplayFreezer.swift */; };
+		F678FA2372BE2EDE419C373F /* AppIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71939469CC15EB4BE1B0B164 /* AppIcon.swift */; };
 		FCA4153F12E778A939457E93 /* ScreenshotRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = F961ED0267218D7171A5DB27 /* ScreenshotRepository.swift */; };
 /* End PBXBuildFile section */
 
@@ -81,6 +82,7 @@
 		64B8ECFD5280F45D47A4624C /* AnnotationRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationRepository.swift; sourceTree = "<group>"; };
 		6F0D6CA0AA37132847DC6F05 /* RecognizeTextUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecognizeTextUseCase.swift; sourceTree = "<group>"; };
 		70353DD99D620482667A4220 /* BeautifyRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeautifyRenderer.swift; sourceTree = "<group>"; };
+		71939469CC15EB4BE1B0B164 /* AppIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIcon.swift; sourceTree = "<group>"; };
 		7B5271C2D03AAD40BAA8139B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7C824D020078A357B3B4CFFA /* AreaPickerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaPickerOverlay.swift; sourceTree = "<group>"; };
 		7E87518271AD19E7877A3F49 /* EditorToolbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorToolbarView.swift; sourceTree = "<group>"; };
@@ -187,6 +189,7 @@
 			children = (
 				D7A61C6A0175A2C34DD0D543 /* AnnotationColor+SwiftUI.swift */,
 				C243ED87E2218E99CDE35A32 /* AnnotationRenderer.swift */,
+				71939469CC15EB4BE1B0B164 /* AppIcon.swift */,
 				70353DD99D620482667A4220 /* BeautifyRenderer.swift */,
 				F242610EABE851DAD7B2B0F6 /* FlattenedImageView.swift */,
 				553C36A68D428AF2967AFAB2 /* OverlayPanel.swift */,
@@ -410,6 +413,7 @@
 				3C8FF4279883AE9B6B05C29C /* AnnotationRenderer.swift in Sources */,
 				683B6C8B29B0684CFAFA62F3 /* AnnotationRepository.swift in Sources */,
 				5B404C483E8691805D2074DB /* AnnotationRepositoryImpl.swift in Sources */,
+				F678FA2372BE2EDE419C373F /* AppIcon.swift in Sources */,
 				A0A94F5C6DEAD8DFC82A9668 /* AreaCaptureService.swift in Sources */,
 				3A441895771A52FEE6DA155D /* AreaPickerOverlay.swift in Sources */,
 				75ADB67BD8077A76A83A844A /* BackdropStyle.swift in Sources */,
