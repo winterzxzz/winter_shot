@@ -48,7 +48,7 @@ final class WindowCaptureService {
         }
 
         let windows = orderedPickableWindows(in: content)
-        let backdrops = try await freezeDisplays(in: content)
+        let backdrops = try await DisplayFreezer().freeze(content: content)
 
         guard let picked = await picker.pickWindow(windows: windows, backdrops: backdrops),
               let scWindow = content.windows.first(where: { $0.windowID == picked.id }) else {
@@ -94,37 +94,7 @@ final class WindowCaptureService {
         return result
     }
 
-    // MARK: - Freeze
-
-    private func freezeDisplays(in content: SCShareableContent) async throws -> [DisplayBackdrop] {
-        var backdrops: [DisplayBackdrop] = []
-        for display in content.displays {
-            let scale = displayScale(for: display.displayID)
-            let filter = SCContentFilter(display: display, excludingWindows: [])
-            let configuration = SCStreamConfiguration()
-            configuration.width = Int(CGFloat(display.width) * scale)
-            configuration.height = Int(CGFloat(display.height) * scale)
-            configuration.showsCursor = false
-            let image = try await SCScreenshotManager.captureImage(contentFilter: filter,
-                                                                   configuration: configuration)
-            backdrops.append(DisplayBackdrop(displayID: display.displayID,
-                                             frame: display.frame,
-                                             image: image))
-        }
-        return backdrops
-    }
-
     // MARK: - Display helpers
-
-    private func displayScale(for displayID: CGDirectDisplayID) -> CGFloat {
-        for screen in NSScreen.screens {
-            let key = NSDeviceDescriptionKey("NSScreenNumber")
-            if (screen.deviceDescription[key] as? NSNumber)?.uint32Value == displayID {
-                return screen.backingScaleFactor
-            }
-        }
-        return NSScreen.main?.backingScaleFactor ?? 2
-    }
 
     private func displayScale(forWindowAt frame: CGRect) -> CGFloat {
         let displayID = CGMainDisplayID()
@@ -134,6 +104,6 @@ final class WindowCaptureService {
         if CGGetDisplaysWithRect(frame, 1, &candidate, &count) == .success, count > 0 {
             found = candidate
         }
-        return displayScale(for: found)
+        return DisplayFreezer.scale(for: found)
     }
 }

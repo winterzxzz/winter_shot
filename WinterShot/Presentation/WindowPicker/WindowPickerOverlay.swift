@@ -25,7 +25,7 @@ final class WindowPickerOverlayPresenter: WindowPickerUI {
         model.hovered = nil
 
         for backdrop in backdrops {
-            let panel = KeyablePanel(
+            let panel = OverlayPanel(
                 contentRect: appKitFrame(for: backdrop.frame),
                 styleMask: [.borderless, .fullSizeContentView],
                 backing: .buffered,
@@ -104,11 +104,6 @@ final class WindowPickerOverlayPresenter: WindowPickerUI {
             self?.finish(target)
         }
     }
-}
-
-/// Borderless panels refuse key status by default; the picker needs it for Esc.
-private final class KeyablePanel: NSPanel {
-    override var canBecomeKey: Bool { true }
 }
 
 @MainActor

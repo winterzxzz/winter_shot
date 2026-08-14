@@ -4,7 +4,7 @@ A native macOS menu-bar screenshot tool inspired by [BridgeShot](https://www.bri
 
 ## Features
 
-- **Capture** — area, window (no shadow), and fullscreen, driven by the native macOS capture UI for pixel-perfect Retina output.
+- **Capture** — area and window with a frozen-screen selector (ScreenCaptureKit): the screen freezes, a pixel loupe with live coordinates follows the cursor, and windows lift out of a dimmed backdrop as you hover — a click captures the window clean even when partially covered. Fullscreen uses the system capture tool. After every capture a thumbnail slides in at the screen edge; click it to open the editor.
 - **Nine annotation tools** — arrow, rectangle, ellipse, line, freehand, text, numbered counters, highlighter, and redact.
 - **Non-destructive by design** — annotations live in a `.wshot.json` sidecar next to the image. Reopen any screenshot later and every arrow is still editable; pixels are flattened only on export.
 - **On-device OCR** — recognize and copy text from any screenshot via Apple Vision. Nothing leaves your Mac.
@@ -65,7 +65,7 @@ WinterShot/
 
 - Global hotkeys (⌘⇧4-style) via a hotkey manager
 - Background beautify (padding, gradient backdrops, rounded corners)
-- Pixel loupe and live coordinates during area selection
+- Space to toggle window/area mode mid-selection
 - Multi-display fullscreen capture
 
 ## License

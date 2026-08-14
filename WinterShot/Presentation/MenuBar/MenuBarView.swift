@@ -52,8 +52,10 @@ struct MenuBarView: View {
     private func capture(_ mode: CaptureMode) {
         Task {
             guard let screenshot = await viewModel.capture(mode: mode) else { return }
-            NSApp.activate(ignoringOtherApps: true)
-            openWindow(value: screenshot)
+            CapturePreviewManager.shared.show(screenshot: screenshot) { shot in
+                NSApp.activate(ignoringOtherApps: true)
+                openWindow(value: shot)
+            }
         }
     }
 }

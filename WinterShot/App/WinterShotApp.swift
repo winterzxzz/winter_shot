@@ -90,8 +90,10 @@ private struct MenuBarIconView: View {
                     return
                 }
                 NSLog("WinterShot: captured %@", screenshot.imageURL.path)
-                NSApp.activate(ignoringOtherApps: true)
-                openWindow(value: screenshot)
+                CapturePreviewManager.shared.show(screenshot: screenshot) { shot in
+                    NSApp.activate(ignoringOtherApps: true)
+                    openWindow(value: shot)
+                }
             } catch {
                 NSLog("WinterShot: capture failed: %@", error.localizedDescription)
             }

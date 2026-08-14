@@ -7,15 +7,18 @@ import Foundation
 final class ScreenshotRepositoryImpl: ScreenshotRepository {
     private let captureService: SystemScreenCaptureService
     private let windowCaptureService: WindowCaptureService
+    private let areaCaptureService: AreaCaptureService
     private let store: FileScreenshotStore
 
     var storageDirectory: URL { store.directory }
 
     init(captureService: SystemScreenCaptureService,
          windowCaptureService: WindowCaptureService,
+         areaCaptureService: AreaCaptureService,
          store: FileScreenshotStore) {
         self.captureService = captureService
         self.windowCaptureService = windowCaptureService
+        self.areaCaptureService = areaCaptureService
         self.store = store
     }
 
@@ -24,9 +27,12 @@ final class ScreenshotRepositoryImpl: ScreenshotRepository {
         let imageURL = store.newImageURL(date: createdAt)
 
         let captured: Bool
-        if mode == .window {
+        switch mode {
+        case .window:
             captured = try await captureWindow(to: imageURL)
-        } else {
+        case .area:
+            captured = try await captureArea(to: imageURL)
+        case .fullscreen:
             captured = try await captureService.capture(mode: mode, to: imageURL)
         }
         guard captured else {
@@ -51,15 +57,32 @@ final class ScreenshotRepositoryImpl: ScreenshotRepository {
             guard let cgImage = try await windowCaptureService.captureWindow() else {
                 return false
             }
-            let rep = NSBitmapImageRep(cgImage: cgImage)
-            guard let data = rep.representation(using: .png, properties: [:]) else {
-                return false
-            }
-            try data.write(to: url)
-            return true
+            return try write(cgImage, to: url)
         } catch WindowCaptureService.WindowCaptureError.screenCaptureUnavailable {
             return try await captureService.capture(mode: .window, to: url)
         }
+    }
+
+    /// Frozen-screen area selector; falls back to the system crosshair when
+    /// ScreenCaptureKit is unavailable. Returns false on cancel.
+    private func captureArea(to url: URL) async throws -> Bool {
+        do {
+            guard let cgImage = try await areaCaptureService.captureArea() else {
+                return false
+            }
+            return try write(cgImage, to: url)
+        } catch AreaCaptureService.AreaCaptureError.screenCaptureUnavailable {
+            return try await captureService.capture(mode: .area, to: url)
+        }
+    }
+
+    private func write(_ cgImage: CGImage, to url: URL) throws -> Bool {
+        let rep = NSBitmapImageRep(cgImage: cgImage)
+        guard let data = rep.representation(using: .png, properties: [:]) else {
+            return false
+        }
+        try data.write(to: url)
+        return true
     }
 
     func history() throws -> [Screenshot] {
