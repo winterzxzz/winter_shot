@@ -47,11 +47,12 @@ final class GitHubUpdateService {
         let version = release.tag_name.hasPrefix("v")
             ? String(release.tag_name.dropFirst())
             : release.tag_name
-        let zipAsset = release.assets.first { $0.name.lowercased().hasSuffix(".zip") }
+        let asset = release.assets.first { $0.name.lowercased().hasSuffix(".dmg") }
+            ?? release.assets.first { $0.name.lowercased().hasSuffix(".zip") }
         return ReleaseInfo(version: version,
                            tagName: release.tag_name,
                            pageURL: release.html_url,
-                           assetURL: zipAsset?.browser_download_url)
+                           assetURL: asset?.browser_download_url)
     }
 
     /// True when `candidate` is a strictly newer semantic version than `current`.

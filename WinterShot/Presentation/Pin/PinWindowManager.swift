@@ -50,6 +50,8 @@ private struct PinView: View {
     let image: NSImage
     let onClose: () -> Void
 
+    @State private var hovering = false
+
     var body: some View {
         Image(nsImage: image)
             .resizable()
@@ -57,9 +59,30 @@ private struct PinView: View {
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
+                    .strokeBorder(Color.white.opacity(hovering ? 0.5 : 0.25), lineWidth: 1)
             )
+            .overlay(alignment: .topTrailing) {
+                if hovering {
+                    Button(action: onClose) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 20, height: 20)
+                            .background(.black.opacity(0.72), in: Circle())
+                            .overlay(Circle().strokeBorder(.white.opacity(0.25), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Unpin")
+                    .padding(6)
+                    .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.12), value: hovering)
+            .onHover { hovering = $0 }
             .onTapGesture(count: 2, perform: onClose)
-            .help("Double-click to unpin")
+            .contextMenu {
+                Button("Unpin", action: onClose)
+            }
+            .help("Double-click or hover for ✕ to unpin")
     }
 }
