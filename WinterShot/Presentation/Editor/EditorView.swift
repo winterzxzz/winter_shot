@@ -19,9 +19,9 @@ struct EditorView: View {
         .toolbar {
             ToolbarItemGroup {
                 toolPicker
+            }
 
-                Divider()
-
+            ToolbarItemGroup {
                 Button {
                     viewModel.undo()
                 } label: {
@@ -45,9 +45,9 @@ struct EditorView: View {
                 }
                 .disabled(viewModel.selectedAnnotationID == nil)
                 .keyboardShortcut(.delete, modifiers: [])
+            }
 
-                Divider()
-
+            ToolbarItemGroup {
                 Button {
                     Task { await viewModel.copyRecognizedText() }
                 } label: {
