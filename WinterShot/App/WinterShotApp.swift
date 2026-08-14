@@ -32,6 +32,7 @@ private struct MenuBarIconView: View {
     var body: some View {
         Image(systemName: "camera.viewfinder")
             .onAppear {
+                DIContainer.shared.startGlobalHotkeys()
                 if let mode = Self.launchCaptureMode() {
                     NSLog("WinterShot: launch-argument capture requested (%@)", mode.rawValue)
                     perform(mode)

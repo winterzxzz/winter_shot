@@ -18,6 +18,18 @@ final class DIContainer {
     // Cross-scene selection channel for the main window
     let selectionBus = SelectionBus()
 
+    private let hotkeyService = GlobalHotkeyService()
+
+    /// Registers ⌘⇧4/⌘⇧8/⌘⇧9. Safe to call repeatedly.
+    func startGlobalHotkeys() {
+        hotkeyService.onTrigger = { mode in
+            NotificationCenter.default.post(name: .winterShotPerformCapture,
+                                            object: nil,
+                                            userInfo: ["mode": mode.rawValue])
+        }
+        hotkeyService.register()
+    }
+
     private init() {
         store = FileScreenshotStore()
         captureService = SystemScreenCaptureService()

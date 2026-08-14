@@ -119,16 +119,18 @@ private struct CaptureCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             ZStack {
-                Group {
+                // Bounded base so wide thumbnails can't blow out the card layout;
+                // the image only ever paints inside the clipped overlay.
+                Color.white.opacity(0.06)
+                .frame(height: 140)
+                .frame(maxWidth: .infinity)
+                .overlay {
                     if let thumbnail {
                         Image(nsImage: thumbnail)
                             .resizable()
                             .scaledToFill()
-                    } else {
-                        Color.white.opacity(0.06)
                     }
                 }
-                .frame(height: 140)
                 .clipShape(RoundedRectangle(cornerRadius: 9))
                 .overlay(
                     RoundedRectangle(cornerRadius: 9)

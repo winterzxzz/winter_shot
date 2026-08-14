@@ -23,4 +23,13 @@ enum CaptureMode: String, Codable, CaseIterable, Identifiable, Hashable {
         case .fullscreen: return "display"
         }
     }
+
+    /// Number key of the global hotkey (⌘⇧ + this key).
+    var hotkeyNumber: Character {
+        switch self {
+        case .area: return "4"
+        case .window: return "8"
+        case .fullscreen: return "9"
+        }
+    }
 }

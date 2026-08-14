@@ -12,6 +12,7 @@ A native macOS menu-bar screenshot tool inspired by [BridgeShot](https://www.bri
 - **On-device OCR** — recognize and copy text from any screenshot via Apple Vision. Nothing leaves your Mac.
 - **Pin to screen** — float a shot above every window; drag to move, double-click to dismiss.
 - **History** — a searchable library of every capture, reopenable in the editor with annotations intact.
+- **Global hotkeys** — the classic screenshot keys, system-wide: ⌘⇧4 area, ⌘⇧8 window, ⌘⇧9 fullscreen. (If macOS's own ⌘⇧4 is still enabled both will fire — turn the system one off in System Settings → Keyboard → Keyboard Shortcuts → Screenshots.)
 - **Menu-bar native** — no Dock icon, no Electron, zero third-party dependencies.
 
 ## Requirements
@@ -65,8 +66,7 @@ WinterShot/
 
 ## Roadmap
 
-- Global hotkeys (⌘⇧4-style) via a hotkey manager
-- Background beautify (padding, gradient backdrops, rounded corners)
+- Configurable hotkeys
 - Space to toggle window/area mode mid-selection
 - Multi-display fullscreen capture
 

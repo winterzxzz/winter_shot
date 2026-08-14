@@ -18,6 +18,7 @@ struct MenuBarView: View {
                 } label: {
                     Label(mode.label, systemImage: mode.systemImage)
                 }
+                .keyboardShortcut(KeyEquivalent(mode.hotkeyNumber), modifiers: [.command, .shift])
             }
 
             Divider()
