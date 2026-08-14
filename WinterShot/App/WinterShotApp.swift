@@ -1,11 +1,19 @@
 import SwiftUI
+import AppKit
+
+extension Notification.Name {
+    /// Posted to trigger a capture programmatically (see AppDelegate launch hook).
+    static let winterShotPerformCapture = Notification.Name("winterShotPerformCapture")
+}
 
 @main
 struct WinterShotApp: App {
     var body: some Scene {
         // Menu-bar home base — the app has no Dock icon (LSUIElement).
-        MenuBarExtra("WinterShot", systemImage: "camera.viewfinder") {
+        MenuBarExtra {
             MenuBarView(container: .shared)
+        } label: {
+            MenuBarIconView()
         }
 
         // One editor window per screenshot.
@@ -21,5 +29,48 @@ struct WinterShotApp: App {
             HistoryView(container: .shared)
         }
         .defaultSize(width: 760, height: 520)
+    }
+}
+
+/// The menu-bar icon. Lives for the whole app lifetime (unlike the dropdown
+/// content), so it also handles programmatic capture requests.
+private struct MenuBarIconView: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Image(systemName: "camera.viewfinder")
+            .onAppear {
+                guard let mode = Self.launchCaptureMode() else { return }
+                NSLog("WinterShot: launch-argument capture requested (%@)", mode.rawValue)
+                perform(mode)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .winterShotPerformCapture)) { note in
+                guard let raw = note.userInfo?["mode"] as? String,
+                      let mode = CaptureMode(rawValue: raw) else { return }
+                perform(mode)
+            }
+    }
+
+    private static func launchCaptureMode() -> CaptureMode? {
+        guard let index = CommandLine.arguments.firstIndex(of: "--capture"),
+              CommandLine.arguments.indices.contains(index + 1) else { return nil }
+        return CaptureMode(rawValue: CommandLine.arguments[index + 1])
+    }
+
+    private func perform(_ mode: CaptureMode) {
+        Task { @MainActor in
+            do {
+                guard let screenshot = try await DIContainer.shared
+                    .captureScreenshotUseCase.execute(mode: mode) else {
+                    NSLog("WinterShot: capture cancelled or produced no file")
+                    return
+                }
+                NSLog("WinterShot: captured %@", screenshot.imageURL.path)
+                NSApp.activate(ignoringOtherApps: true)
+                openWindow(value: screenshot)
+            } catch {
+                NSLog("WinterShot: capture failed: %@", error.localizedDescription)
+            }
+        }
     }
 }
