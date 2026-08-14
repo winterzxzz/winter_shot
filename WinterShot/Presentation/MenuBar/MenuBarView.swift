@@ -24,9 +24,9 @@ struct MenuBarView: View {
 
             Button {
                 NSApp.activate(ignoringOtherApps: true)
-                openWindow(id: "history")
+                openWindow(id: "main")
             } label: {
-                Label("History…", systemImage: "photo.on.rectangle.angled")
+                Label("Open WinterShot…", systemImage: "photo.on.rectangle.angled")
             }
 
             Button {
@@ -53,8 +53,9 @@ struct MenuBarView: View {
         Task {
             guard let screenshot = await viewModel.capture(mode: mode) else { return }
             CapturePreviewManager.shared.show(screenshot: screenshot) { shot in
+                DIContainer.shared.selectionBus.pending = shot
                 NSApp.activate(ignoringOtherApps: true)
-                openWindow(value: shot)
+                openWindow(id: "main")
             }
         }
     }

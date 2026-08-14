@@ -11,7 +11,7 @@
 		0D4ABB33D0BB8B5971A74744 /* LoadAnnotationsUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E667FD01FD84A910203159 /* LoadAnnotationsUseCase.swift */; };
 		0F25C1799EEF4C49197F0B94 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8AFCD52F989FAC9612D7DA1 /* MenuBarView.swift */; };
 		155D92684D223C7B7E3BA0F6 /* OCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F85EC6544D33B3801E3926E /* OCRService.swift */; };
-		1A40527CEE0D31E9199A9858 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30D8CBF0579066097AE9BA1 /* HistoryView.swift */; };
+		1A0676CDE9AE59651B0E0249 /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E7B5C4F2B2E0D3EB57C3144 /* MainWindowView.swift */; };
 		1FD8EF4777DD8BA0A8D27F96 /* FlattenedImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F242610EABE851DAD7B2B0F6 /* FlattenedImageView.swift */; };
 		30436D41AC0C57AF39999121 /* CaptureScreenshotUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A79594107D38D7B3313B305 /* CaptureScreenshotUseCase.swift */; };
 		3A441895771A52FEE6DA155D /* AreaPickerOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C824D020078A357B3B4CFFA /* AreaPickerOverlay.swift */; };
@@ -21,8 +21,6 @@
 		49985723090FC67B79A365B3 /* WindowCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20EDBC135B97FBE45E8D9774 /* WindowCaptureService.swift */; };
 		57242771BFDA3142FEEC473E /* PinWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5C70BAAD5A3AE9B44697E8D /* PinWindowManager.swift */; };
 		5B404C483E8691805D2074DB /* AnnotationRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = B75CDB7C41A5522626CB93F6 /* AnnotationRepositoryImpl.swift */; };
-		5F3907C271B4A39097055848 /* HistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37D31F549419C37C053D426F /* HistoryViewModel.swift */; };
-		663B2FE4F15A390BA4F3C9A1 /* EditorInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2431E59D97AE89C716E53C0 /* EditorInspectorView.swift */; };
 		683B6C8B29B0684CFAFA62F3 /* AnnotationRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64B8ECFD5280F45D47A4624C /* AnnotationRepository.swift */; };
 		6D727EDBFB38FA842318B79E /* ScreenshotRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9CFB5EDD683675FF9F3B857 /* ScreenshotRepositoryImpl.swift */; };
 		7844646A77126DAFA0308CA8 /* Screenshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0BF92C15C182F672F1599E3 /* Screenshot.swift */; };
@@ -31,6 +29,7 @@
 		804CDC953F188AE1DC151962 /* DIContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ABA7C765089FB3689351F3D /* DIContainer.swift */; };
 		87DCCC0E1E1EB623145CEA09 /* DeleteScreenshotUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6109FEE881F3A698BE5CC951 /* DeleteScreenshotUseCase.swift */; };
 		8C4049F99FF6D689F78C1499 /* Annotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BF7610B72022C543758A9D9 /* Annotation.swift */; };
+		8D38C233745E963EF1CA3998 /* CapturesSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F0A25D68246DF430D50A5DE /* CapturesSidebarView.swift */; };
 		8DA8FA2E84B23910E06608DC /* FetchHistoryUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2CD20FA5CBD44CC3A6809F8 /* FetchHistoryUseCase.swift */; };
 		987D7A70E31E21D2DDEF3FD2 /* EditorCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9369660D42EEB5E5D478F835 /* EditorCanvasView.swift */; };
 		9BA1C90F55DADE80DE784454 /* SystemScreenCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036BF601111B474D5B59C780 /* SystemScreenCaptureService.swift */; };
@@ -40,8 +39,10 @@
 		AA14A4CB3BA0E380680E0BFD /* VisionOCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09D9E79352A4F3D535132EA2 /* VisionOCRService.swift */; };
 		B4DB1872752D120E6EC4822E /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED5C33AA9B4830D5EEA38A7E /* EditorViewModel.swift */; };
 		B4E5D81DE3706141A32AE02B /* OverlayPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 553C36A68D428AF2967AFAB2 /* OverlayPanel.swift */; };
+		B53C3632DC94BC2E86731E8C /* EditorToolbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E87518271AD19E7877A3F49 /* EditorToolbarView.swift */; };
 		B7B41AB0A463529F210EFA81 /* MenuBarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B096EA1F71BFCB77833929C /* MenuBarViewModel.swift */; };
 		D076F868B1781BAB4E1211D6 /* WinterShotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9096208A2FBF0271F06E0C /* WinterShotApp.swift */; };
+		DEBE62A7779E90ADBA4A323C /* MainViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CAE2E95F28A951A7115C3C /* MainViewModel.swift */; };
 		E00B8108EA40EEB90C382281 /* AnnotationColor+SwiftUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A61C6A0175A2C34DD0D543 /* AnnotationColor+SwiftUI.swift */; };
 		F228065A0E5808839AB8AB33 /* DisplayFreezer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDAFC25C044A66DF7219D653 /* DisplayFreezer.swift */; };
 		FCA4153F12E778A939457E93 /* ScreenshotRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = F961ED0267218D7171A5DB27 /* ScreenshotRepository.swift */; };
@@ -57,7 +58,9 @@
 		0BF7610B72022C543758A9D9 /* Annotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Annotation.swift; sourceTree = "<group>"; };
 		141BA95984926C8A3F5A1AE6 /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
 		20EDBC135B97FBE45E8D9774 /* WindowCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowCaptureService.swift; sourceTree = "<group>"; };
-		37D31F549419C37C053D426F /* HistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewModel.swift; sourceTree = "<group>"; };
+		2E7B5C4F2B2E0D3EB57C3144 /* MainWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
+		2F0A25D68246DF430D50A5DE /* CapturesSidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturesSidebarView.swift; sourceTree = "<group>"; };
+		33CAE2E95F28A951A7115C3C /* MainViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewModel.swift; sourceTree = "<group>"; };
 		3ABA7C765089FB3689351F3D /* DIContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DIContainer.swift; sourceTree = "<group>"; };
 		3F85EC6544D33B3801E3926E /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
 		50AAB6A814BD2D36D7E533FA /* WinterShot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WinterShot.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -66,6 +69,7 @@
 		64B8ECFD5280F45D47A4624C /* AnnotationRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationRepository.swift; sourceTree = "<group>"; };
 		6F0D6CA0AA37132847DC6F05 /* RecognizeTextUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecognizeTextUseCase.swift; sourceTree = "<group>"; };
 		7C824D020078A357B3B4CFFA /* AreaPickerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaPickerOverlay.swift; sourceTree = "<group>"; };
+		7E87518271AD19E7877A3F49 /* EditorToolbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorToolbarView.swift; sourceTree = "<group>"; };
 		9369660D42EEB5E5D478F835 /* EditorCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorCanvasView.swift; sourceTree = "<group>"; };
 		969FBD8818DD7B02683B8D7B /* WindowPickerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPickerOverlay.swift; sourceTree = "<group>"; };
 		9F44A30B804B90627C25BA56 /* CapturePreviewManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturePreviewManager.swift; sourceTree = "<group>"; };
@@ -74,9 +78,7 @@
 		B5C70BAAD5A3AE9B44697E8D /* PinWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinWindowManager.swift; sourceTree = "<group>"; };
 		B75CDB7C41A5522626CB93F6 /* AnnotationRepositoryImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationRepositoryImpl.swift; sourceTree = "<group>"; };
 		BDAFC25C044A66DF7219D653 /* DisplayFreezer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayFreezer.swift; sourceTree = "<group>"; };
-		C2431E59D97AE89C716E53C0 /* EditorInspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorInspectorView.swift; sourceTree = "<group>"; };
 		C243ED87E2218E99CDE35A32 /* AnnotationRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationRenderer.swift; sourceTree = "<group>"; };
-		C30D8CBF0579066097AE9BA1 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		D0BF92C15C182F672F1599E3 /* Screenshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Screenshot.swift; sourceTree = "<group>"; };
 		D7A61C6A0175A2C34DD0D543 /* AnnotationColor+SwiftUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AnnotationColor+SwiftUI.swift"; sourceTree = "<group>"; };
 		D8AFCD52F989FAC9612D7DA1 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
@@ -115,7 +117,7 @@
 			isa = PBXGroup;
 			children = (
 				9369660D42EEB5E5D478F835 /* EditorCanvasView.swift */,
-				C2431E59D97AE89C716E53C0 /* EditorInspectorView.swift */,
+				7E87518271AD19E7877A3F49 /* EditorToolbarView.swift */,
 				141BA95984926C8A3F5A1AE6 /* EditorView.swift */,
 				ED5C33AA9B4830D5EEA38A7E /* EditorViewModel.swift */,
 			);
@@ -149,6 +151,16 @@
 			path = MenuBar;
 			sourceTree = "<group>";
 		};
+		48FFC9712B129FE8615417E4 /* Main */ = {
+			isa = PBXGroup;
+			children = (
+				2F0A25D68246DF430D50A5DE /* CapturesSidebarView.swift */,
+				33CAE2E95F28A951A7115C3C /* MainViewModel.swift */,
+				2E7B5C4F2B2E0D3EB57C3144 /* MainWindowView.swift */,
+			);
+			path = Main;
+			sourceTree = "<group>";
+		};
 		4B7F68E42CD88DA2D6213757 /* Common */ = {
 			isa = PBXGroup;
 			children = (
@@ -158,15 +170,6 @@
 				553C36A68D428AF2967AFAB2 /* OverlayPanel.swift */,
 			);
 			path = Common;
-			sourceTree = "<group>";
-		};
-		4FBC788F1FC22DB42002BD9F /* History */ = {
-			isa = PBXGroup;
-			children = (
-				C30D8CBF0579066097AE9BA1 /* HistoryView.swift */,
-				37D31F549419C37C053D426F /* HistoryViewModel.swift */,
-			);
-			path = History;
 			sourceTree = "<group>";
 		};
 		5800BE7650CF5B392F37106E /* Repositories */ = {
@@ -252,7 +255,7 @@
 				81E61A37C79E94BCACD4FB80 /* AreaPicker */,
 				4B7F68E42CD88DA2D6213757 /* Common */,
 				2B40377390E07BDF24F1113B /* Editor */,
-				4FBC788F1FC22DB42002BD9F /* History */,
+				48FFC9712B129FE8615417E4 /* Main */,
 				4338F57E8D7C32C450DDF681 /* MenuBar */,
 				D91A44B86CAE883185B59A42 /* Pin */,
 				D6CF749F7908E0762B119363 /* Preview */,
@@ -365,19 +368,20 @@
 				9E2CA98C71F97958DBE5254D /* CaptureMode.swift in Sources */,
 				3AF43CE26B1F5036E8E0ADE7 /* CapturePreviewManager.swift in Sources */,
 				30436D41AC0C57AF39999121 /* CaptureScreenshotUseCase.swift in Sources */,
+				8D38C233745E963EF1CA3998 /* CapturesSidebarView.swift in Sources */,
 				804CDC953F188AE1DC151962 /* DIContainer.swift in Sources */,
 				87DCCC0E1E1EB623145CEA09 /* DeleteScreenshotUseCase.swift in Sources */,
 				F228065A0E5808839AB8AB33 /* DisplayFreezer.swift in Sources */,
 				987D7A70E31E21D2DDEF3FD2 /* EditorCanvasView.swift in Sources */,
-				663B2FE4F15A390BA4F3C9A1 /* EditorInspectorView.swift in Sources */,
+				B53C3632DC94BC2E86731E8C /* EditorToolbarView.swift in Sources */,
 				79275690A86833FA965D95D8 /* EditorView.swift in Sources */,
 				B4DB1872752D120E6EC4822E /* EditorViewModel.swift in Sources */,
 				8DA8FA2E84B23910E06608DC /* FetchHistoryUseCase.swift in Sources */,
 				7BAD339EC928E0DA062C7B31 /* FileScreenshotStore.swift in Sources */,
 				1FD8EF4777DD8BA0A8D27F96 /* FlattenedImageView.swift in Sources */,
-				1A40527CEE0D31E9199A9858 /* HistoryView.swift in Sources */,
-				5F3907C271B4A39097055848 /* HistoryViewModel.swift in Sources */,
 				0D4ABB33D0BB8B5971A74744 /* LoadAnnotationsUseCase.swift in Sources */,
+				DEBE62A7779E90ADBA4A323C /* MainViewModel.swift in Sources */,
+				1A0676CDE9AE59651B0E0249 /* MainWindowView.swift in Sources */,
 				0F25C1799EEF4C49197F0B94 /* MenuBarView.swift in Sources */,
 				B7B41AB0A463529F210EFA81 /* MenuBarViewModel.swift in Sources */,
 				155D92684D223C7B7E3BA0F6 /* OCRService.swift in Sources */,

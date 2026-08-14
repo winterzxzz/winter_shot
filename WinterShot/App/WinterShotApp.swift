@@ -2,7 +2,7 @@ import SwiftUI
 import AppKit
 
 extension Notification.Name {
-    /// Posted to trigger a capture programmatically (see AppDelegate launch hook).
+    /// Posted to trigger a capture programmatically (see the launch hook).
     static let winterShotPerformCapture = Notification.Name("winterShotPerformCapture")
 }
 
@@ -16,19 +16,11 @@ struct WinterShotApp: App {
             MenuBarIconView()
         }
 
-        // One editor window per screenshot.
-        WindowGroup("Editor", for: Screenshot.self) { $screenshot in
-            if let screenshot {
-                EditorView(screenshot: screenshot, container: .shared)
-            }
+        // The main window: captures library + editor.
+        Window("WinterShot", id: "main") {
+            MainWindowView(container: .shared)
         }
-        .defaultSize(width: 1000, height: 700)
-
-        // The capture library.
-        WindowGroup("History", id: "history") {
-            HistoryView(container: .shared)
-        }
-        .defaultSize(width: 760, height: 520)
+        .defaultSize(width: 1280, height: 800)
     }
 }
 
@@ -76,8 +68,7 @@ private struct MenuBarIconView: View {
                 return
             }
             NSLog("WinterShot: opening editor for %@", filename)
-            NSApp.activate(ignoringOtherApps: true)
-            openWindow(value: screenshot)
+            open(screenshot)
         }
     }
 
@@ -91,12 +82,17 @@ private struct MenuBarIconView: View {
                 }
                 NSLog("WinterShot: captured %@", screenshot.imageURL.path)
                 CapturePreviewManager.shared.show(screenshot: screenshot) { shot in
-                    NSApp.activate(ignoringOtherApps: true)
-                    openWindow(value: shot)
+                    open(shot)
                 }
             } catch {
                 NSLog("WinterShot: capture failed: %@", error.localizedDescription)
             }
         }
+    }
+
+    private func open(_ screenshot: Screenshot) {
+        DIContainer.shared.selectionBus.pending = screenshot
+        NSApp.activate(ignoringOtherApps: true)
+        openWindow(id: "main")
     }
 }

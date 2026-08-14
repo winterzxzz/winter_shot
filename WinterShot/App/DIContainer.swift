@@ -15,6 +15,9 @@ final class DIContainer {
     let annotationRepository: AnnotationRepository
     let ocrService: OCRService
 
+    // Cross-scene selection channel for the main window
+    let selectionBus = SelectionBus()
+
     private init() {
         store = FileScreenshotStore()
         captureService = SystemScreenCaptureService()
