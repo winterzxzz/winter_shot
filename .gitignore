@@ -13,3 +13,7 @@ build/
 # Swift Package Manager
 .build/
 .swiftpm/
+
+# Stray screenshots
+clipboard-*.png
+PNG image*.png

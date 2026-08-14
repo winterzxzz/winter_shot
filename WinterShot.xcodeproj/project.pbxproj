@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		0896CCE91C388FBB08EFBDDD /* RecognizeTextUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F0D6CA0AA37132847DC6F05 /* RecognizeTextUseCase.swift */; };
 		0D4ABB33D0BB8B5971A74744 /* LoadAnnotationsUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E667FD01FD84A910203159 /* LoadAnnotationsUseCase.swift */; };
-		0F25C1799EEF4C49197F0B94 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8AFCD52F989FAC9612D7DA1 /* MenuBarView.swift */; };
 		155D92684D223C7B7E3BA0F6 /* OCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F85EC6544D33B3801E3926E /* OCRService.swift */; };
 		16CF37EAFE195EAD403182F4 /* GitHubUpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBDADA3A9CC5BD28C982EBFC /* GitHubUpdateService.swift */; };
 		1A0676CDE9AE59651B0E0249 /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E7B5C4F2B2E0D3EB57C3144 /* MainWindowView.swift */; };
@@ -25,6 +24,7 @@
 		56B9B5A4E3988FA975655241 /* SetCropUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B2EC158E240E8357D2E75A2 /* SetCropUseCase.swift */; };
 		57242771BFDA3142FEEC473E /* PinWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5C70BAAD5A3AE9B44697E8D /* PinWindowManager.swift */; };
 		5B404C483E8691805D2074DB /* AnnotationRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = B75CDB7C41A5522626CB93F6 /* AnnotationRepositoryImpl.swift */; };
+		5E2D4E44BAE9FA3E4629EE6D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E8524EA3756852EBF743008 /* AppDelegate.swift */; };
 		683B6C8B29B0684CFAFA62F3 /* AnnotationRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64B8ECFD5280F45D47A4624C /* AnnotationRepository.swift */; };
 		6D727EDBFB38FA842318B79E /* ScreenshotRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9CFB5EDD683675FF9F3B857 /* ScreenshotRepositoryImpl.swift */; };
 		75ADB67BD8077A76A83A844A /* BackdropStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB228CB4C25E75D1A301D11 /* BackdropStyle.swift */; };
@@ -48,23 +48,24 @@
 		B4DB1872752D120E6EC4822E /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED5C33AA9B4830D5EEA38A7E /* EditorViewModel.swift */; };
 		B4E5D81DE3706141A32AE02B /* OverlayPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 553C36A68D428AF2967AFAB2 /* OverlayPanel.swift */; };
 		B53C3632DC94BC2E86731E8C /* EditorToolbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E87518271AD19E7877A3F49 /* EditorToolbarView.swift */; };
-		B7B41AB0A463529F210EFA81 /* MenuBarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B096EA1F71BFCB77833929C /* MenuBarViewModel.swift */; };
 		BBE1528808F70A2DBC6C3A36 /* SetBackgroundUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 410B4F55604E2E005A588A98 /* SetBackgroundUseCase.swift */; };
+		CBF9FEF6D22F1ADDF4583F61 /* NotchPanelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06154281D95F62A09C646DCC /* NotchPanelManager.swift */; };
 		D076F868B1781BAB4E1211D6 /* WinterShotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9096208A2FBF0271F06E0C /* WinterShotApp.swift */; };
 		DEBE62A7779E90ADBA4A323C /* MainViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CAE2E95F28A951A7115C3C /* MainViewModel.swift */; };
 		E00B8108EA40EEB90C382281 /* AnnotationColor+SwiftUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A61C6A0175A2C34DD0D543 /* AnnotationColor+SwiftUI.swift */; };
 		F228065A0E5808839AB8AB33 /* DisplayFreezer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDAFC25C044A66DF7219D653 /* DisplayFreezer.swift */; };
 		F678FA2372BE2EDE419C373F /* AppIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71939469CC15EB4BE1B0B164 /* AppIcon.swift */; };
 		FCA4153F12E778A939457E93 /* ScreenshotRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = F961ED0267218D7171A5DB27 /* ScreenshotRepository.swift */; };
+		FCDB4E49C32A68F3FD67F6F0 /* NotchHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82E64A98871972B5D7E2CC83 /* NotchHistoryView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		036BF601111B474D5B59C780 /* SystemScreenCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemScreenCaptureService.swift; sourceTree = "<group>"; };
 		03E667FD01FD84A910203159 /* LoadAnnotationsUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadAnnotationsUseCase.swift; sourceTree = "<group>"; };
+		06154281D95F62A09C646DCC /* NotchPanelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchPanelManager.swift; sourceTree = "<group>"; };
 		09D9E79352A4F3D535132EA2 /* VisionOCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisionOCRService.swift; sourceTree = "<group>"; };
 		0A79594107D38D7B3313B305 /* CaptureScreenshotUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureScreenshotUseCase.swift; sourceTree = "<group>"; };
 		0A9096208A2FBF0271F06E0C /* WinterShotApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WinterShotApp.swift; sourceTree = "<group>"; };
-		0B096EA1F71BFCB77833929C /* MenuBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarViewModel.swift; sourceTree = "<group>"; };
 		0BF7610B72022C543758A9D9 /* Annotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Annotation.swift; sourceTree = "<group>"; };
 		141BA95984926C8A3F5A1AE6 /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
 		20EDBC135B97FBE45E8D9774 /* WindowCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowCaptureService.swift; sourceTree = "<group>"; };
@@ -85,7 +86,9 @@
 		71939469CC15EB4BE1B0B164 /* AppIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIcon.swift; sourceTree = "<group>"; };
 		7B5271C2D03AAD40BAA8139B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7C824D020078A357B3B4CFFA /* AreaPickerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaPickerOverlay.swift; sourceTree = "<group>"; };
+		7E8524EA3756852EBF743008 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7E87518271AD19E7877A3F49 /* EditorToolbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorToolbarView.swift; sourceTree = "<group>"; };
+		82E64A98871972B5D7E2CC83 /* NotchHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchHistoryView.swift; sourceTree = "<group>"; };
 		8B2EC158E240E8357D2E75A2 /* SetCropUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetCropUseCase.swift; sourceTree = "<group>"; };
 		9369660D42EEB5E5D478F835 /* EditorCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorCanvasView.swift; sourceTree = "<group>"; };
 		969FBD8818DD7B02683B8D7B /* WindowPickerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPickerOverlay.swift; sourceTree = "<group>"; };
@@ -100,7 +103,6 @@
 		D0BF92C15C182F672F1599E3 /* Screenshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Screenshot.swift; sourceTree = "<group>"; };
 		D68C1EB5C4AB5BC9260D1BC5 /* GlobalHotkeyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkeyService.swift; sourceTree = "<group>"; };
 		D7A61C6A0175A2C34DD0D543 /* AnnotationColor+SwiftUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AnnotationColor+SwiftUI.swift"; sourceTree = "<group>"; };
-		D8AFCD52F989FAC9612D7DA1 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		E1111D96E824C5F5EAC8FF70 /* SaveAnnotationsUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveAnnotationsUseCase.swift; sourceTree = "<group>"; };
 		E9CFB5EDD683675FF9F3B857 /* ScreenshotRepositoryImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotRepositoryImpl.swift; sourceTree = "<group>"; };
 		ED5C33AA9B4830D5EEA38A7E /* EditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorViewModel.swift; sourceTree = "<group>"; };
@@ -164,15 +166,6 @@
 			path = Storage;
 			sourceTree = "<group>";
 		};
-		4338F57E8D7C32C450DDF681 /* MenuBar */ = {
-			isa = PBXGroup;
-			children = (
-				D8AFCD52F989FAC9612D7DA1 /* MenuBarView.swift */,
-				0B096EA1F71BFCB77833929C /* MenuBarViewModel.swift */,
-			);
-			path = MenuBar;
-			sourceTree = "<group>";
-		};
 		48FFC9712B129FE8615417E4 /* Main */ = {
 			isa = PBXGroup;
 			children = (
@@ -224,6 +217,7 @@
 		71AED235468F042585A10242 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				7E8524EA3756852EBF743008 /* AppDelegate.swift */,
 				3ABA7C765089FB3689351F3D /* DIContainer.swift */,
 				0A9096208A2FBF0271F06E0C /* WinterShotApp.swift */,
 			);
@@ -254,6 +248,15 @@
 				7C824D020078A357B3B4CFFA /* AreaPickerOverlay.swift */,
 			);
 			path = AreaPicker;
+			sourceTree = "<group>";
+		};
+		85F7C9572EE42D62930D91E5 /* Notch */ = {
+			isa = PBXGroup;
+			children = (
+				82E64A98871972B5D7E2CC83 /* NotchHistoryView.swift */,
+				06154281D95F62A09C646DCC /* NotchPanelManager.swift */,
+			);
+			path = Notch;
 			sourceTree = "<group>";
 		};
 		8D367DC6DCFDF14FF3A4B93B /* Repositories */ = {
@@ -291,7 +294,7 @@
 				4B7F68E42CD88DA2D6213757 /* Common */,
 				2B40377390E07BDF24F1113B /* Editor */,
 				48FFC9712B129FE8615417E4 /* Main */,
-				4338F57E8D7C32C450DDF681 /* MenuBar */,
+				85F7C9572EE42D62930D91E5 /* Notch */,
 				D91A44B86CAE883185B59A42 /* Pin */,
 				D6CF749F7908E0762B119363 /* Preview */,
 				7B3CC561834D83546C8AA0DC /* Settings */,
@@ -413,6 +416,7 @@
 				3C8FF4279883AE9B6B05C29C /* AnnotationRenderer.swift in Sources */,
 				683B6C8B29B0684CFAFA62F3 /* AnnotationRepository.swift in Sources */,
 				5B404C483E8691805D2074DB /* AnnotationRepositoryImpl.swift in Sources */,
+				5E2D4E44BAE9FA3E4629EE6D /* AppDelegate.swift in Sources */,
 				F678FA2372BE2EDE419C373F /* AppIcon.swift in Sources */,
 				A0A94F5C6DEAD8DFC82A9668 /* AreaCaptureService.swift in Sources */,
 				3A441895771A52FEE6DA155D /* AreaPickerOverlay.swift in Sources */,
@@ -437,8 +441,8 @@
 				0D4ABB33D0BB8B5971A74744 /* LoadAnnotationsUseCase.swift in Sources */,
 				DEBE62A7779E90ADBA4A323C /* MainViewModel.swift in Sources */,
 				1A0676CDE9AE59651B0E0249 /* MainWindowView.swift in Sources */,
-				0F25C1799EEF4C49197F0B94 /* MenuBarView.swift in Sources */,
-				B7B41AB0A463529F210EFA81 /* MenuBarViewModel.swift in Sources */,
+				FCDB4E49C32A68F3FD67F6F0 /* NotchHistoryView.swift in Sources */,
+				CBF9FEF6D22F1ADDF4583F61 /* NotchPanelManager.swift in Sources */,
 				155D92684D223C7B7E3BA0F6 /* OCRService.swift in Sources */,
 				B4E5D81DE3706141A32AE02B /* OverlayPanel.swift in Sources */,
 				57242771BFDA3142FEEC473E /* PinWindowManager.swift in Sources */,
