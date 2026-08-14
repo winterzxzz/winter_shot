@@ -17,7 +17,9 @@ struct EditorView: View {
 
             VStack(spacing: 10) {
                 EditorToolbarView(viewModel: viewModel, onDone: onDone)
-                if viewModel.selectedAnnotation?.tool == .text {
+                if viewModel.isCropping {
+                    cropBar
+                } else if viewModel.selectedAnnotation?.tool == .text {
                     textEditor
                 }
                 Spacer()
@@ -27,6 +29,45 @@ struct EditorView: View {
             .padding(.bottom, 18)
         }
         .onDeleteCommand { viewModel.deleteSelected() }
+        .onExitCommand {
+            if viewModel.isCropping { viewModel.cancelCrop() }
+        }
+    }
+
+    private var cropBar: some View {
+        HStack(spacing: 10) {
+            Text("Drag to crop")
+                .foregroundStyle(.secondary)
+
+            Button {
+                viewModel.applyCrop()
+            } label: {
+                Label("Apply", systemImage: "checkmark")
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.black)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(.white, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .disabled(viewModel.cropDraft == nil)
+            .opacity(viewModel.cropDraft == nil ? 0.5 : 1)
+            .keyboardShortcut(.return, modifiers: [])
+
+            Button {
+                viewModel.cancelCrop()
+            } label: {
+                Label("Cancel (Esc)", systemImage: "xmark")
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(.white.opacity(0.12), in: Capsule())
+            }
+            .buttonStyle(.plain)
+        }
+        .font(.system(size: 12))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 10))
     }
 
     private var textEditor: some View {
@@ -91,6 +132,9 @@ struct EditorView: View {
     }
 
     private var sizeLabel: String {
-        "\(Int(viewModel.imagePixelSize.width)) × \(Int(viewModel.imagePixelSize.height)) px"
+        let visible = viewModel.crop ?? CGRect(origin: .zero, size: viewModel.imagePixelSize)
+        var label = "\(Int(visible.width)) × \(Int(visible.height)) px"
+        if viewModel.crop != nil { label += " (cropped)" }
+        return label
     }
 }

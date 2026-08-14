@@ -14,13 +14,28 @@ final class AnnotationRepositoryImpl: AnnotationRepository {
     }
 
     func saveAnnotations(_ annotations: [Annotation], for screenshot: Screenshot) throws {
-        var sidecar = store.readSidecar(for: screenshot.imageURL) ?? ScreenshotSidecar(
+        var sidecar = sidecar(for: screenshot)
+        sidecar.annotations = annotations
+        try store.writeSidecar(sidecar, for: screenshot.imageURL)
+    }
+
+    func loadCrop(for screenshot: Screenshot) throws -> CGRect? {
+        store.readSidecar(for: screenshot.imageURL)?.crop
+    }
+
+    func saveCrop(_ crop: CGRect?, for screenshot: Screenshot) throws {
+        var sidecar = sidecar(for: screenshot)
+        sidecar.crop = crop
+        try store.writeSidecar(sidecar, for: screenshot.imageURL)
+    }
+
+    private func sidecar(for screenshot: Screenshot) -> ScreenshotSidecar {
+        store.readSidecar(for: screenshot.imageURL) ?? ScreenshotSidecar(
             screenshotID: screenshot.id,
             mode: screenshot.mode,
             createdAt: screenshot.createdAt,
-            annotations: []
+            annotations: [],
+            crop: nil
         )
-        sidecar.annotations = annotations
-        try store.writeSidecar(sidecar, for: screenshot.imageURL)
     }
 }

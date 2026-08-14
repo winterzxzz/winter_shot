@@ -39,6 +39,14 @@ struct EditorToolbarView: View {
                 colorPopover
             }
 
+            toolButton(icon: "crop", label: "Crop", isActive: viewModel.isCropping) {
+                if viewModel.isCropping {
+                    viewModel.cancelCrop()
+                } else {
+                    viewModel.enterCropMode()
+                }
+            }
+
             pillDivider
 
             iconButton(icon: "arrow.uturn.backward", label: "Undo", disabled: !viewModel.canUndo) {
@@ -64,6 +72,8 @@ struct EditorToolbarView: View {
             Menu {
                 Button("Export PNG…") { viewModel.exportPNG() }
                     .keyboardShortcut("e", modifiers: .command)
+                Button("Reset Crop") { viewModel.resetCrop() }
+                    .disabled(viewModel.crop == nil)
                 Button("Delete Selected Annotation") { viewModel.deleteSelected() }
                     .disabled(viewModel.selectedAnnotationID == nil)
                 Button("Clear All Annotations", role: .destructive) { viewModel.clearAll() }

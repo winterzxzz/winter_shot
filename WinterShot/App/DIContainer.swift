@@ -50,4 +50,10 @@ final class DIContainer {
     var recognizeTextUseCase: RecognizeTextUseCase {
         RecognizeTextUseCase(ocrService: ocrService)
     }
+    var setCropUseCase: SetCropUseCase {
+        SetCropUseCase(repository: annotationRepository)
+    }
+    var loadCropUseCase: LoadCropUseCase {
+        LoadCropUseCase(repository: annotationRepository)
+    }
 }

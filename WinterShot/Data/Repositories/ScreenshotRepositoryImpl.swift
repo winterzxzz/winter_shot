@@ -44,7 +44,8 @@ final class ScreenshotRepositoryImpl: ScreenshotRepository {
             screenshotID: screenshot.id,
             mode: mode,
             createdAt: createdAt,
-            annotations: []
+            annotations: [],
+            crop: nil
         )
         try store.writeSidecar(sidecar, for: imageURL)
         return screenshot

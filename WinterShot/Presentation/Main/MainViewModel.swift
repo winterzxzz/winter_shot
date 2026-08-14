@@ -100,11 +100,12 @@ final class MainViewModel: ObservableObject {
             pixelSize = image.size
         }
         let annotations = (try? container.loadAnnotationsUseCase.execute(for: screenshot)) ?? []
+        let crop = (try? container.loadCropUseCase.execute(for: screenshot)) ?? nil
         let renderer = ImageRenderer(content: FlattenedImageView(
-            image: image, imageSize: pixelSize, annotations: annotations
+            image: image, imageSize: pixelSize, annotations: annotations, crop: crop
         ))
         renderer.scale = 1
         guard let cgImage = renderer.cgImage else { return nil }
-        return NSImage(cgImage: cgImage, size: pixelSize)
+        return NSImage(cgImage: cgImage, size: crop?.size ?? pixelSize)
     }
 }

@@ -19,6 +19,7 @@
 		3C8FF4279883AE9B6B05C29C /* AnnotationRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C243ED87E2218E99CDE35A32 /* AnnotationRenderer.swift */; };
 		443539E55EA4D09183F330B8 /* WindowPickerOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969FBD8818DD7B02683B8D7B /* WindowPickerOverlay.swift */; };
 		49985723090FC67B79A365B3 /* WindowCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20EDBC135B97FBE45E8D9774 /* WindowCaptureService.swift */; };
+		56B9B5A4E3988FA975655241 /* SetCropUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B2EC158E240E8357D2E75A2 /* SetCropUseCase.swift */; };
 		57242771BFDA3142FEEC473E /* PinWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5C70BAAD5A3AE9B44697E8D /* PinWindowManager.swift */; };
 		5B404C483E8691805D2074DB /* AnnotationRepositoryImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = B75CDB7C41A5522626CB93F6 /* AnnotationRepositoryImpl.swift */; };
 		683B6C8B29B0684CFAFA62F3 /* AnnotationRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64B8ECFD5280F45D47A4624C /* AnnotationRepository.swift */; };
@@ -70,6 +71,7 @@
 		6F0D6CA0AA37132847DC6F05 /* RecognizeTextUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecognizeTextUseCase.swift; sourceTree = "<group>"; };
 		7C824D020078A357B3B4CFFA /* AreaPickerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreaPickerOverlay.swift; sourceTree = "<group>"; };
 		7E87518271AD19E7877A3F49 /* EditorToolbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorToolbarView.swift; sourceTree = "<group>"; };
+		8B2EC158E240E8357D2E75A2 /* SetCropUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetCropUseCase.swift; sourceTree = "<group>"; };
 		9369660D42EEB5E5D478F835 /* EditorCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorCanvasView.swift; sourceTree = "<group>"; };
 		969FBD8818DD7B02683B8D7B /* WindowPickerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPickerOverlay.swift; sourceTree = "<group>"; };
 		9F44A30B804B90627C25BA56 /* CapturePreviewManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturePreviewManager.swift; sourceTree = "<group>"; };
@@ -190,6 +192,7 @@
 				03E667FD01FD84A910203159 /* LoadAnnotationsUseCase.swift */,
 				6F0D6CA0AA37132847DC6F05 /* RecognizeTextUseCase.swift */,
 				E1111D96E824C5F5EAC8FF70 /* SaveAnnotationsUseCase.swift */,
+				8B2EC158E240E8357D2E75A2 /* SetCropUseCase.swift */,
 			);
 			path = UseCases;
 			sourceTree = "<group>";
@@ -392,6 +395,7 @@
 				7844646A77126DAFA0308CA8 /* Screenshot.swift in Sources */,
 				FCA4153F12E778A939457E93 /* ScreenshotRepository.swift in Sources */,
 				6D727EDBFB38FA842318B79E /* ScreenshotRepositoryImpl.swift in Sources */,
+				56B9B5A4E3988FA975655241 /* SetCropUseCase.swift in Sources */,
 				9BA1C90F55DADE80DE784454 /* SystemScreenCaptureService.swift in Sources */,
 				AA14A4CB3BA0E380680E0BFD /* VisionOCRService.swift in Sources */,
 				49985723090FC67B79A365B3 /* WindowCaptureService.swift in Sources */,

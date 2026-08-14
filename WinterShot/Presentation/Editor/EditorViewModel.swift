@@ -26,6 +26,12 @@ final class EditorViewModel: ObservableObject {
     /// The scale the canvas last rendered at; drives the zoom label in fit mode.
     @Published var renderedScale: CGFloat = 1
 
+    /// Non-destructive crop in image pixel space; nil shows the full capture.
+    @Published var crop: CGRect?
+    @Published var isCropping = false
+    @Published var cropDraft: CGRect?
+    private var cropDragStart: CGPoint?
+
     let image: NSImage?
     let imagePixelSize: CGSize
 
@@ -36,6 +42,8 @@ final class EditorViewModel: ObservableObject {
     private let loadAnnotationsUseCase: LoadAnnotationsUseCase
     private let saveAnnotationsUseCase: SaveAnnotationsUseCase
     private let recognizeTextUseCase: RecognizeTextUseCase
+    private let setCropUseCase: SetCropUseCase
+    private let loadCropUseCase: LoadCropUseCase
 
     private static let zoomSteps: [CGFloat] = [0.1, 0.25, 0.33, 0.5, 0.67, 0.75, 0.9, 1, 1.25, 1.5, 2, 3, 4]
 
@@ -55,6 +63,8 @@ final class EditorViewModel: ObservableObject {
         self.loadAnnotationsUseCase = container.loadAnnotationsUseCase
         self.saveAnnotationsUseCase = container.saveAnnotationsUseCase
         self.recognizeTextUseCase = container.recognizeTextUseCase
+        self.setCropUseCase = container.setCropUseCase
+        self.loadCropUseCase = container.loadCropUseCase
 
         let nsImage = NSImage(contentsOf: screenshot.imageURL)
         self.image = nsImage
@@ -66,20 +76,85 @@ final class EditorViewModel: ObservableObject {
         }
 
         self.annotations = (try? loadAnnotationsUseCase.execute(for: screenshot)) ?? []
+        self.crop = (try? loadCropUseCase.execute(for: screenshot)) ?? nil
+    }
+
+    // MARK: - Crop
+
+    var fullImageRect: CGRect {
+        CGRect(origin: .zero, size: imagePixelSize)
+    }
+
+    /// What the canvas shows: the full image while cropping, otherwise the crop.
+    var visibleRect: CGRect {
+        isCropping ? fullImageRect : (crop ?? fullImageRect)
+    }
+
+    func enterCropMode() {
+        selectedAnnotationID = nil
+        cropDraft = crop
+        isCropping = true
+        zoomMode = .fit
+    }
+
+    func cancelCrop() {
+        isCropping = false
+        cropDraft = nil
+        cropDragStart = nil
+    }
+
+    func applyCrop() {
+        defer { isCropping = false; cropDraft = nil; cropDragStart = nil }
+        guard let draft = cropDraft, draft.width >= 20, draft.height >= 20 else { return }
+        crop = draft
+        persistCrop()
+        zoomMode = .fit
+        statusMessage = "Cropped to \(Int(draft.width)) × \(Int(draft.height)) px (non-destructive)."
+    }
+
+    func resetCrop() {
+        guard crop != nil else { return }
+        crop = nil
+        persistCrop()
+        zoomMode = .fit
+        statusMessage = "Crop reset."
+    }
+
+    private func persistCrop() {
+        do {
+            try setCropUseCase.execute(crop, for: screenshot)
+        } catch {
+            statusMessage = "Could not save crop: \(error.localizedDescription)"
+        }
+    }
+
+    private func cropDragBegan(at point: CGPoint) {
+        cropDragStart = point
+        cropDraft = nil
+    }
+
+    private func cropDragChanged(to point: CGPoint) {
+        guard let start = cropDragStart else { return }
+        let rect = CGRect(x: min(start.x, point.x),
+                          y: min(start.y, point.y),
+                          width: abs(point.x - start.x),
+                          height: abs(point.y - start.y))
+        cropDraft = rect.intersection(fullImageRect)
     }
 
     // MARK: - Zoom
 
     func effectiveScale(fitting available: CGSize) -> CGFloat {
+        let content = visibleRect.size
         switch zoomMode {
         case .percent(let value):
             return value
         case .fit:
-            guard imagePixelSize.width > 0, imagePixelSize.height > 0,
+            guard content.width > 0, content.height > 0,
                   available.width > 0, available.height > 0 else { return 1 }
             let padding: CGFloat = 48
-            return max(min((available.width - padding) / imagePixelSize.width,
-                           (available.height - padding) / imagePixelSize.height,
+            return max(min((available.width - padding) / content.width,
+                           (available.height - padding) / content.height,
                            1), 0.02)
         }
     }
@@ -106,6 +181,10 @@ final class EditorViewModel: ObservableObject {
     // MARK: - Drag lifecycle (all points in image pixel space)
 
     func dragBegan(at point: CGPoint) {
+        if isCropping {
+            cropDragBegan(at: point)
+            return
+        }
         guard let tool = selectedTool else {
             beginMove(at: point)
             return
@@ -115,6 +194,10 @@ final class EditorViewModel: ObservableObject {
     }
 
     func dragChanged(to point: CGPoint, translation: CGSize) {
+        if isCropping {
+            cropDragChanged(to: point)
+            return
+        }
         guard let tool = selectedTool else {
             continueMove(translation: translation)
             return
@@ -129,6 +212,11 @@ final class EditorViewModel: ObservableObject {
     }
 
     func dragEnded(at point: CGPoint, translation: CGSize) {
+        if isCropping {
+            cropDragChanged(to: point)
+            cropDragStart = nil
+            return
+        }
         guard let tool = selectedTool else {
             endMove(translation: translation, at: point)
             return
@@ -295,14 +383,16 @@ final class EditorViewModel: ObservableObject {
     /// and it only ever touches the exported copy.
     func flattenedImage() -> NSImage? {
         guard let image else { return nil }
+        let visible = crop ?? fullImageRect
         let renderer = ImageRenderer(content: FlattenedImageView(
             image: image,
             imageSize: imagePixelSize,
-            annotations: annotations
+            annotations: annotations,
+            crop: crop
         ))
         renderer.scale = 1
         guard let cgImage = renderer.cgImage else { return nil }
-        return NSImage(cgImage: cgImage, size: imagePixelSize)
+        return NSImage(cgImage: cgImage, size: visible.size)
     }
 
     func copyFlattenedToPasteboard() {
