@@ -39,9 +39,11 @@ struct CapturesSidebarView: View {
     private var emptyState: some View {
         VStack(spacing: 8) {
             Spacer()
-            Image(systemName: "camera.viewfinder")
-                .font(.system(size: 28))
-                .foregroundStyle(.tertiary)
+            Image(nsImage: AppIcon.full)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 40, height: 40)
+                .opacity(0.7)
             Text("No captures yet")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -91,7 +93,7 @@ struct CapturesSidebarView: View {
 
             Spacer()
 
-            Button { viewModel.openCapturesFolder() } label: {
+            SettingsLink {
                 Image(systemName: "gearshape")
             }
             .help("Settings")
@@ -183,6 +185,7 @@ private struct CaptureCard: View {
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
         .onTapGesture(perform: onOpen)
+        .onDrag { NSItemProvider(contentsOf: screenshot.imageURL) ?? NSItemProvider() }
         .task(id: screenshot.id) { loadThumbnail() }
     }
 

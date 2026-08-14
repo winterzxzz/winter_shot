@@ -1,9 +1,12 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// After a capture succeeds, floats a thumbnail at the left edge of the
-/// screen (like the system screenshot preview). Clicking it opens the editor;
-/// it slides away on its own after a few seconds.
+/// screen (like the system screenshot preview). It carries the same quick
+/// actions as a library card: close, annotate, copy, pin, delete. It can be
+/// dragged into other apps, and slides away on its own after a few seconds
+/// (paused while the pointer is over it).
 @MainActor
 final class CapturePreviewManager {
     static let shared = CapturePreviewManager()
@@ -23,11 +26,12 @@ final class CapturePreviewManager {
             return
         }
 
-        let maxThumb = CGSize(width: 240, height: 180)
+        let maxThumb = CGSize(width: 260, height: 200)
         let scale = min(maxThumb.width / max(image.size.width, 1),
                         maxThumb.height / max(image.size.height, 1),
                         1)
-        let size = NSSize(width: image.size.width * scale, height: image.size.height * scale)
+        let size = NSSize(width: max(image.size.width * scale, 180),
+                          height: image.size.height * scale)
 
         let panel = NSPanel(
             contentRect: NSRect(origin: .zero, size: size),
@@ -41,10 +45,39 @@ final class CapturePreviewManager {
         panel.hasShadow = true
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
 
-        panel.contentView = NSHostingView(rootView: CapturePreviewView(image: image) { [weak self] in
-            self?.dismiss()
-            onOpen(screenshot)
-        })
+        let view = CapturePreviewView(
+            image: image,
+            fileURL: screenshot.imageURL,
+            onOpen: { [weak self] in
+                self?.dismiss()
+                onOpen(screenshot)
+            },
+            onCopy: { [weak self] in
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.writeObjects([image])
+                self?.dismiss()
+            },
+            onPin: { [weak self] in
+                PinWindowManager.shared.pin(image: image)
+                self?.dismiss()
+            },
+            onDelete: { [weak self] in
+                try? DIContainer.shared.deleteScreenshotUseCase.execute(screenshot)
+                self?.dismiss()
+            },
+            onClose: { [weak self] in
+                self?.dismiss()
+            },
+            onHoverChange: { [weak self] hovering in
+                if hovering {
+                    self?.dismissTimer?.invalidate()
+                    self?.dismissTimer = nil
+                } else {
+                    self?.scheduleDismiss()
+                }
+            }
+        )
+        panel.contentView = NSHostingView(rootView: view)
 
         let origin = NSPoint(x: screen.visibleFrame.minX + 16,
                              y: screen.visibleFrame.minY + 24)
@@ -52,6 +85,11 @@ final class CapturePreviewManager {
         panel.orderFrontRegardless()
         self.panel = panel
 
+        scheduleDismiss()
+    }
+
+    private func scheduleDismiss() {
+        dismissTimer?.invalidate()
         dismissTimer = Timer.scheduledTimer(withTimeInterval: Self.lifetime, repeats: false) { [weak self] _ in
             Task { @MainActor in self?.dismiss() }
         }
@@ -67,7 +105,14 @@ final class CapturePreviewManager {
 
 private struct CapturePreviewView: View {
     let image: NSImage
-    let onClick: () -> Void
+    let fileURL: URL
+    let onOpen: () -> Void
+    let onCopy: () -> Void
+    let onPin: () -> Void
+    let onDelete: () -> Void
+    let onClose: () -> Void
+    let onHoverChange: (Bool) -> Void
+
     @State private var hovering = false
 
     var body: some View {
@@ -79,10 +124,50 @@ private struct CapturePreviewView: View {
                 RoundedRectangle(cornerRadius: 10)
                     .strokeBorder(Color.white.opacity(hovering ? 0.9 : 0.5), lineWidth: 2)
             )
-            .scaleEffect(hovering ? 1.03 : 1)
+            .overlay(alignment: .topTrailing) {
+                Button(action: onClose) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 20, height: 20)
+                        .background(.black.opacity(0.72), in: Circle())
+                        .overlay(Circle().strokeBorder(.white.opacity(0.25), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .help("Dismiss")
+                .padding(6)
+            }
+            .overlay(alignment: .bottom) {
+                HStack(spacing: 14) {
+                    quickAction(icon: "rectangle.and.pencil.and.ellipsis", help: "Annotate", action: onOpen)
+                    quickAction(icon: "doc.on.doc", help: "Copy", action: onCopy)
+                    quickAction(icon: "pin", help: "Pin to screen", action: onPin)
+                    quickAction(icon: "trash", help: "Delete", action: onDelete)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background(.black.opacity(0.72), in: Capsule())
+                .overlay(Capsule().strokeBorder(.white.opacity(0.18), lineWidth: 1))
+                .padding(.bottom, 8)
+            }
+            .scaleEffect(hovering ? 1.02 : 1)
             .animation(.easeOut(duration: 0.15), value: hovering)
-            .onHover { hovering = $0 }
-            .onTapGesture(perform: onClick)
-            .help("Click to annotate")
+            .onHover { value in
+                hovering = value
+                onHoverChange(value)
+            }
+            .onTapGesture(perform: onOpen)
+            .onDrag { NSItemProvider(contentsOf: fileURL) ?? NSItemProvider() }
+            .help("Click to annotate, or drag into another app")
+    }
+
+    private func quickAction(icon: String, help: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 13))
+                .foregroundStyle(.white)
+        }
+        .buttonStyle(.plain)
+        .help(help)
     }
 }

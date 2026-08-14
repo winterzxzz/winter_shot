@@ -21,6 +21,10 @@ struct WinterShotApp: App {
             MainWindowView(container: .shared)
         }
         .defaultSize(width: 1280, height: 800)
+
+        Settings {
+            SettingsView()
+        }
     }
 }
 
@@ -30,7 +34,7 @@ private struct MenuBarIconView: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Image(systemName: "camera.viewfinder")
+        Image(nsImage: AppIcon.menuBar)
             .onAppear {
                 DIContainer.shared.startGlobalHotkeys()
                 if let mode = Self.launchCaptureMode() {

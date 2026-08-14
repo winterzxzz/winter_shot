@@ -19,6 +19,7 @@ final class DIContainer {
     let selectionBus = SelectionBus()
 
     private let hotkeyService = GlobalHotkeyService()
+    let updateService = GitHubUpdateService()
 
     /// Registers ⌘⇧4/⌘⇧8/⌘⇧9. Safe to call repeatedly.
     func startGlobalHotkeys() {

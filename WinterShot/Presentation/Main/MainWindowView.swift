@@ -4,11 +4,13 @@ import SwiftUI
 /// editor canvas on the right with capture buttons in the header.
 struct MainWindowView: View {
     @StateObject private var viewModel: MainViewModel
+    @StateObject private var updateChecker: UpdateChecker
     @ObservedObject private var selectionBus: SelectionBus
     private let container: DIContainer
 
     init(container: DIContainer) {
         _viewModel = StateObject(wrappedValue: MainViewModel(container: container))
+        _updateChecker = StateObject(wrappedValue: UpdateChecker(service: container.updateService))
         self.selectionBus = container.selectionBus
         self.container = container
     }
@@ -31,9 +33,18 @@ struct MainWindowView: View {
                     }
                     .help(mode.label)
                 }
-                Text("WinterShot")
-                    .font(.system(size: 15, weight: .bold))
-                    .padding(.leading, 6)
+            }
+            ToolbarItem(placement: .navigation) {
+                HStack(spacing: 8) {
+                    Image(nsImage: AppIcon.full)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 20, height: 20)
+                    Text("WinterShot")
+                        .font(.system(size: 15, weight: .bold))
+                    versionBadge
+                }
+                .padding(.horizontal, 10)
             }
         }
         .preferredColorScheme(.dark)
@@ -42,6 +53,42 @@ struct MainWindowView: View {
             consumePending()
         }
         .onReceive(selectionBus.$pending) { _ in consumePending() }
+        .task { await updateChecker.checkOnce() }
+    }
+
+    /// Version label plus the update button when GitHub has a newer release.
+    @ViewBuilder
+    private var versionBadge: some View {
+        Text("v\(updateChecker.currentVersion)")
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(.white.opacity(0.08), in: Capsule())
+            .help(updateBadgeHelp)
+
+        if case .available(let release) = updateChecker.state {
+            Button {
+                updateChecker.update()
+            } label: {
+                Label("Update to \(release.tagName)", systemImage: "arrow.down.circle.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.black)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.green, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .help("A newer version is on GitHub — click to open the release")
+        }
+    }
+
+    private var updateBadgeHelp: String {
+        switch updateChecker.state {
+        case .upToDate: return "You're on the latest release."
+        case .checking: return "Checking GitHub for updates…"
+        default: return "Installed version"
+        }
     }
 
     @ViewBuilder
@@ -58,9 +105,10 @@ struct MainWindowView: View {
 
     private var placeholder: some View {
         VStack(spacing: 12) {
-            Image(systemName: "camera.viewfinder")
-                .font(.system(size: 44))
-                .foregroundStyle(.tertiary)
+            Image(nsImage: AppIcon.full)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 64, height: 64)
             Text("Capture something, or pick one from the library")
                 .foregroundStyle(.secondary)
         }
