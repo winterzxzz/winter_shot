@@ -130,12 +130,14 @@ final class RecordingCompositor {
         context.addPath(contentPath)
         context.clip()
 
-        // Map the camera's visible rect onto the content rect.
+        // Map the camera's visible rect onto the content rect. The decoded
+        // image may be a downscaled proxy (preview), so stretch it to the
+        // logical frame size the event log speaks in.
         let s = contentRect.width / visible.width
         let drawRect = CGRect(x: contentRect.minX - visible.minX * s,
                               y: contentRect.minY - visible.minY * s,
-                              width: CGFloat(frameImage.width) * s,
-                              height: CGFloat(frameImage.height) * s)
+                              width: events.frameWidth * s,
+                              height: events.frameHeight * s)
         context.interpolationQuality = .high
         context.draw(frameImage, in: drawRect)
 
@@ -205,9 +207,12 @@ struct CameraRig {
     private var center: CGPoint
     private var centerVelocity: CGVector = .zero
 
-    /// Spring stiffness (k); damping is critical: 2√k.
-    private let scaleStiffness: CGFloat = 120
-    private let centerStiffness: CGFloat = 80
+    /// Spring stiffness (k); damping is critical: 2√k. Zooming out is slower
+    /// than zooming in — the Screen Studio signature — and the pan is gentler
+    /// than the zoom so the camera glides instead of snapping.
+    private let zoomInStiffness: CGFloat = 90
+    private let zoomOutStiffness: CGFloat = 30
+    private let centerStiffness: CGFloat = 55
 
     init(frame: CGSize, events: RecordingEventLog, options: RecordingExportOptions) {
         self.frame = frame
@@ -218,12 +223,18 @@ struct CameraRig {
             .map { (t: $0.t - events.firstFrameTime, point: CGPoint(x: $0.x, y: $0.y)) }
             .sorted { $0.t < $1.t }
         self.clicks = relClicks
+        self.windows = Self.zoomWindows(events: events)
+    }
 
-        // Merge clicks less than 1.8 s apart into one zoom window.
+    /// Merge nearby clicks into one zoom window with a generous hold, so
+    /// pauses while typing or reading don't pump the camera in and out.
+    /// Shared with the timeline UI, which draws these as segments.
+    static func zoomWindows(events: RecordingEventLog) -> [(start: Double, end: Double)] {
+        let times = events.clicks.map { $0.t - events.firstFrameTime }.sorted()
         var merged: [(Double, Double)] = []
-        for click in relClicks {
-            let start = click.t - 0.4
-            let end = click.t + 1.6
+        for t in times {
+            let start = t - 0.4
+            let end = t + 3.0
             if var last = merged.last, start <= last.1 + 0.01 {
                 last.1 = max(last.1, end)
                 merged[merged.count - 1] = last
@@ -231,7 +242,7 @@ struct CameraRig {
                 merged.append((start, end))
             }
         }
-        self.windows = merged.map { (start: $0.0, end: $0.1) }
+        return merged.map { (start: max(0, $0.0), end: $0.1) }
     }
 
     mutating func reset() {
@@ -256,6 +267,7 @@ struct CameraRig {
         }
 
         // Critically damped spring, integrated in small steps for stability.
+        let scaleStiffness = targetScale >= scale ? zoomInStiffness : zoomOutStiffness
         var remaining = dt
         while remaining > 0 {
             let h = min(remaining, 1.0 / 120.0)

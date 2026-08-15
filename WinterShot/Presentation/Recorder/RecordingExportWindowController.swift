@@ -14,8 +14,12 @@ final class RecordingExportWindowController: NSObject, NSWindowDelegate {
         let hosting = NSHostingController(rootView: view)
         window = NSWindow(contentViewController: hosting)
         window.title = "Recording — \(recording.filename)"
-        window.setContentSize(NSSize(width: 960, height: 620))
-        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+        window.setContentSize(NSSize(width: 1080, height: 680))
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.appearance = NSAppearance(named: .darkAqua)
+        window.backgroundColor = NSColor(srgbRed: 0.086, green: 0.086, blue: 0.094, alpha: 1)
         window.center()
         window.isReleasedWhenClosed = false
         super.init()

@@ -18,6 +18,10 @@ final class PreviewTransport: ObservableObject {
 
     init(recording: Recording) {
         let item = AVPlayerItem(url: recording.videoURL)
+        // Decode at preview scale — compositing a full 5K frame per tick is
+        // what makes the preview stutter, and the preview never shows more
+        // than ~1500 px anyway.
+        item.preferredMaximumResolution = CGSize(width: 1920, height: 1200)
         videoOutput = AVPlayerItemVideoOutput(pixelBufferAttributes: [
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
         ])
@@ -96,7 +100,7 @@ final class RecordingPreviewNSView: NSView {
     private var lastFrame: (image: CGImage, t: Double)?
 
     /// Preview render width — smaller than export for 60 fps CPU compositing.
-    private static let previewWidth: CGFloat = 1440
+    private static let previewWidth: CGFloat = 1100
 
     init(transport: PreviewTransport, events: RecordingEventLog, options: RecordingExportOptions) {
         self.transport = transport
