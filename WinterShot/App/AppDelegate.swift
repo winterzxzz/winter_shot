@@ -2,8 +2,8 @@ import AppKit
 import SwiftUI
 
 /// AppKit home base for everything that outlives SwiftUI scenes: the status
-/// item (left-click drops the notch history panel, right-click shows the
-/// classic menu), global hotkeys, launch arguments, and opening the main
+/// item (click shows the features menu; its "Show History" item drops the
+/// notch panel), global hotkeys, launch arguments, and opening the main
 /// window from outside a SwiftUI scene.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -34,19 +34,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             button.target = self
             button.action = #selector(statusItemClicked(_:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-            button.toolTip = "WinterShot — click for history"
+            button.toolTip = "WinterShot"
         }
         statusItem = item
     }
 
     @objc private func statusItemClicked(_ sender: NSStatusBarButton) {
-        if NSApp.currentEvent?.type == .rightMouseUp {
-            showStatusMenu()
-        } else if RecordingController.shared.isRecording {
+        if RecordingController.shared.isRecording, NSApp.currentEvent?.type == .leftMouseUp {
             // While recording the icon is a stop button.
             RecordingController.shared.stop()
         } else {
-            NotchPanelManager.shared.toggle(on: sender.window?.screen)
+            // Both clicks show the features menu; the notch history panel
+            // opens from its "Show History" item so shots are easy to drag.
+            showStatusMenu()
         }
     }
 
@@ -61,13 +61,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             button.toolTip = "WinterShot — recording, click to stop (⌘⇧6)"
         } else {
             button.image = AppIcon.menuBar
-            button.toolTip = "WinterShot — click for history"
+            button.toolTip = "WinterShot"
         }
     }
 
-    /// The classic dropdown, kept on right-click. Assigning the menu and
-    /// clicking programmatically is the standard way to show it on demand
-    /// while leaving left-click free for the panel.
+    /// The features dropdown, shown on any click. Assigning the menu and
+    /// clicking programmatically shows it on demand while keeping the button
+    /// action free to act as a stop button during recording.
     private func showStatusMenu() {
         let menu = NSMenu()
         for mode in CaptureMode.allCases {
