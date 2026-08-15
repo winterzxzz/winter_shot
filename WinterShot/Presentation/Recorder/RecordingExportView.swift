@@ -1,5 +1,5 @@
 import SwiftUI
-import AVKit
+import AVFoundation
 
 /// Post-recording window: raw preview on the left, Screen Studio-style export
 /// options on the right. The polish (backdrop, auto-zoom, smooth cursor) is
@@ -9,7 +9,7 @@ struct RecordingExportView: View {
     let events: RecordingEventLog
 
     @State private var options = RecordingExportOptions()
-    @State private var player: AVPlayer
+    @StateObject private var transport: PreviewTransport
     @State private var isExporting = false
     @State private var progress: Double = 0
     @State private var exportError: String?
@@ -17,20 +17,54 @@ struct RecordingExportView: View {
     init(recording: Recording, events: RecordingEventLog) {
         self.recording = recording
         self.events = events
-        _player = State(initialValue: AVPlayer(url: recording.videoURL))
+        _transport = StateObject(wrappedValue: PreviewTransport(recording: recording))
     }
 
     var body: some View {
         HSplitView {
-            PlayerView(player: player)
-                .frame(minWidth: 480, minHeight: 360)
-                .layoutPriority(1)
+            VStack(spacing: 0) {
+                CompositedPreview(transport: transport, events: events, options: options)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                transportBar
+            }
+            .frame(minWidth: 520, minHeight: 400)
+            .layoutPriority(1)
+            .background(Color(nsColor: .underPageBackgroundColor))
 
             optionsPanel
                 .frame(width: 300)
         }
-        .onAppear { player.play() }
-        .onDisappear { player.pause() }
+        .onAppear { transport.play() }
+        .onDisappear { transport.player.pause() }
+    }
+
+    private var transportBar: some View {
+        HStack(spacing: 12) {
+            Button {
+                transport.togglePlayback()
+            } label: {
+                Image(systemName: transport.isPlaying ? "pause.fill" : "play.fill")
+                    .frame(width: 18)
+            }
+            .buttonStyle(.plain)
+
+            Slider(value: Binding(
+                get: { transport.time },
+                set: { transport.seek(to: $0) }
+            ), in: 0...max(transport.duration, 0.1))
+
+            Text(timecode(transport.time) + " / " + timecode(transport.duration))
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.bar)
+    }
+
+    private func timecode(_ seconds: Double) -> String {
+        let total = Int(seconds.rounded())
+        return String(format: "%d:%02d", total / 60, total % 60)
     }
 
     private var optionsPanel: some View {
@@ -165,7 +199,7 @@ struct RecordingExportView: View {
         isExporting = true
         progress = 0
         exportError = nil
-        player.pause()
+        transport.player.pause()
 
         let useCase = DIContainer.shared.exportRecordingUseCase
         let recording = recording
@@ -190,25 +224,6 @@ struct RecordingExportView: View {
                 }
             }
         }
-    }
-}
-
-/// AppKit-backed player. AVKit's SwiftUI `VideoPlayer` aborts at runtime in
-/// this AppKit-hosted window (generic metadata instantiation crash), so wrap
-/// `AVPlayerView` directly.
-private struct PlayerView: NSViewRepresentable {
-    let player: AVPlayer
-
-    func makeNSView(context: Context) -> AVPlayerView {
-        let view = AVPlayerView()
-        view.player = player
-        view.controlsStyle = .inline
-        view.showsFullScreenToggleButton = false
-        return view
-    }
-
-    func updateNSView(_ nsView: AVPlayerView, context: Context) {
-        nsView.player = player
     }
 }
 

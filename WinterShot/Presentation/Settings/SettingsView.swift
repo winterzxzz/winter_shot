@@ -24,13 +24,16 @@ struct SettingsView: View {
             }
 
             Section("Global Hotkeys") {
-                ForEach(CaptureMode.allCases) { mode in
+                ForEach(CaptureMode.allCases.filter { $0.hotkeyNumber != nil }) { mode in
                     LabeledContent(mode.label) {
-                        Text("⌘⇧\(String(mode.hotkeyNumber))")
+                        Text("⌘⇧\(String(mode.hotkeyNumber!))")
                             .font(.system(size: 12, weight: .semibold, design: .monospaced))
                             .foregroundStyle(.secondary)
                     }
                 }
+                Text("Other features are available from the menu bar icon.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
             }
 
             Section("About") {

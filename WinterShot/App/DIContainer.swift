@@ -23,16 +23,12 @@ final class DIContainer {
     private let hotkeyService = GlobalHotkeyService()
     let updateService = GitHubUpdateService()
 
-    /// Registers ⌘⇧4/⌘⇧8/⌘⇧9 captures and ⌘⇧6 record toggle.
-    /// Safe to call repeatedly.
+    /// Registers the ⌘⇧4 capture hotkey. Safe to call repeatedly.
     func startGlobalHotkeys() {
         hotkeyService.onTrigger = { mode in
             NotificationCenter.default.post(name: .winterShotPerformCapture,
                                             object: nil,
                                             userInfo: ["mode": mode.rawValue])
-        }
-        hotkeyService.onRecordToggle = {
-            RecordingController.shared.toggle()
         }
         hotkeyService.register()
     }

@@ -1,9 +1,9 @@
 import AppKit
 import Carbon.HIToolbox
 
-/// System-wide capture hotkeys via Carbon RegisterEventHotKey — the classic
-/// screenshot keys, BridgeShot-style:
-///   ⌘⇧4 area · ⌘⇧8 window · ⌘⇧9 fullscreen · ⌘⇧6 record toggle
+/// System-wide capture hotkey via Carbon RegisterEventHotKey: ⌘⇧4 opens the
+/// area selector (which also picks whole windows on hover). Every other
+/// feature is triggered from the menu bar, so it gets no hotkey.
 /// No special permissions required. If macOS's own ⌘⇧4 shortcut is still
 /// enabled both will fire; users can turn the system one off in
 /// System Settings → Keyboard → Keyboard Shortcuts → Screenshots.
@@ -12,20 +12,14 @@ final class GlobalHotkeyService {
         let id: UInt32
         let keyCode: UInt32
         let modifiers: UInt32
-        /// nil marks the record start/stop toggle.
-        let mode: CaptureMode?
+        let mode: CaptureMode
     }
 
     /// Called on the main thread when a capture hotkey fires.
     var onTrigger: ((CaptureMode) -> Void)?
-    /// Called on the main thread when the record toggle fires.
-    var onRecordToggle: (() -> Void)?
 
     private let hotkeys: [Hotkey] = [
         Hotkey(id: 1, keyCode: UInt32(kVK_ANSI_4), modifiers: UInt32(cmdKey | shiftKey), mode: .area),
-        Hotkey(id: 2, keyCode: UInt32(kVK_ANSI_8), modifiers: UInt32(cmdKey | shiftKey), mode: .window),
-        Hotkey(id: 3, keyCode: UInt32(kVK_ANSI_9), modifiers: UInt32(cmdKey | shiftKey), mode: .fullscreen),
-        Hotkey(id: 4, keyCode: UInt32(kVK_ANSI_6), modifiers: UInt32(cmdKey | shiftKey), mode: nil),
     ]
 
     private var hotkeyRefs: [EventHotKeyRef?] = []
@@ -86,7 +80,7 @@ final class GlobalHotkeyService {
                 hotkeyRefs.append(ref)
             } else {
                 NSLog("WinterShot: could not register hotkey for %@ (%d)",
-                      hotkey.mode?.rawValue ?? "record", result)
+                      hotkey.mode.rawValue, result)
             }
         }
         NSLog("WinterShot: registered %d global hotkeys", hotkeyRefs.count)
@@ -106,11 +100,7 @@ final class GlobalHotkeyService {
     private func handle(id: UInt32) {
         guard let hotkey = hotkeys.first(where: { $0.id == id }) else { return }
         DispatchQueue.main.async { [weak self] in
-            if let mode = hotkey.mode {
-                self?.onTrigger?(mode)
-            } else {
-                self?.onRecordToggle?()
-            }
+            self?.onTrigger?(hotkey.mode)
         }
     }
 }

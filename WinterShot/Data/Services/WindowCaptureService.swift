@@ -47,7 +47,7 @@ final class WindowCaptureService {
             throw WindowCaptureError.screenCaptureUnavailable
         }
 
-        let windows = orderedPickableWindows(in: content)
+        let windows = Self.orderedPickableWindows(in: content)
         let backdrops = try await DisplayFreezer().freeze(content: content)
 
         guard let picked = await picker.pickWindow(windows: windows, backdrops: backdrops),
@@ -67,8 +67,9 @@ final class WindowCaptureService {
     // MARK: - Enumeration
 
     /// Pickable windows in front-to-back order (CGWindowList order), so hover
-    /// hit-testing resolves the topmost window under the cursor.
-    private func orderedPickableWindows(in content: SCShareableContent) -> [PickableWindow] {
+    /// hit-testing resolves the topmost window under the cursor. Shared with
+    /// the area selector, which highlights windows on hover too.
+    static func orderedPickableWindows(in content: SCShareableContent) -> [PickableWindow] {
         let info = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements],
                                               kCGNullWindowID) as? [[String: Any]] ?? []
         let orderedIDs = info.compactMap { ($0[kCGWindowNumber as String] as? NSNumber)?.uint32Value }

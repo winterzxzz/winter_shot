@@ -5,7 +5,7 @@
 //
 // Layout (matches winter_voice's installer): brand header with tagline,
 // numbered dashed rings around the two drop targets, a gradient drag arrow
-// between them, nameplate capsules under the icons, and a brand strip along
+// between them, white glow behind the icon labels, and a brand strip along
 // the bottom.
 import AppKit
 
@@ -212,6 +212,40 @@ drawCentered(
 let targetCenters: [(x: CGFloat, hex: UInt32)] = [(165, accentSky), (495, accentBlue)]
 let targetCenterTopY: CGFloat = 192
 let ringRadius: CGFloat = 78
+
+// Finder draws icon labels in BLACK whenever the view has a background
+// picture (regardless of system appearance), offers no way to recolor them,
+// and cannot hide them. To effectively remove the labels, sink each one into
+// a soft black pool at the measured label position — black text on black
+// reads as nothing, and the pool itself blends into the canvas like the
+// icon's ground shadow. Glyph band of the 12pt label under a 100pt icon at
+// y=192 spans 258.5–266.5pt from the window top (measured off a live
+// Finder window). Drawn before the rings so the dashed circles pass over
+// the pools unbroken.
+for (target, title) in [(targetCenters[0], "WinterShot"), (targetCenters[1], "Applications")] {
+    let labelWidth = NSAttributedString(string: title, attributes: [
+        .font: NSFont.systemFont(ofSize: 12, weight: .regular),
+    ]).size().width
+    let poolCenter = NSPoint(x: target.x, y: fromTop(262.5))
+    let coreWidth = labelWidth + 18
+    let coreHeight: CGFloat = 19
+    // Many thin layers, widest and faintest first, approximate a gaussian
+    // falloff so the pool has no visible edge against the navy canvas.
+    let steps = 12
+    for step in 0..<steps {
+        let t = CGFloat(step) / CGFloat(steps - 1)   // 0 = outermost
+        let grow = 18 * (1 - t)
+        let rect = NSRect(
+            x: poolCenter.x - coreWidth / 2 - grow,
+            y: poolCenter.y - coreHeight / 2 - grow * 0.55,
+            width: coreWidth + grow * 2,
+            height: coreHeight + grow * 1.1
+        )
+        color(0x000000, 0.09 + 0.10 * t).setFill()
+        NSBezierPath(roundedRect: rect, xRadius: rect.height / 2, yRadius: rect.height / 2).fill()
+    }
+}
+
 for (index, target) in targetCenters.enumerated() {
     let center = NSPoint(x: target.x, y: fromTop(targetCenterTopY))
     let ring = NSBezierPath(ovalIn: NSRect(
@@ -244,31 +278,6 @@ for (index, target) in targetCenters.enumerated() {
         x: badgeCenter.x - numberSize.width / 2,
         y: badgeCenter.y - numberSize.height / 2
     ))
-}
-
-// Finder draws icon labels in BLACK whenever the view has a background
-// picture (regardless of system appearance), and exposes no way to recolor
-// them. To keep the titles readable on the dark canvas without a visible
-// nameplate, bake a white glow shaped exactly like each label string at the
-// label position — Finder's black text lands on the glow's core and reads
-// as outlined text.
-for (target, title) in [(targetCenters[0], "WinterShot"), (targetCenters[1], "Applications")] {
-    let labelFont = NSFont.systemFont(ofSize: 12, weight: .regular)
-    let glow = NSShadow()
-    glow.shadowColor = color(0xFFFFFF, 0.9)
-    glow.shadowBlurRadius = 5
-    glow.shadowOffset = .zero
-    // Soft core: a crisp white core would show as doubled glyphs wherever
-    // Finder's black text lands a pixel off; a diffuse halo hides that.
-    let text = NSAttributedString(string: title, attributes: [
-        .font: labelFont,
-        .foregroundColor: color(0xFFFFFF, 0.25),
-        .shadow: glow,
-    ])
-    let textSize = text.size()
-    let origin = NSPoint(x: target.x - textSize.width / 2, y: fromTop(255.5) - textSize.height / 2)
-    // Stack the shadowed draw a few times so the halo builds up solid.
-    for _ in 0..<6 { text.draw(at: origin) }
 }
 
 // "DRAG TO INSTALL" with a gradient arc sweeping toward Applications.

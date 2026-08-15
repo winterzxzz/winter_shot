@@ -7,17 +7,19 @@ struct AreaSelection {
     let rect: CGRect
 }
 
-/// UI that presents the frozen-screen area selector.
+/// UI that presents the frozen-screen area selector. Receives the on-screen
+/// windows so hovering can snap the selection to the window under the cursor.
 /// Implemented in the Presentation layer; injected by the composition root.
 @MainActor
 protocol AreaPickerUI {
-    func pickArea(backdrops: [DisplayBackdrop]) async -> AreaSelection?
+    func pickArea(backdrops: [DisplayBackdrop], windows: [PickableWindow]) async -> AreaSelection?
 }
 
 /// BridgeShot-style area capture: freeze every display, let the user drag a
 /// rect on the frozen frame (with loupe and live coordinates), then crop the
 /// selection out of the frozen image — pixel-perfect and immune to the screen
-/// changing mid-selection.
+/// changing mid-selection. Hovering a window highlights it; a click captures
+/// that window's rect without dragging.
 @MainActor
 final class AreaCaptureService {
     enum AreaCaptureError: Error {
@@ -40,7 +42,8 @@ final class AreaCaptureService {
         }
 
         let backdrops = try await DisplayFreezer().freeze(content: content)
-        guard let selection = await picker.pickArea(backdrops: backdrops) else { return nil }
+        let windows = WindowCaptureService.orderedPickableWindows(in: content)
+        guard let selection = await picker.pickArea(backdrops: backdrops, windows: windows) else { return nil }
 
         let scale = CGFloat(selection.backdrop.image.width) / max(selection.backdrop.frame.width, 1)
         let pixelRect = CGRect(x: selection.rect.origin.x * scale,

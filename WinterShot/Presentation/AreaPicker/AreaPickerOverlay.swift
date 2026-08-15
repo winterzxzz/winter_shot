@@ -4,24 +4,25 @@ import SwiftUI
 /// Frozen-screen area selector, BridgeShot-style: every display is covered by
 /// its frozen snapshot; a pixel loupe with live coordinates follows the
 /// cursor; dragging marks the selection with a size readout. Release captures,
-/// Esc cancels.
+/// Esc cancels. Hovering over a window highlights it and a plain click
+/// captures that window's rect — no dragging needed.
 ///
 /// Set WINTERSHOT_AUTOAREA="x,y,w,h" (global points, CG coords, optionally
 /// WINTERSHOT_AUTOPICK_DELAY=<seconds>) to auto-select — used by smoke tests.
 @MainActor
 final class AreaPickerOverlayPresenter: AreaPickerUI {
     private var panels: [NSPanel] = []
-    private var keyMonitor: Any?
+    private let escMonitor = EscapeCancelMonitor()
     private var continuation: CheckedContinuation<AreaSelection?, Never>?
 
-    func pickArea(backdrops: [DisplayBackdrop]) async -> AreaSelection? {
+    func pickArea(backdrops: [DisplayBackdrop], windows: [PickableWindow]) async -> AreaSelection? {
         await withCheckedContinuation { continuation in
             self.continuation = continuation
-            present(backdrops: backdrops)
+            present(backdrops: backdrops, windows: windows)
         }
     }
 
-    private func present(backdrops: [DisplayBackdrop]) {
+    private func present(backdrops: [DisplayBackdrop], windows: [PickableWindow]) {
         for backdrop in backdrops {
             let panel = OverlayPanel(
                 contentRect: appKitFrame(for: backdrop.frame),
@@ -37,6 +38,7 @@ final class AreaPickerOverlayPresenter: AreaPickerUI {
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
             panel.contentView = NSHostingView(rootView: AreaPickerScreenView(
                 backdrop: backdrop,
+                windows: windows,
                 onSelect: { [weak self] rect in
                     self?.finish(AreaSelection(backdrop: backdrop, rect: rect))
                 }
@@ -48,13 +50,7 @@ final class AreaPickerOverlayPresenter: AreaPickerUI {
         NSApp.activate(ignoringOtherApps: true)
         NSCursor.crosshair.push()
 
-        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.keyCode == 53 { // Esc
-                self?.finish(nil)
-                return nil
-            }
-            return event
-        }
+        escMonitor.start { [weak self] in self?.finish(nil) }
 
         armAutoSelectIfRequested(backdrops: backdrops)
     }
@@ -64,10 +60,7 @@ final class AreaPickerOverlayPresenter: AreaPickerUI {
         self.continuation = nil
 
         NSCursor.pop()
-        if let keyMonitor {
-            NSEvent.removeMonitor(keyMonitor)
-            self.keyMonitor = nil
-        }
+        escMonitor.stop()
         panels.forEach { $0.close() }
         panels.removeAll()
 
@@ -108,11 +101,13 @@ final class AreaPickerOverlayPresenter: AreaPickerUI {
 
 private struct AreaPickerScreenView: View {
     let backdrop: DisplayBackdrop
+    let windows: [PickableWindow]
     let onSelect: (CGRect) -> Void
 
     @State private var cursor: CGPoint?
     @State private var dragStart: CGPoint?
     @State private var dragCurrent: CGPoint?
+    @State private var hoveredWindow: PickableWindow?
 
     private var pixelScale: CGFloat {
         CGFloat(backdrop.image.width) / max(backdrop.frame.width, 1)
@@ -124,6 +119,15 @@ private struct AreaPickerScreenView: View {
                       y: min(dragStart.y, dragCurrent.y),
                       width: abs(dragCurrent.x - dragStart.x),
                       height: abs(dragCurrent.y - dragStart.y))
+    }
+
+    /// Topmost window under the cursor, as a rect in this display's local
+    /// coords, clipped to the display. nil while dragging so the marquee wins.
+    private func windowRect(of window: PickableWindow?) -> CGRect? {
+        guard let window, backdrop.frame.intersects(window.frame) else { return nil }
+        return window.frame
+            .offsetBy(dx: -backdrop.frame.origin.x, dy: -backdrop.frame.origin.y)
+            .intersection(CGRect(origin: .zero, size: backdrop.frame.size))
     }
 
     var body: some View {
@@ -138,22 +142,45 @@ private struct AreaPickerScreenView: View {
                 }
 
                 if selection == nil {
-                    HStack(spacing: 14) {
-                        Text("Drag to select an area").fontWeight(.semibold)
-                        Text("Esc").fontWeight(.semibold) + Text("  Cancel").foregroundColor(.secondary)
+                    VStack(spacing: 10) {
+                        if let hoveredWindow {
+                            Text(hoveredWindow.title.isEmpty
+                                 ? hoveredWindow.appName
+                                 : "\(hoveredWindow.appName) — \(hoveredWindow.title)")
+                                .font(.system(size: 13, weight: .semibold))
+                                .lineLimit(1)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(.ultraThinMaterial, in: Capsule())
+                        }
+                        HStack(spacing: 14) {
+                            Text(hoveredWindow == nil
+                                 ? "Drag to select an area"
+                                 : "Click to capture window · Drag to select an area")
+                                .fontWeight(.semibold)
+                            Text("Esc").fontWeight(.semibold) + Text("  Cancel").foregroundColor(.secondary)
+                        }
+                        .font(.system(size: 12))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(.ultraThinMaterial, in: Capsule())
                     }
-                    .font(.system(size: 12))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(.ultraThinMaterial, in: Capsule())
                     .padding(.bottom, 48)
                 }
             }
             .contentShape(Rectangle())
             .onContinuousHover { phase in
                 switch phase {
-                case .active(let location): cursor = location
-                case .ended: cursor = nil
+                case .active(let location):
+                    cursor = location
+                    if dragStart == nil {
+                        let global = CGPoint(x: backdrop.frame.origin.x + location.x,
+                                             y: backdrop.frame.origin.y + location.y)
+                        hoveredWindow = windows.first { $0.frame.contains(global) }
+                    }
+                case .ended:
+                    cursor = nil
+                    hoveredWindow = nil
                 }
             }
             .gesture(
@@ -162,6 +189,7 @@ private struct AreaPickerScreenView: View {
                         dragStart = value.startLocation
                         dragCurrent = value.location
                         cursor = value.location
+                        hoveredWindow = nil
                     }
                     .onEnded { value in
                         defer { dragStart = nil; dragCurrent = nil }
@@ -170,19 +198,34 @@ private struct AreaPickerScreenView: View {
                         onSelect(rect)
                     }
             )
+            .onTapGesture {
+                if let rect = windowRect(of: hoveredWindow), rect.width >= 4, rect.height >= 4 {
+                    onSelect(rect)
+                }
+            }
         }
         .ignoresSafeArea()
     }
 
     private func drawOverlay(in context: inout GraphicsContext, size: CGSize) {
+        let hoveredRect = selection == nil ? windowRect(of: hoveredWindow) : nil
+
         var dim = Path()
         dim.addRect(CGRect(origin: .zero, size: size))
         if let selection {
             dim.addRect(selection)
+        } else if let hoveredRect {
+            dim.addRoundedRect(in: hoveredRect, cornerSize: CGSize(width: 8, height: 8))
         }
         context.fill(dim,
-                     with: .color(.black.opacity(selection == nil ? 0.22 : 0.45)),
+                     with: .color(.black.opacity(selection == nil && hoveredRect == nil ? 0.22 : 0.45)),
                      style: FillStyle(eoFill: true))
+
+        if let hoveredRect {
+            context.stroke(Path(roundedRect: hoveredRect, cornerRadius: 8),
+                           with: .color(.accentColor),
+                           lineWidth: 2.5)
+        }
 
         if let selection {
             context.stroke(Path(selection), with: .color(.white.opacity(0.95)),

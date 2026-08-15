@@ -58,7 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                accessibilityDescription: "Stop Recording")?
                 .withSymbolConfiguration(.init(paletteColors: [.white, .systemRed]))
             button.image = icon
-            button.toolTip = "WinterShot — recording, click to stop (⌘⇧6)"
+            button.toolTip = "WinterShot — recording, click to stop"
         } else {
             button.image = AppIcon.menuBar
             button.toolTip = "WinterShot"
@@ -73,8 +73,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for mode in CaptureMode.allCases {
             let item = NSMenuItem(title: mode.label,
                                   action: #selector(captureFromMenu(_:)),
-                                  keyEquivalent: String(mode.hotkeyNumber))
-            item.keyEquivalentModifierMask = [.command, .shift]
+                                  keyEquivalent: mode.hotkeyNumber.map(String.init) ?? "")
+            if mode.hotkeyNumber != nil {
+                item.keyEquivalentModifierMask = [.command, .shift]
+            }
             item.target = self
             item.representedObject = mode.rawValue
             item.image = NSImage(systemSymbolName: mode.systemImage,
@@ -85,8 +87,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let isRecording = RecordingController.shared.isRecording
         let record = NSMenuItem(title: isRecording ? "Stop Recording" : "Record Screen",
                                 action: #selector(toggleRecordingFromMenu),
-                                keyEquivalent: "6")
-        record.keyEquivalentModifierMask = [.command, .shift]
+                                keyEquivalent: "")
         record.target = self
         record.image = NSImage(systemSymbolName: isRecording ? "stop.circle" : "record.circle",
                                accessibilityDescription: record.title)

@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0896CCE91C388FBB08EFBDDD /* RecognizeTextUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F0D6CA0AA37132847DC6F05 /* RecognizeTextUseCase.swift */; };
 		0D4ABB33D0BB8B5971A74744 /* LoadAnnotationsUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E667FD01FD84A910203159 /* LoadAnnotationsUseCase.swift */; };
+		12F60D26C7151202921C16F8 /* RecordingPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8DACF3C2D4B2E8F05474299 /* RecordingPreviewView.swift */; };
 		155D92684D223C7B7E3BA0F6 /* OCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F85EC6544D33B3801E3926E /* OCRService.swift */; };
 		16CF37EAFE195EAD403182F4 /* GitHubUpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBDADA3A9CC5BD28C982EBFC /* GitHubUpdateService.swift */; };
 		1A0676CDE9AE59651B0E0249 /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E7B5C4F2B2E0D3EB57C3144 /* MainWindowView.swift */; };
@@ -59,10 +60,12 @@
 		BBE1528808F70A2DBC6C3A36 /* SetBackgroundUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 410B4F55604E2E005A588A98 /* SetBackgroundUseCase.swift */; };
 		CBF9FEF6D22F1ADDF4583F61 /* NotchPanelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06154281D95F62A09C646DCC /* NotchPanelManager.swift */; };
 		D076F868B1781BAB4E1211D6 /* WinterShotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9096208A2FBF0271F06E0C /* WinterShotApp.swift */; };
+		D36E093D9DA2A9A127D152C3 /* EscapeCancelMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDB7B9EB2B656D386473D27C /* EscapeCancelMonitor.swift */; };
 		DEBE62A7779E90ADBA4A323C /* MainViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CAE2E95F28A951A7115C3C /* MainViewModel.swift */; };
 		E00B8108EA40EEB90C382281 /* AnnotationColor+SwiftUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A61C6A0175A2C34DD0D543 /* AnnotationColor+SwiftUI.swift */; };
 		EE3993997CB1F2CB93D9D8DB /* RecordScreenUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E6E82C860D04D3D66CB1124 /* RecordScreenUseCase.swift */; };
 		F228065A0E5808839AB8AB33 /* DisplayFreezer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDAFC25C044A66DF7219D653 /* DisplayFreezer.swift */; };
+		F42ABD982420D6C72E3E2FEA /* RecordingCompositor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F2C85BBB3B7986A9C6BE3E1 /* RecordingCompositor.swift */; };
 		F678FA2372BE2EDE419C373F /* AppIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71939469CC15EB4BE1B0B164 /* AppIcon.swift */; };
 		F80E9ADFD59260635659DCAD /* Recording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BBDE42E9447DD6771CCBF99 /* Recording.swift */; };
 		FCA4153F12E778A939457E93 /* ScreenshotRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = F961ED0267218D7171A5DB27 /* ScreenshotRepository.swift */; };
@@ -93,6 +96,7 @@
 		3F85EC6544D33B3801E3926E /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
 		410B4F55604E2E005A588A98 /* SetBackgroundUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetBackgroundUseCase.swift; sourceTree = "<group>"; };
 		4CDCE549FCA7A124F561D866 /* RecordingExporterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingExporterService.swift; sourceTree = "<group>"; };
+		4F2C85BBB3B7986A9C6BE3E1 /* RecordingCompositor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingCompositor.swift; sourceTree = "<group>"; };
 		50AAB6A814BD2D36D7E533FA /* WinterShot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WinterShot.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		553C36A68D428AF2967AFAB2 /* OverlayPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayPanel.swift; sourceTree = "<group>"; };
 		5922AC83A2FCD9346C287369 /* RecordingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingController.swift; sourceTree = "<group>"; };
@@ -117,11 +121,13 @@
 		B5C70BAAD5A3AE9B44697E8D /* PinWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinWindowManager.swift; sourceTree = "<group>"; };
 		B6A941AB037116E966856D9F /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		B75CDB7C41A5522626CB93F6 /* AnnotationRepositoryImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationRepositoryImpl.swift; sourceTree = "<group>"; };
+		B8DACF3C2D4B2E8F05474299 /* RecordingPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingPreviewView.swift; sourceTree = "<group>"; };
 		BDAFC25C044A66DF7219D653 /* DisplayFreezer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayFreezer.swift; sourceTree = "<group>"; };
 		C243ED87E2218E99CDE35A32 /* AnnotationRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationRenderer.swift; sourceTree = "<group>"; };
 		D0BF92C15C182F672F1599E3 /* Screenshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Screenshot.swift; sourceTree = "<group>"; };
 		D68C1EB5C4AB5BC9260D1BC5 /* GlobalHotkeyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkeyService.swift; sourceTree = "<group>"; };
 		D7A61C6A0175A2C34DD0D543 /* AnnotationColor+SwiftUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AnnotationColor+SwiftUI.swift"; sourceTree = "<group>"; };
+		DDB7B9EB2B656D386473D27C /* EscapeCancelMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EscapeCancelMonitor.swift; sourceTree = "<group>"; };
 		E1111D96E824C5F5EAC8FF70 /* SaveAnnotationsUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveAnnotationsUseCase.swift; sourceTree = "<group>"; };
 		E9CFB5EDD683675FF9F3B857 /* ScreenshotRepositoryImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotRepositoryImpl.swift; sourceTree = "<group>"; };
 		ED5C33AA9B4830D5EEA38A7E /* EditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorViewModel.swift; sourceTree = "<group>"; };
@@ -154,6 +160,7 @@
 				5922AC83A2FCD9346C287369 /* RecordingController.swift */,
 				3C1176D102B5328AD76A32C8 /* RecordingExportView.swift */,
 				3854AF6795A6E833942A5FED /* RecordingExportWindowController.swift */,
+				B8DACF3C2D4B2E8F05474299 /* RecordingPreviewView.swift */,
 			);
 			path = Recorder;
 			sourceTree = "<group>";
@@ -215,6 +222,7 @@
 				C243ED87E2218E99CDE35A32 /* AnnotationRenderer.swift */,
 				71939469CC15EB4BE1B0B164 /* AppIcon.swift */,
 				70353DD99D620482667A4220 /* BeautifyRenderer.swift */,
+				DDB7B9EB2B656D386473D27C /* EscapeCancelMonitor.swift */,
 				F242610EABE851DAD7B2B0F6 /* FlattenedImageView.swift */,
 				553C36A68D428AF2967AFAB2 /* OverlayPanel.swift */,
 				081C10403C97414E515B2B89 /* WindowOpener.swift */,
@@ -369,6 +377,7 @@
 				BDAFC25C044A66DF7219D653 /* DisplayFreezer.swift */,
 				FBDADA3A9CC5BD28C982EBFC /* GitHubUpdateService.swift */,
 				D68C1EB5C4AB5BC9260D1BC5 /* GlobalHotkeyService.swift */,
+				4F2C85BBB3B7986A9C6BE3E1 /* RecordingCompositor.swift */,
 				4CDCE549FCA7A124F561D866 /* RecordingExporterService.swift */,
 				092BDC9C41BF6768F07573BA /* ScreenRecordingService.swift */,
 				036BF601111B474D5B59C780 /* SystemScreenCaptureService.swift */,
@@ -471,6 +480,7 @@
 				B53C3632DC94BC2E86731E8C /* EditorToolbarView.swift in Sources */,
 				79275690A86833FA965D95D8 /* EditorView.swift in Sources */,
 				B4DB1872752D120E6EC4822E /* EditorViewModel.swift in Sources */,
+				D36E093D9DA2A9A127D152C3 /* EscapeCancelMonitor.swift in Sources */,
 				8DA8FA2E84B23910E06608DC /* FetchHistoryUseCase.swift in Sources */,
 				7BAD339EC928E0DA062C7B31 /* FileScreenshotStore.swift in Sources */,
 				1FD8EF4777DD8BA0A8D27F96 /* FlattenedImageView.swift in Sources */,
@@ -487,10 +497,12 @@
 				0896CCE91C388FBB08EFBDDD /* RecognizeTextUseCase.swift in Sources */,
 				EE3993997CB1F2CB93D9D8DB /* RecordScreenUseCase.swift in Sources */,
 				F80E9ADFD59260635659DCAD /* Recording.swift in Sources */,
+				F42ABD982420D6C72E3E2FEA /* RecordingCompositor.swift in Sources */,
 				9108600B04B8F7802F10624E /* RecordingController.swift in Sources */,
 				7528A0E792A46DF0930D31A7 /* RecordingExportView.swift in Sources */,
 				577B81ABD38F37821D1572F2 /* RecordingExportWindowController.swift in Sources */,
 				24637C63E2E54083FED1EAA8 /* RecordingExporterService.swift in Sources */,
+				12F60D26C7151202921C16F8 /* RecordingPreviewView.swift in Sources */,
 				9CCBE6E68F7606DA2637D778 /* SaveAnnotationsUseCase.swift in Sources */,
 				1C30A9DDDA5B7D5865BC2177 /* ScreenRecorder.swift in Sources */,
 				1C9C8342BABC17640532B6CC /* ScreenRecordingService.swift in Sources */,

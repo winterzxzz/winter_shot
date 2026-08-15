@@ -192,7 +192,7 @@ struct NotchHistoryView: View {
             HStack(spacing: 7) {
                 ForEach(CaptureMode.allCases) { mode in
                     HeaderButton(icon: mode.systemImage,
-                                 help: "\(mode.label)  ⌘⇧\(mode.hotkeyNumber)") {
+                                 help: mode.hotkeyNumber.map { "\(mode.label)  ⌘⇧\($0)" } ?? mode.label) {
                         onCapture(mode)
                     }
                 }
@@ -238,7 +238,7 @@ struct NotchHistoryView: View {
             Text("No captures yet")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.white.opacity(0.65))
-            Text("⌘⇧4 area · ⌘⇧8 window · ⌘⇧9 screen")
+            Text("⌘⇧4 to capture · more in the menu bar")
                 .font(.system(size: 10.5))
                 .foregroundStyle(.white.opacity(0.35))
         }

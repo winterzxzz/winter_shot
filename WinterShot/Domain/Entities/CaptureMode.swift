@@ -24,12 +24,9 @@ enum CaptureMode: String, Codable, CaseIterable, Identifiable, Hashable {
         }
     }
 
-    /// Number key of the global hotkey (⌘⇧ + this key).
-    var hotkeyNumber: Character {
-        switch self {
-        case .area: return "4"
-        case .window: return "8"
-        case .fullscreen: return "9"
-        }
+    /// Number key of the global hotkey (⌘⇧ + this key). Only area capture has
+    /// one; the other features are triggered from the menu bar.
+    var hotkeyNumber: Character? {
+        self == .area ? "4" : nil
     }
 }

@@ -10,7 +10,7 @@ import SwiftUI
 @MainActor
 final class WindowPickerOverlayPresenter: WindowPickerUI {
     private var panels: [NSPanel] = []
-    private var keyMonitor: Any?
+    private let escMonitor = EscapeCancelMonitor()
     private var continuation: CheckedContinuation<PickableWindow?, Never>?
     private let model = PickerModel()
 
@@ -50,13 +50,7 @@ final class WindowPickerOverlayPresenter: WindowPickerUI {
         NSApp.activate(ignoringOtherApps: true)
         NSCursor.crosshair.push()
 
-        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.keyCode == 53 { // Esc
-                self?.finish(nil)
-                return nil
-            }
-            return event
-        }
+        escMonitor.start { [weak self] in self?.finish(nil) }
 
         armAutoPickIfRequested(windows: windows)
     }
@@ -66,10 +60,7 @@ final class WindowPickerOverlayPresenter: WindowPickerUI {
         self.continuation = nil
 
         NSCursor.pop()
-        if let keyMonitor {
-            NSEvent.removeMonitor(keyMonitor)
-            self.keyMonitor = nil
-        }
+        escMonitor.stop()
         panels.forEach { $0.close() }
         panels.removeAll()
 
