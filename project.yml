@@ -26,7 +26,11 @@ targets:
         SWIFT_VERSION: "5.0"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        CODE_SIGN_IDENTITY: "-"
-        CODE_SIGN_STYLE: Automatic
+        # Sign with the local Apple Development cert (by hash — the two
+        # revoked twins share its name) so the signature is stable across
+        # rebuilds and TCC permissions stick. Fall back to "-" if absent.
+        CODE_SIGN_IDENTITY: "2E8C8843523E16FAF9C2A0EEFE944335933E5C16"
+        DEVELOPMENT_TEAM: DA9KW67BQV
+        CODE_SIGN_STYLE: Manual
         ENABLE_HARDENED_RUNTIME: NO
         COMBINE_HIDPI_IMAGES: YES
