@@ -22,7 +22,7 @@ struct RecordingExportView: View {
 
     var body: some View {
         HSplitView {
-            VideoPlayer(player: player)
+            PlayerView(player: player)
                 .frame(minWidth: 480, minHeight: 360)
                 .layoutPriority(1)
 
@@ -190,6 +190,25 @@ struct RecordingExportView: View {
                 }
             }
         }
+    }
+}
+
+/// AppKit-backed player. AVKit's SwiftUI `VideoPlayer` aborts at runtime in
+/// this AppKit-hosted window (generic metadata instantiation crash), so wrap
+/// `AVPlayerView` directly.
+private struct PlayerView: NSViewRepresentable {
+    let player: AVPlayer
+
+    func makeNSView(context: Context) -> AVPlayerView {
+        let view = AVPlayerView()
+        view.player = player
+        view.controlsStyle = .inline
+        view.showsFullScreenToggleButton = false
+        return view
+    }
+
+    func updateNSView(_ nsView: AVPlayerView, context: Context) {
+        nsView.player = player
     }
 }
 

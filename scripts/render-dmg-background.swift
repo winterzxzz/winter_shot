@@ -246,20 +246,29 @@ for (index, target) in targetCenters.enumerated() {
     ))
 }
 
-// Nameplate capsules where Finder draws the icon labels. Finder colors the
-// label text from the SYSTEM appearance (black in Light Mode, white in Dark
-// Mode), not from the background picture — a ~50% gray is the only tone
-// that stays readable under both.
-for target in targetCenters {
-    let capsule = NSBezierPath(
-        roundedRect: NSRect(x: target.x - 76, y: fromTop(254) - 15, width: 152, height: 30),
-        xRadius: 15, yRadius: 15
-    )
-    color(0x7A7A83, 0.92).setFill()
-    capsule.fill()
-    color(0xFFFFFF, 0.14).setStroke()
-    capsule.lineWidth = 1
-    capsule.stroke()
+// Finder draws icon labels in BLACK whenever the view has a background
+// picture (regardless of system appearance), and exposes no way to recolor
+// them. To keep the titles readable on the dark canvas without a visible
+// nameplate, bake a white glow shaped exactly like each label string at the
+// label position — Finder's black text lands on the glow's core and reads
+// as outlined text.
+for (target, title) in [(targetCenters[0], "WinterShot"), (targetCenters[1], "Applications")] {
+    let labelFont = NSFont.systemFont(ofSize: 12, weight: .regular)
+    let glow = NSShadow()
+    glow.shadowColor = color(0xFFFFFF, 0.9)
+    glow.shadowBlurRadius = 5
+    glow.shadowOffset = .zero
+    // Soft core: a crisp white core would show as doubled glyphs wherever
+    // Finder's black text lands a pixel off; a diffuse halo hides that.
+    let text = NSAttributedString(string: title, attributes: [
+        .font: labelFont,
+        .foregroundColor: color(0xFFFFFF, 0.25),
+        .shadow: glow,
+    ])
+    let textSize = text.size()
+    let origin = NSPoint(x: target.x - textSize.width / 2, y: fromTop(255.5) - textSize.height / 2)
+    // Stack the shadowed draw a few times so the halo builds up solid.
+    for _ in 0..<6 { text.draw(at: origin) }
 }
 
 // "DRAG TO INSTALL" with a gradient arc sweeping toward Applications.
