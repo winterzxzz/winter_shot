@@ -5,6 +5,7 @@ A native macOS menu-bar screenshot tool inspired by [BridgeShot](https://www.bri
 ## Features
 
 - **Capture** — area and window with a frozen-screen selector (ScreenCaptureKit): the screen freezes, a pixel loupe with live coordinates follows the cursor, and windows lift out of a dimmed backdrop as you hover — a click captures the window clean even when partially covered. Fullscreen uses the system capture tool. After every capture a thumbnail slides in at the screen edge; click it to open the editor.
+- **Screen recording (beta)** — Screen Studio-style recordings, fully on-device. ⌘⇧6 (or the menu) records the display under your cursor with ScreenCaptureKit; the real cursor is kept out of the pixels while its motion and clicks are logged to a `.wsrec.json` sidecar. On stop, an export window opens: pick a gradient backdrop (same presets as beautify), auto-zoom that eases into every click, a smoothed synthetic cursor with click ripples, and export a polished MP4. The raw recording stays untouched — re-export with different looks anytime.
 - **Nine annotation tools** — arrow, rectangle, ellipse, line, freehand, text, numbered counters, highlighter, and redact.
 - **Non-destructive by design** — annotations and the crop live in a `.wshot.json` sidecar next to the image. Reopen any screenshot later and every arrow is still editable and the crop reversible; pixels are flattened only on export.
 - **Crop** — drag a rect with rule-of-thirds guides and a live size readout; the crop applies to the canvas, exports, copies, and pins, and can be reset at any time.

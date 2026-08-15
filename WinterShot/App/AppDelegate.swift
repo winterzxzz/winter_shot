@@ -13,6 +13,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         WindowOpener.install()
         setUpStatusItem()
         DIContainer.shared.startGlobalHotkeys()
+        RecordingController.shared.onStateChange = { [weak self] recording in
+            self?.updateStatusIcon(recording: recording)
+        }
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleCaptureNotification(_:)),
@@ -39,8 +42,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func statusItemClicked(_ sender: NSStatusBarButton) {
         if NSApp.currentEvent?.type == .rightMouseUp {
             showStatusMenu()
+        } else if RecordingController.shared.isRecording {
+            // While recording the icon is a stop button.
+            RecordingController.shared.stop()
         } else {
             NotchPanelManager.shared.toggle(on: sender.window?.screen)
+        }
+    }
+
+    /// Swaps the status icon to a red stop symbol while recording.
+    private func updateStatusIcon(recording: Bool) {
+        guard let button = statusItem?.button else { return }
+        if recording {
+            let icon = NSImage(systemSymbolName: "stop.circle.fill",
+                               accessibilityDescription: "Stop Recording")?
+                .withSymbolConfiguration(.init(paletteColors: [.white, .systemRed]))
+            button.image = icon
+            button.toolTip = "WinterShot — recording, click to stop (⌘⇧6)"
+        } else {
+            button.image = AppIcon.menuBar
+            button.toolTip = "WinterShot — click for history"
         }
     }
 
@@ -60,6 +81,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                  accessibilityDescription: mode.label)
             menu.addItem(item)
         }
+
+        let isRecording = RecordingController.shared.isRecording
+        let record = NSMenuItem(title: isRecording ? "Stop Recording" : "Record Screen",
+                                action: #selector(toggleRecordingFromMenu),
+                                keyEquivalent: "6")
+        record.keyEquivalentModifierMask = [.command, .shift]
+        record.target = self
+        record.image = NSImage(systemSymbolName: isRecording ? "stop.circle" : "record.circle",
+                               accessibilityDescription: record.title)
+        menu.addItem(record)
         menu.addItem(.separator())
 
         let history = NSMenuItem(title: "Show History",
@@ -100,6 +131,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let raw = sender.representedObject as? String,
               let mode = CaptureMode(rawValue: raw) else { return }
         capture(mode)
+    }
+
+    @objc private func toggleRecordingFromMenu() {
+        RecordingController.shared.toggle()
     }
 
     @objc private func showHistoryFromMenu() {

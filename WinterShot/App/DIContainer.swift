@@ -14,6 +14,8 @@ final class DIContainer {
     let screenshotRepository: ScreenshotRepository
     let annotationRepository: AnnotationRepository
     let ocrService: OCRService
+    let screenRecorder: ScreenRecorder
+    let recordingRenderer: RecordingRenderer
 
     // Cross-scene selection channel for the main window
     let selectionBus = SelectionBus()
@@ -21,12 +23,16 @@ final class DIContainer {
     private let hotkeyService = GlobalHotkeyService()
     let updateService = GitHubUpdateService()
 
-    /// Registers ⌘⇧4/⌘⇧8/⌘⇧9. Safe to call repeatedly.
+    /// Registers ⌘⇧4/⌘⇧8/⌘⇧9 captures and ⌘⇧6 record toggle.
+    /// Safe to call repeatedly.
     func startGlobalHotkeys() {
         hotkeyService.onTrigger = { mode in
             NotificationCenter.default.post(name: .winterShotPerformCapture,
                                             object: nil,
                                             userInfo: ["mode": mode.rawValue])
+        }
+        hotkeyService.onRecordToggle = {
+            RecordingController.shared.toggle()
         }
         hotkeyService.register()
     }
@@ -42,6 +48,8 @@ final class DIContainer {
                                                         store: store)
         annotationRepository = AnnotationRepositoryImpl(store: store)
         ocrService = VisionOCRService()
+        screenRecorder = ScreenRecordingService(store: store)
+        recordingRenderer = RecordingExporterService()
     }
 
     // Use cases
@@ -74,5 +82,14 @@ final class DIContainer {
     }
     var loadBackgroundUseCase: LoadBackgroundUseCase {
         LoadBackgroundUseCase(repository: annotationRepository)
+    }
+    var startRecordingUseCase: StartRecordingUseCase {
+        StartRecordingUseCase(recorder: screenRecorder)
+    }
+    var stopRecordingUseCase: StopRecordingUseCase {
+        StopRecordingUseCase(recorder: screenRecorder)
+    }
+    var exportRecordingUseCase: ExportRecordingUseCase {
+        ExportRecordingUseCase(renderer: recordingRenderer)
     }
 }
