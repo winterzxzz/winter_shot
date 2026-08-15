@@ -1,13 +1,25 @@
 import SwiftUI
 
-/// The app's Settings window: storage location and the global hotkey map.
+/// The app's Settings window: appearance, storage location, and the global
+/// capture hotkey.
 struct SettingsView: View {
+    @ObservedObject private var preferences = AppPreferences.shared
+
     private var capturesFolder: URL {
         DIContainer.shared.screenshotRepository.storageDirectory
     }
 
     var body: some View {
         Form {
+            Section("Appearance") {
+                Picker("Theme", selection: $preferences.theme) {
+                    ForEach(AppTheme.allCases) { theme in
+                        Text(theme.label).tag(theme)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+
             Section("Storage") {
                 LabeledContent("Captures folder") {
                     HStack(spacing: 8) {
@@ -23,15 +35,11 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Global Hotkeys") {
-                ForEach(CaptureMode.allCases.filter { $0.hotkeyNumber != nil }) { mode in
-                    LabeledContent(mode.label) {
-                        Text("⌘⇧\(String(mode.hotkeyNumber!))")
-                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                    }
+            Section("Global Hotkey") {
+                LabeledContent("Capture Area") {
+                    HotkeyRecorderView()
                 }
-                Text("Other features are available from the menu bar icon.")
+                Text("Click the shortcut to record a new one (must include ⌘, ⌥, or ⌃). Other features are available from the menu bar icon.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }

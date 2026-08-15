@@ -23,14 +23,34 @@ final class DIContainer {
     private let hotkeyService = GlobalHotkeyService()
     let updateService = GitHubUpdateService()
 
-    /// Registers the ⌘⇧4 capture hotkey. Safe to call repeatedly.
+    /// Registers the user's capture hotkey (default ⌘⇧4) and keeps the
+    /// registration in sync when the preference changes. Safe to call
+    /// repeatedly.
     func startGlobalHotkeys() {
         hotkeyService.onTrigger = { mode in
             NotificationCenter.default.post(name: .winterShotPerformCapture,
                                             object: nil,
                                             userInfo: ["mode": mode.rawValue])
         }
-        hotkeyService.register()
+        hotkeyService.register(AppPreferences.shared.captureHotkey)
+        NotificationCenter.default.addObserver(forName: .winterShotHotkeyChanged,
+                                               object: nil,
+                                               queue: .main) { [hotkeyService] _ in
+            MainActor.assumeIsolated {
+                hotkeyService.register(AppPreferences.shared.captureHotkey)
+            }
+        }
+    }
+
+    /// Temporarily releases the capture hotkey so the Settings recorder can
+    /// see every keypress — otherwise pressing the current combo would fire a
+    /// capture instead of re-recording it.
+    func pauseGlobalHotkey() {
+        hotkeyService.unregister()
+    }
+
+    func resumeGlobalHotkey() {
+        hotkeyService.register(AppPreferences.shared.captureHotkey)
     }
 
     private init() {

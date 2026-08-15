@@ -10,9 +10,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        AppPreferences.shared.applyTheme()
         WindowOpener.install()
         setUpStatusItem()
         DIContainer.shared.startGlobalHotkeys()
+        OnboardingWindowController.shared.showIfNeeded()
         RecordingController.shared.onStateChange = { [weak self] recording in
             self?.updateStatusIcon(recording: recording)
         }
@@ -70,12 +72,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// action free to act as a stop button during recording.
     private func showStatusMenu() {
         let menu = NSMenu()
+        let hotkey = AppPreferences.shared.captureHotkey
         for mode in CaptureMode.allCases {
             let item = NSMenuItem(title: mode.label,
                                   action: #selector(captureFromMenu(_:)),
-                                  keyEquivalent: mode.hotkeyNumber.map(String.init) ?? "")
-            if mode.hotkeyNumber != nil {
-                item.keyEquivalentModifierMask = [.command, .shift]
+                                  keyEquivalent: mode == .area ? hotkey.keyEquivalent : "")
+            if mode == .area {
+                item.keyEquivalentModifierMask = hotkey.menuModifierMask
             }
             item.target = self
             item.representedObject = mode.rawValue
