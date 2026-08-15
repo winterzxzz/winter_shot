@@ -47,7 +47,8 @@ final class RecordingCompositor {
         let content = CGSize(width: (frame.width * fit).rounded(.down),
                              height: (frame.height * fit).rounded(.down))
         let style = options.background
-        let pad = style.isEnabled ? (style.padding * min(content.width, content.height)).rounded() : 0
+        // Screen Studio pads by a ratio of the average dimension.
+        let pad = style.isEnabled ? (style.padding * (content.width + content.height) / 2).rounded() : 0
         let outputSize = CGSize(width: even(content.width + pad * 2),
                                 height: even(content.height + pad * 2))
         let radius = style.isEnabled
@@ -84,8 +85,8 @@ final class RecordingCompositor {
         lastT = t
 
         let visible = camera.step(to: t, dt: dt)
-        let cursorPos = options.showCursor ? cursorTrack.step(to: t, dt: dt) : nil
-        draw(frameImage: frameImage, at: t, visible: visible, cursor: cursorPos, into: context)
+        let cursorPose = options.showCursor ? cursorTrack.step(to: t, dt: dt) : nil
+        draw(frameImage: frameImage, at: t, visible: visible, cursor: cursorPose, into: context)
     }
 
     // MARK: - Drawing
@@ -93,7 +94,7 @@ final class RecordingCompositor {
     private func draw(frameImage: CGImage,
                       at t: Double,
                       visible: CGRect,
-                      cursor: CGPoint?,
+                      cursor: CursorTrack.Pose?,
                       into context: CGContext) {
         let outputSize = geometry.outputSize
         let contentRect = geometry.contentRect
@@ -116,10 +117,13 @@ final class RecordingCompositor {
                                  transform: nil)
 
         if style.isEnabled, style.shadow, pad > 0 {
+            // Screen Studio shadow: distance 25, angle 90° (down), blur 20,
+            // alpha 0.75 — scaled from recording points to output pixels.
+            let k = contentRect.width / (events.frameWidth / events.pixelScale)
             context.saveGState()
-            context.setShadow(offset: CGSize(width: 0, height: -pad * 0.12),
-                              blur: pad * 0.35,
-                              color: CGColor(gray: 0, alpha: 0.45))
+            context.setShadow(offset: CGSize(width: 0, height: -25 * k),
+                              blur: 30 * k,
+                              color: CGColor(gray: 0, alpha: 0.75))
             context.addPath(contentPath)
             context.setFillColor(CGColor(gray: 0, alpha: 0.6))
             context.fillPath()
@@ -142,21 +146,34 @@ final class RecordingCompositor {
         context.draw(frameImage, in: drawRect)
 
         if options.clickRipples {
+            // Screen Studio circle effect: 150 ms, scale 0.2 → 3.5, alpha
+            // keyframed [0, 0.05, 0.8, 1] → [0, 1, 0, 0] at 0.6 strength,
+            // light-gray fill, base radius 16 × cursor size.
             for ripple in activeRipples(at: t) {
                 let p = CGPoint(x: contentRect.minX + (ripple.center.x - visible.minX) * s,
                                 y: contentRect.minY + (ripple.center.y - visible.minY) * s)
-                let progress = CGFloat(ripple.age / 0.45)
-                let radius = (10 + 45 * easeOut(progress)) * events.pixelScale * s
-                context.setFillColor(CGColor(gray: 1, alpha: 0.35 * (1 - progress)))
+                let progress = CGFloat(ripple.age / 0.15)
+                let alphaKey: CGFloat
+                if progress < 0.05 {
+                    alphaKey = progress / 0.05
+                } else if progress < 0.8 {
+                    alphaKey = 1 - (progress - 0.05) / 0.75
+                } else {
+                    alphaKey = 0
+                }
+                let scaleKey = 0.2 + 3.3 * progress
+                let radius = 16 * options.cursorScale * events.pixelScale * s * scaleKey
+                context.setFillColor(CGColor(srgbRed: 0.867, green: 0.867, blue: 0.867,
+                                             alpha: 0.6 * alphaKey))
                 context.fillEllipse(in: CGRect(x: p.x - radius, y: p.y - radius,
                                                width: radius * 2, height: radius * 2))
             }
         }
 
         if let cursor {
-            let p = CGPoint(x: contentRect.minX + (cursor.x - visible.minX) * s,
-                            y: contentRect.minY + (cursor.y - visible.minY) * s)
-            let k = events.pixelScale * options.cursorScale * s
+            let p = CGPoint(x: contentRect.minX + (cursor.position.x - visible.minX) * s,
+                            y: contentRect.minY + (cursor.position.y - visible.minY) * s)
+            let k = events.pixelScale * options.cursorScale * s * cursor.scale
             let w = cursorSprite.size.width * k
             let h = cursorSprite.size.height * k
             // Anchor the hotspot (given from the image's top-left) at p.
@@ -181,21 +198,49 @@ final class RecordingCompositor {
     private func activeRipples(at t: Double) -> [Ripple] {
         events.clicks.compactMap { click in
             let age = t - (click.t - events.firstFrameTime)
-            guard age >= 0, age <= 0.45 else { return nil }
+            guard age >= 0, age <= 0.15 else { return nil }
             return Ripple(center: CGPoint(x: click.x, y: click.y), age: age)
         }
     }
+}
 
-    private func easeOut(_ x: CGFloat) -> CGFloat {
-        1 - (1 - x) * (1 - x)
+// MARK: - Springs
+
+/// Damped spring (stiffness/damping/mass), integrated with semi-implicit
+/// Euler in 1 ms substeps — the exact integrator Screen Studio uses, with its
+/// recovered constants.
+struct MotionSpring {
+    let stiffness: Double
+    let damping: Double
+    let mass: Double
+
+    /// Screen zoom/pan.
+    static let screenMovement = MotionSpring(stiffness: 200, damping: 40, mass: 2.25)
+    /// Cursor movement (default).
+    static let mouseMovement = MotionSpring(stiffness: 470, damping: 70, mass: 3)
+    /// Cursor movement right after a click (snappier).
+    static let mouseAfterClick = MotionSpring(stiffness: 530, damping: 40, mass: 1)
+    /// Cursor scale pulse on click.
+    static let mouseClick = MotionSpring(stiffness: 700, damping: 30, mass: 1)
+
+    func step(_ value: inout CGFloat, _ velocity: inout CGFloat, toward target: CGFloat, dt: Double) {
+        var remaining = dt
+        while remaining > 0 {
+            let h = min(remaining, 0.001)
+            let a = (-(Double(value) - Double(target)) * stiffness - Double(velocity) * damping) / mass
+            velocity += CGFloat(a * h)
+            value += velocity * CGFloat(h)
+            remaining -= h
+        }
     }
 }
 
 // MARK: - Camera
 
-/// Auto-zoom camera: click bursts open a zoom window; scale and center chase
-/// their targets with a critically damped spring — the Screen Studio ease.
-/// Stepped frame by frame in presentation order.
+/// Auto-zoom camera: each click opens a zoom window ([t−0.3 s, t+2.5 s],
+/// merged when less than 2.5 s apart — Screen Studio's follow-click-groups
+/// timing); scale and center chase their targets on the screen-movement
+/// spring. Stepped frame by frame in presentation order.
 struct CameraRig {
     private let frame: CGSize
     private let zoomLevel: CGFloat
@@ -207,12 +252,7 @@ struct CameraRig {
     private var center: CGPoint
     private var centerVelocity: CGVector = .zero
 
-    /// Spring stiffness (k); damping is critical: 2√k. Zooming out is slower
-    /// than zooming in — the Screen Studio signature — and the pan is gentler
-    /// than the zoom so the camera glides instead of snapping.
-    private let zoomInStiffness: CGFloat = 90
-    private let zoomOutStiffness: CGFloat = 30
-    private let centerStiffness: CGFloat = 55
+    private let spring = MotionSpring.screenMovement
 
     init(frame: CGSize, events: RecordingEventLog, options: RecordingExportOptions) {
         self.frame = frame
@@ -226,16 +266,17 @@ struct CameraRig {
         self.windows = Self.zoomWindows(events: events)
     }
 
-    /// Merge nearby clicks into one zoom window with a generous hold, so
+    /// Screen Studio's auto-zoom timing: a window per click of
+    /// [t−0.3 s, t+2.5 s], windows less than 2.5 s apart merged into one — so
     /// pauses while typing or reading don't pump the camera in and out.
     /// Shared with the timeline UI, which draws these as segments.
     static func zoomWindows(events: RecordingEventLog) -> [(start: Double, end: Double)] {
         let times = events.clicks.map { $0.t - events.firstFrameTime }.sorted()
         var merged: [(Double, Double)] = []
         for t in times {
-            let start = t - 0.4
-            let end = t + 3.0
-            if var last = merged.last, start <= last.1 + 0.01 {
+            let start = t - 0.3
+            let end = t + 2.5
+            if var last = merged.last, start <= last.1 + 2.5 {
                 last.1 = max(last.1, end)
                 merged[merged.count - 1] = last
             } else {
@@ -266,16 +307,9 @@ struct CameraRig {
             }
         }
 
-        // Critically damped spring, integrated in small steps for stability.
-        let scaleStiffness = targetScale >= scale ? zoomInStiffness : zoomOutStiffness
-        var remaining = dt
-        while remaining > 0 {
-            let h = min(remaining, 1.0 / 120.0)
-            spring(&scale, &scaleVelocity, toward: targetScale, stiffness: scaleStiffness, dt: h)
-            spring(&center.x, &centerVelocity.dx, toward: targetCenter.x, stiffness: centerStiffness, dt: h)
-            spring(&center.y, &centerVelocity.dy, toward: targetCenter.y, stiffness: centerStiffness, dt: h)
-            remaining -= h
-        }
+        spring.step(&scale, &scaleVelocity, toward: targetScale, dt: dt)
+        spring.step(&center.x, &centerVelocity.dx, toward: targetCenter.x, dt: dt)
+        spring.step(&center.y, &centerVelocity.dy, toward: targetCenter.y, dt: dt)
         scale = min(max(scale, 1), zoomLevel == 1 ? 1 : zoomLevel)
 
         let w = frame.width / scale
@@ -284,40 +318,45 @@ struct CameraRig {
         let y = min(max(center.y, h / 2), frame.height - h / 2) - h / 2
         return CGRect(x: x, y: y, width: w, height: h)
     }
-
-    private func spring(_ value: inout CGFloat,
-                        _ velocity: inout CGFloat,
-                        toward target: CGFloat,
-                        stiffness: CGFloat,
-                        dt: Double) {
-        let damping = 2 * sqrt(stiffness)
-        let acceleration = stiffness * (target - value) - damping * velocity
-        velocity += acceleration * CGFloat(dt)
-        value += velocity * CGFloat(dt)
-    }
 }
 
 // MARK: - Cursor
 
-/// Interpolates the raw 120 Hz cursor log at frame times, then applies a
-/// light exponential smoothing — jitter dies, intent stays.
+/// Smoothed synthetic cursor, Screen Studio-style: the raw 120 Hz log is
+/// interpolated at frame times, then the drawn cursor chases it on the
+/// mouse-movement spring (snappier for 175 ms after a click), and the sprite
+/// pulses to 0.8× scale for 130 ms on every click.
 struct CursorTrack {
+    struct Pose {
+        var position: CGPoint
+        /// Click-pulse scale multiplier (1 at rest, dips toward 0.8 on click).
+        var scale: CGFloat
+    }
+
     private let samples: [(t: Double, point: CGPoint)]
-    private var smoothed: CGPoint?
+    private let clickTimes: [Double]
+    private var position: CGPoint?
+    private var velocity: CGVector = .zero
+    private var pulseScale: CGFloat = 1
+    private var pulseVelocity: CGFloat = 0
     private var index = 0
 
     init(events: RecordingEventLog) {
         samples = events.cursorSamples
             .map { (t: $0.t - events.firstFrameTime, point: CGPoint(x: $0.x, y: $0.y)) }
             .sorted { $0.t < $1.t }
+        clickTimes = events.clicks.map { $0.t - events.firstFrameTime }.sorted()
     }
 
     mutating func reset() {
-        smoothed = nil
+        position = nil
+        velocity = .zero
+        pulseScale = 1
+        pulseVelocity = 0
         index = 0
     }
 
-    mutating func step(to t: Double, dt: Double) -> CGPoint? {
+    mutating func step(to t: Double, dt: Double) -> Pose? {
         guard !samples.isEmpty else { return nil }
         while index < samples.count - 1, samples[index + 1].t <= t { index += 1 }
         let raw: CGPoint
@@ -330,15 +369,23 @@ struct CursorTrack {
         } else {
             raw = samples[index].point
         }
-        guard var current = smoothed else {
-            smoothed = raw
-            return raw
+
+        let sinceClick = t - (clickTimes.last(where: { $0 <= t }) ?? -.infinity)
+
+        guard var current = position else {
+            position = raw
+            return Pose(position: raw, scale: 1)
         }
-        let alpha = CGFloat(1 - exp(-dt / 0.05))
-        current.x += (raw.x - current.x) * alpha
-        current.y += (raw.y - current.y) * alpha
-        smoothed = current
-        return current
+        let spring = sinceClick <= 0.175 ? MotionSpring.mouseAfterClick : MotionSpring.mouseMovement
+        spring.step(&current.x, &velocity.dx, toward: raw.x, dt: dt)
+        spring.step(&current.y, &velocity.dy, toward: raw.y, dt: dt)
+        position = current
+
+        // Click pulse: chase 0.8 for 130 ms after a mousedown, then recover.
+        let pulseTarget: CGFloat = sinceClick <= 0.13 ? 0.8 : 1
+        MotionSpring.mouseClick.step(&pulseScale, &pulseVelocity, toward: pulseTarget, dt: dt)
+
+        return Pose(position: current, scale: min(max(pulseScale, 0.6), 1.15))
     }
 }
 

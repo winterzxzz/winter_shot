@@ -50,18 +50,19 @@ struct RecordingEventLog: Codable {
     var clicks: [ClickEvent]
 }
 
-/// Options for a Screen Studio-style export render.
+/// Options for a Screen Studio-style export render. Defaults mirror Screen
+/// Studio's recovered defaults: 2× zoom, 1.5× cursor, 10% padding.
 struct RecordingExportOptions: Codable, Equatable {
     /// Backdrop behind the shot — same presets as screenshot beautify.
-    var background: BackdropStyle = .init(preset: .midnight)
+    var background: BackdropStyle = .init(preset: .midnight, padding: 0.10)
     /// Automatic zoom-in around clicks.
     var autoZoom: Bool = true
     /// Zoom magnification when zoomed in.
-    var zoomLevel: Double = 1.8
+    var zoomLevel: Double = 2.0
     /// Draw the synthetic smoothed cursor.
     var showCursor: Bool = true
     /// Cursor size multiplier (1 = natural).
-    var cursorScale: Double = 2.0
+    var cursorScale: Double = 1.5
     /// Show expanding ripple on clicks.
     var clickRipples: Bool = true
     /// Longest output edge in pixels; source is downscaled to fit.
