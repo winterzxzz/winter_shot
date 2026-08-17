@@ -63,12 +63,22 @@ final class RecordingCompositor {
 
     /// `maxWidth` bounds the longest output edge — pass
     /// `options.maxOutputWidth` for export, something smaller for preview.
+    /// Frame size of the raw recording (before the crop).
+    private let fullFrame: CGSize
+    /// The crop in raw-recording pixels, bottom-left origin.
+    private let cropRect: CGRect
+
     @MainActor
-    init(events: RecordingEventLog, options: RecordingExportOptions, duration: Double, maxWidth: CGFloat) {
+    init(events rawEvents: RecordingEventLog, options: RecordingExportOptions, duration: Double, maxWidth: CGFloat) {
+        // Everything downstream — camera, cursor, geometry — works in the
+        // cropped frame, so re-express the log there once.
+        self.fullFrame = CGSize(width: rawEvents.frameWidth, height: rawEvents.frameHeight)
+        self.cropRect = Self.cropRect(for: options, fullFrame: fullFrame)
+        let events = rawEvents.cropped(to: cropRect)
         self.events = events
         self.options = options
         self.duration = duration
-        self.geometry = Self.geometry(events: events, options: options, maxWidth: maxWidth)
+        self.geometry = Self.geometry(events: rawEvents, options: options, maxWidth: maxWidth)
         let frame = CGSize(width: events.frameWidth, height: events.frameHeight)
         self.camera = CameraRig(frame: frame, events: events, duration: duration, options: options)
         self.cursor = CursorTrack(events: events)
@@ -82,10 +92,23 @@ final class RecordingCompositor {
     /// ratio of its average dimension (Screen Studio's rule), optionally
     /// forced to an aspect ratio by growing the canvas around the content —
     /// then the whole thing is scaled so no edge exceeds `maxWidth`.
+    /// The crop of `options` in raw-recording pixels (bottom-left origin),
+    /// never smaller than Screen Studio's 200 × 200 pt minimum.
+    static func cropRect(for options: RecordingExportOptions, fullFrame: CGSize) -> CGRect {
+        var rect = options.crop.pixelRect(in: fullFrame).integral
+        let minSide: CGFloat = 200
+        if rect.width < minSide { rect.size.width = min(minSide, fullFrame.width) }
+        if rect.height < minSide { rect.size.height = min(minSide, fullFrame.height) }
+        rect.origin.x = min(max(rect.minX, 0), fullFrame.width - rect.width)
+        rect.origin.y = min(max(rect.minY, 0), fullFrame.height - rect.height)
+        return rect
+    }
+
     static func geometry(events: RecordingEventLog,
                          options: RecordingExportOptions,
                          maxWidth: CGFloat) -> Geometry {
-        let frame = CGSize(width: events.frameWidth, height: events.frameHeight)
+        let fullFrame = CGSize(width: events.frameWidth, height: events.frameHeight)
+        let frame = cropRect(for: options, fullFrame: fullFrame).size
         let bg = options.background
         // Work in recording pixels first.
         var pad = CGFloat(bg.padding) * (frame.width + frame.height) / 2
@@ -168,14 +191,22 @@ final class RecordingCompositor {
                     y: Double(contentRect.minY) + (Double(p.y) * pose.scale + Double(pose.position.y)) * fit)
         }
 
-        // Screen: clamp so blur never samples transparency at the frame
-        // edge, then map source px → output px in one transform.
-        let srcScale = frameW / max(Double(source.extent.width), 1)
+        // Screen: cut the crop out of the (possibly proxy-sized) source so
+        // its origin is the crop's origin, apply masks in that space, clamp
+        // so blur never samples outside it, then map to output px.
+        let proxy = Double(fullFrame.width) / max(Double(source.extent.width), 1)
+        let cropProxy = CGRect(x: cropRect.minX / proxy, y: cropRect.minY / proxy,
+                               width: cropRect.width / proxy, height: cropRect.height / proxy)
+        var screen = source
+            .cropped(to: cropProxy)
+            .transformed(by: CGAffineTransform(translationX: -cropProxy.minX, y: -cropProxy.minY))
+        screen = applyMasks(to: screen, at: t, proxy: proxy)
+        let srcScale = frameW / max(Double(cropProxy.width), 1)
         let a = srcScale * k
         let screenTransform = CGAffineTransform(a: a, b: 0, c: 0, d: a,
                                                 tx: Double(contentRect.minX) + Double(cam.position.x) * fit,
                                                 ty: Double(contentRect.minY) + Double(cam.position.y) * fit)
-        var zoomer = source.clampedToExtent().transformed(by: screenTransform)
+        var zoomer = screen.clampedToExtent().transformed(by: screenTransform)
 
         // Camera motion blur from the travel since the last tick — Screen
         // Studio's rule: zoom blur about the anchor when the size change
@@ -279,6 +310,80 @@ final class RecordingCompositor {
                 kCIInputBackgroundImageKey: backdrop,
                 kCIInputMaskImageKey: mask,
             ])
+    }
+
+    // MARK: - Masks
+
+    /// Screen Studio's masks, in cropped-screen space (proxy pixels): a
+    /// sensitive-data mask blurs its rounded region (radius 32 pt, corners
+    /// 12 pt, active from 200 ms before its start); a highlight mask dims
+    /// everything except its region. Both fade over 120 ms.
+    private func applyMasks(to screen: CIImage, at t: Double, proxy: Double) -> CIImage {
+        let active = options.masks.filter { mask in
+            !mask.isDisabled && mask.end > mask.start
+                && t >= mask.start - (mask.kind == .sensitiveData ? 0.2 : 0) - 0.12
+                && t <= mask.end + 0.12
+        }
+        guard !active.isEmpty else { return screen }
+        let extent = screen.extent
+        let pointScale = events.pixelScale / proxy // proxy px per recording point
+        var result = screen
+        var highlightShapes: [(shape: CIImage, alpha: Double)] = []
+
+        for mask in active {
+            let lead = mask.kind == .sensitiveData ? 0.2 : 0
+            let fadeIn = min(max((t - (mask.start - lead)) / 0.12 + 1, 0), 1)
+            let fadeOut = min(max((mask.end - t) / 0.12 + 1, 0), 1)
+            let alpha = min(fadeIn, fadeOut)
+            guard alpha > 0.001 else { continue }
+
+            var rect = mask.rect.clamped(minWidth: 0.005, minHeight: 0.005).pixelRect(in: extent.size)
+            rect = rect.offsetBy(dx: extent.minX, dy: extent.minY).integral
+            guard rect.width >= 1, rect.height >= 1 else { continue }
+            let radius = min(12 * pointScale, min(rect.width, rect.height) / 2)
+            guard let shape = CIFilter(name: "CIRoundedRectangleGenerator", parameters: [
+                "inputExtent": CIVector(cgRect: rect),
+                "inputRadius": radius,
+                "inputColor": CIColor(red: 1, green: 1, blue: 1, alpha: 1),
+            ])?.outputImage else { continue }
+
+            switch mask.kind {
+            case .sensitiveData:
+                let blurRadius = max(1, mask.blur * pointScale)
+                let blurred = screen.clampedToExtent()
+                    .applyingFilter("CIGaussianBlur", parameters: [kCIInputRadiusKey: blurRadius])
+                    .cropped(to: rect)
+                let region = blurred
+                    .applyingFilter("CIBlendWithAlphaMask", parameters: [
+                        kCIInputBackgroundImageKey: CIImage.empty(),
+                        kCIInputMaskImageKey: shape,
+                    ])
+                    .applyingFilter("CIColorMatrix", parameters: [
+                        "inputAVector": CIVector(x: 0, y: 0, z: 0, w: alpha),
+                    ])
+                result = region.composited(over: result)
+            case .highlight:
+                highlightShapes.append((shape, alpha * mask.highlightOpacity))
+            }
+        }
+
+        if !highlightShapes.isEmpty {
+            // One dim layer with a hole per highlight mask.
+            var holes = highlightShapes[0].shape
+            for extra in highlightShapes.dropFirst() {
+                holes = extra.shape.applyingFilter("CIMaximumCompositing", parameters: [
+                    kCIInputBackgroundImageKey: holes,
+                ])
+            }
+            let opacity = highlightShapes.map(\.alpha).max() ?? 0
+            let dim = CIImage(color: CIColor(red: 0, green: 0, blue: 0, alpha: opacity)).cropped(to: extent)
+            // Source-out keeps the dim only where the hole shapes are transparent.
+            let dimWithHoles = dim.applyingFilter("CISourceOutCompositing", parameters: [
+                kCIInputBackgroundImageKey: holes,
+            ])
+            result = dimWithHoles.composited(over: result)
+        }
+        return result
     }
 
     private struct Ripple {

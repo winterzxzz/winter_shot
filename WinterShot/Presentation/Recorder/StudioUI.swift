@@ -360,6 +360,32 @@ struct StudioButton: View {
     }
 }
 
+/// Icon + label toolbar button (Screen Studio's "Crop" / "Mask" above the video).
+struct StudioToolButton: View {
+    let title: String
+    let icon: String
+    var isActive = false
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon).font(.system(size: 12, weight: .semibold))
+                Text(title).font(Studio.controlCopy)
+            }
+            .foregroundStyle(isActive ? Studio.primaryText : Studio.text)
+            .padding(.horizontal, 10)
+            .frame(height: 30)
+            .background(isActive ? Studio.active : (hovering ? Studio.hover : Color.clear),
+                        in: RoundedRectangle(cornerRadius: Studio.radius))
+            .contentShape(RoundedRectangle(cornerRadius: Studio.radius))
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+    }
+}
+
 /// Square icon-only control (toolbar buttons, transport buttons).
 struct StudioIconButton: View {
     let icon: String

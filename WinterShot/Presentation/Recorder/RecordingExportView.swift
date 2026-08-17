@@ -87,9 +87,17 @@ struct RecordingExportView: View {
         ]
     }
 
+    enum EditMode { case none, crop, mask }
+
     @State private var options = RecordingExportOptions()
     @State private var panel: Panel = .background
     @State private var showPanels = true
+    @State private var editMode: EditMode = .none
+    @State private var selectedMaskID: UUID?
+    // Crop editor working state (applied on Done).
+    @State private var cropDraft: UnitRect = .full
+    @State private var cropAspect: CropAspect = .any
+    @State private var cropStill: CGImage?
     @State private var wallpaperCategory: String = WallpaperLibrary.shared.categories.first ?? ""
     @StateObject private var transport: PreviewTransport
     @State private var isExporting = false
@@ -131,7 +139,11 @@ struct RecordingExportView: View {
             topBar
             HStack(alignment: .top, spacing: 8) {
                 VStack(spacing: 6) {
-                    previewToolbar
+                    if editMode == .crop {
+                        cropToolbar
+                    } else {
+                        previewToolbar
+                    }
                     preview
                     controlsBar
                 }
@@ -152,7 +164,19 @@ struct RecordingExportView: View {
         .background(Studio.background)
         .preferredColorScheme(.dark)
         .focusEffectDisabled()
-        .onAppear { transport.play() }
+        .onAppear {
+            transport.play()
+            // Test hook: open straight into crop / mask mode (screenshots).
+            switch ProcessInfo.processInfo.environment["WS_EDITOR_MODE"] {
+            case "crop": DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { enterCropMode() }
+            case "mask":
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    enterMaskMode()
+                    selectMask(options.masks.first?.id)
+                }
+            default: break
+            }
+        }
         .onDisappear { transport.player.pause() }
         .onChange(of: options) { _, new in recordHistory(new) }
         .alert("Move this recording to the Trash?", isPresented: $confirmDelete) {
@@ -297,20 +321,286 @@ struct RecordingExportView: View {
             .menuIndicator(.visible)
             .fixedSize()
             .help("Output aspect ratio")
+
+            StudioToolButton(title: "Crop", icon: "crop", isActive: false) { enterCropMode() }
+                .help("Crop the recording")
+            StudioToolButton(title: "Mask", icon: "rectangle.dashed", isActive: editMode == .mask) {
+                if editMode == .mask { leaveMaskMode() } else { enterMaskMode() }
+            }
+            .help("Blur or highlight part of the recording")
+            if editMode == .mask {
+                // Escape: drop the selection first, then leave mask mode.
+                Button("") {
+                    if selectedMaskID != nil { selectedMaskID = nil } else { leaveMaskMode() }
+                }
+                .keyboardShortcut(.cancelAction)
+                .frame(width: 0, height: 0)
+                .opacity(0)
+            }
         }
         .frame(height: 34)
     }
 
+    // MARK: - Crop
+
+    private var frameSize: CGSize { CGSize(width: events.frameWidth, height: events.frameHeight) }
+
+    private var cropToolbar: some View {
+        HStack(spacing: 14) {
+            HStack(spacing: 6) {
+                Text("Size").font(Studio.label).foregroundStyle(Studio.textTertiary)
+                cropField(value: Binding(get: { cropDraft.width * frameSize.width },
+                                         set: { setCropSize(width: $0) }))
+                Text("×").font(Studio.label).foregroundStyle(Studio.textTertiary)
+                cropField(value: Binding(get: { cropDraft.height * frameSize.height },
+                                         set: { setCropSize(height: $0) }))
+                Menu {
+                    ForEach(CropAspect.allCases) { a in
+                        Button {
+                            cropAspect = a
+                            if let ratio = a.ratio { lockCrop(to: ratio) }
+                        } label: {
+                            if a == cropAspect { Label(a.label, systemImage: "checkmark") } else { Text(a.label) }
+                        }
+                    }
+                } label: {
+                    Label(cropAspect.label, systemImage: "aspectratio")
+                        .font(Studio.controlCopy)
+                        .foregroundStyle(cropAspect == .any ? Studio.text : Studio.primaryText)
+                        .frame(height: 28)
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.visible)
+                .fixedSize()
+                .help("Set crop aspect ratio")
+            }
+            HStack(spacing: 6) {
+                Text("Position").font(Studio.label).foregroundStyle(Studio.textTertiary)
+                cropField(value: Binding(get: { cropDraft.x * frameSize.width },
+                                         set: { v in cropDraft.x = v / frameSize.width; cropDraft = cropDraft.clamped() }))
+                cropField(value: Binding(get: { cropDraft.y * frameSize.height },
+                                         set: { v in cropDraft.y = v / frameSize.height; cropDraft = cropDraft.clamped() }))
+            }
+            Spacer()
+            StudioButton("Reset", icon: "crop", kind: .secondary, size: .small) {
+                cropDraft = .full
+                cropAspect = .any
+            }
+            StudioButton("Cancel", kind: .transparent, size: .small) { editMode = .none }
+                .keyboardShortcut(.cancelAction)
+            StudioButton("Done", icon: "checkmark", kind: .primary, size: .small) { applyCrop() }
+        }
+        .frame(height: 34)
+    }
+
+    private func cropField(value: Binding<Double>) -> some View {
+        TextField("", value: value, format: .number.grouping(.never).precision(.fractionLength(0)))
+            .textFieldStyle(.plain)
+            .font(Studio.controlCopy.monospacedDigit())
+            .foregroundStyle(Studio.text)
+            .multilineTextAlignment(.center)
+            .frame(width: 54, height: 26)
+            .background(Studio.lighter, in: RoundedRectangle(cornerRadius: Studio.radius))
+            .overlay(RoundedRectangle(cornerRadius: Studio.radius).strokeBorder(Studio.border, lineWidth: 1))
+    }
+
+    private var minCropUnit: (w: Double, h: Double) {
+        (min(200 / frameSize.width, 1), min(200 / frameSize.height, 1))
+    }
+
+    private func setCropSize(width: Double? = nil, height: Double? = nil) {
+        var r = cropDraft
+        if let width { r.width = width / frameSize.width }
+        if let height { r.height = height / frameSize.height }
+        if let ratio = cropAspect.ratio {
+            let unitAspect = ratio * (frameSize.height / frameSize.width)
+            if width != nil { r.height = r.width / unitAspect } else { r.width = r.height * unitAspect }
+        }
+        cropDraft = r.clamped(minWidth: minCropUnit.w, minHeight: minCropUnit.h)
+    }
+
+    /// Fits the current crop to a pixel aspect ratio, keeping its centre.
+    private func lockCrop(to ratio: Double) {
+        let unitAspect = ratio * (frameSize.height / frameSize.width)
+        var r = cropDraft
+        let cx = r.x + r.width / 2, cy = r.y + r.height / 2
+        if r.width / r.height > unitAspect { r.width = r.height * unitAspect } else { r.height = r.width / unitAspect }
+        r.x = cx - r.width / 2
+        r.y = cy - r.height / 2
+        cropDraft = r.clamped(minWidth: minCropUnit.w, minHeight: minCropUnit.h)
+    }
+
+    private func enterCropMode() {
+        transport.player.pause()
+        transport.isPlaying = false
+        selectedMaskID = nil
+        cropDraft = options.crop
+        cropAspect = .any
+        cropStill = nil
+        editMode = .crop
+        let url = recording.videoURL, t = transport.time
+        Task {
+            let image = await RecordingStills.frame(of: url, at: t)
+            await MainActor.run { if editMode == .crop { cropStill = image } }
+        }
+    }
+
+    private func applyCrop() {
+        options.crop = cropDraft.clamped(minWidth: minCropUnit.w, minHeight: minCropUnit.h)
+        editMode = .none
+    }
+
+    // MARK: - Masks
+
+    private static let maskTrackColor = Color(red: 0x82 / 255, green: 0x34 / 255, blue: 0x5A / 255)
+
+    private func enterMaskMode() {
+        transport.player.pause()
+        transport.isPlaying = false
+        editMode = .mask
+    }
+
+    private func leaveMaskMode() {
+        editMode = .none
+    }
+
+    private func addMask(rect: UnitRect) {
+        let duration = max(transport.duration, RecordingMask.minDuration)
+        var start = min(max(transport.time, 0), duration)
+        var end = min(start + RecordingMask.defaultDuration, duration)
+        if end - start < RecordingMask.minDuration {
+            end = duration
+            start = max(0, end - RecordingMask.minDuration)
+        }
+        let mask = RecordingMask(rect: rect, start: start, end: end)
+        options.masks.append(mask)
+        options.masks.sort { $0.start < $1.start }
+        selectedMaskID = mask.id
+    }
+
+    private func selectMask(_ id: UUID?) {
+        selectedMaskID = id
+        guard let id, let mask = options.masks.first(where: { $0.id == id }) else { return }
+        // Show the mask: park the playhead inside its range if it isn't.
+        if transport.time < mask.start || transport.time > mask.end {
+            transport.player.pause()
+            transport.isPlaying = false
+            transport.seek(to: mask.start + min(0.2, mask.duration / 2))
+        }
+    }
+
+    private func updateMask(_ id: UUID, _ change: (inout RecordingMask) -> Void) {
+        guard let index = options.masks.firstIndex(where: { $0.id == id }) else { return }
+        change(&options.masks[index])
+    }
+
+    private func deleteMask(_ id: UUID) {
+        options.masks.removeAll { $0.id == id }
+        if selectedMaskID == id { selectedMaskID = nil }
+    }
+
+    /// Options used for the live preview: mask mode pauses the auto-zoom so
+    /// masks can be placed on a stable, unzoomed frame.
+    private var previewOptions: RecordingExportOptions {
+        guard editMode == .mask else { return options }
+        var o = options
+        o.autoZoom = false
+        return o
+    }
+
+    private var maskEditor: some View {
+        Group {
+            if let id = selectedMaskID, let mask = options.masks.first(where: { $0.id == id }) {
+                VStack(alignment: .leading, spacing: 12) {
+                    StudioButton("Close mask editor", icon: "xmark", kind: .secondary) { selectedMaskID = nil }
+                    StudioSection {
+                        StudioField("Mask type") {
+                            StudioSegmented(selection: Binding(get: { mask.kind },
+                                                               set: { k in updateMask(id) { $0.kind = k } }),
+                                            options: RecordingMaskKind.allCases.map { ($0, $0.label) })
+                        }
+                        if mask.kind == .sensitiveData {
+                            HStack(alignment: .top, spacing: 8) {
+                                Image(systemName: "timeline.selection")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(Color(red: 1, green: 0.6, blue: 0))
+                                Text("Make sure the mask covers the entire part of the timeline where sensitive data is present.")
+                                    .font(Studio.label)
+                                    .foregroundStyle(Studio.textSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .padding(10)
+                            .background(Color(red: 1, green: 0.6, blue: 0).opacity(0.1), in: RoundedRectangle(cornerRadius: Studio.radius))
+                        } else {
+                            StudioField("Highlight mask opacity") {
+                                StudioSlider(value: Binding(get: { mask.highlightOpacity },
+                                                            set: { v in updateMask(id) { $0.highlightOpacity = v } }),
+                                             in: 0.1...0.9, step: 0.05, resetValue: 0.5) { String(format: "%.0f%%", $0 * 100) }
+                            }
+                        }
+                        StudioField("Timing", description: String(format: "%@ → %@. Drag the mask on the timeline to move or trim it, or snap an edge to the playhead.",
+                                                                    timecode(mask.start, precise: true), timecode(mask.end, precise: true))) {
+                            HStack(spacing: 8) {
+                                StudioButton("Start at playhead", kind: .secondary, size: .small) {
+                                    updateMask(id) { m in
+                                        m.start = min(max(transport.time, 0), m.end - RecordingMask.minDuration)
+                                    }
+                                }
+                                StudioButton("End at playhead", kind: .secondary, size: .small) {
+                                    updateMask(id) { m in
+                                        m.end = max(min(transport.time, transport.duration), m.start + RecordingMask.minDuration)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    StudioSection(isLast: true) {
+                        StudioRow("Disable", description: "When disabled, the mask is not applied but stays in the timeline.") {
+                            StudioToggle(isOn: Binding(get: { mask.isDisabled },
+                                                       set: { v in updateMask(id) { $0.isDisabled = v } }))
+                        }
+                        StudioButton("Delete mask", icon: "trash", kind: .secondary) { deleteMask(id) }
+                    }
+                }
+            }
+        }
+    }
+
     private var previewAspect: CGFloat {
-        let size = RecordingCompositor.geometry(events: events, options: options, maxWidth: 1600).outputSize
+        let size = RecordingCompositor.geometry(events: events, options: previewOptions, maxWidth: 1600).outputSize
         return max(size.width, 1) / max(size.height, 1)
     }
 
-    private var preview: some View {
-        CompositedPreview(transport: transport, events: events, options: options)
-            .aspectRatio(previewAspect, contentMode: .fit)
-            .clipShape(RoundedRectangle(cornerRadius: Studio.mediaRadius))
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    @ViewBuilder private var preview: some View {
+        if editMode == .crop {
+            CropEditorView(image: cropStill, frameSize: frameSize, crop: $cropDraft, aspect: cropAspect)
+                .clipShape(RoundedRectangle(cornerRadius: Studio.mediaRadius))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            let geometry = RecordingCompositor.geometry(events: events, options: previewOptions, maxWidth: 1600)
+            CompositedPreview(transport: transport, events: events, options: previewOptions)
+                .overlay {
+                    if editMode == .mask {
+                        GeometryReader { geo in
+                            let scale = geo.size.width / max(geometry.outputSize.width, 1)
+                            let content = CGRect(x: geometry.contentRect.minX * scale,
+                                                 y: (geometry.outputSize.height - geometry.contentRect.maxY) * scale,
+                                                 width: geometry.contentRect.width * scale,
+                                                 height: geometry.contentRect.height * scale)
+                            MaskOverlayView(masks: options.masks,
+                                            selectedID: selectedMaskID,
+                                            contentFrame: content,
+                                            time: transport.time,
+                                            onSelect: { selectMask($0) },
+                                            onChange: { id, rect in updateMask(id) { $0.rect = rect } },
+                                            onCreate: { addMask(rect: $0) })
+                        }
+                    }
+                }
+                .aspectRatio(previewAspect, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: Studio.mediaRadius))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 
     private var controlsBar: some View {
@@ -410,10 +700,14 @@ struct RecordingExportView: View {
     private var sidebar: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                switch panel {
-                case .background: backgroundPanel
-                case .cursor: cursorPanel
-                case .animations: animationsPanel
+                if selectedMaskID != nil, options.masks.contains(where: { $0.id == selectedMaskID }) {
+                    maskEditor
+                } else {
+                    switch panel {
+                    case .background: backgroundPanel
+                    case .cursor: cursorPanel
+                    case .animations: animationsPanel
+                    }
                 }
             }
             .padding(EdgeInsets(top: 24, leading: 24, bottom: 32, trailing: 24))
@@ -620,9 +914,15 @@ struct RecordingExportView: View {
                        time: transport.time,
                        zoomWindows: CameraRig.zoomWindows(events: events, duration: transport.duration),
                        zoomLevel: options.zoomLevel,
-                       zoomEnabled: options.autoZoom) { t in
-            transport.seek(to: t)
-        }
+                       zoomEnabled: options.autoZoom,
+                       masks: options.masks,
+                       showMasks: !options.masks.isEmpty || editMode == .mask,
+                       selectedMaskID: selectedMaskID,
+                       onSeek: { t in transport.seek(to: t) },
+                       onSelectMask: { selectMask($0) },
+                       onMoveMask: { id, start, end in
+                           updateMask(id) { $0.start = start; $0.end = end }
+                       })
     }
 
     // MARK: - History & presets
@@ -789,15 +1089,22 @@ private struct StudioTimeline: View {
     let zoomWindows: [(start: Double, end: Double)]
     let zoomLevel: Double
     let zoomEnabled: Bool
+    let masks: [RecordingMask]
+    let showMasks: Bool
+    let selectedMaskID: UUID?
     let onSeek: (Double) -> Void
+    let onSelectMask: (UUID?) -> Void
+    let onMoveMask: (UUID, Double, Double) -> Void
 
     private let rulerHeight: CGFloat = 22
     private let trackHeight: CGFloat = 46
     private let trackGap: CGFloat = 6
     private let itemRadius: CGFloat = 10
     private static let clipColor = Color(red: 1.0, green: 0.60, blue: 0.0)
+    private static let maskColor = Color(red: 0x82 / 255, green: 0x34 / 255, blue: 0x5A / 255)
 
-    private var totalHeight: CGFloat { rulerHeight + trackGap + trackHeight + trackGap + trackHeight }
+    private var trackCount: Int { showMasks ? 3 : 2 }
+    private var totalHeight: CGFloat { rulerHeight + CGFloat(trackCount) * (trackGap + trackHeight) }
 
     var body: some View {
         GeometryReader { geo in
@@ -807,6 +1114,9 @@ private struct StudioTimeline: View {
                     ruler(width: width)
                     clipTrack(width: width)
                     zoomTrack(width: width)
+                    if showMasks {
+                        maskTrack(width: width)
+                    }
                 }
                 playhead(width: width)
             }
@@ -902,6 +1212,31 @@ private struct StudioTimeline: View {
         .frame(width: width, height: trackHeight)
     }
 
+    private func maskTrack(width: CGFloat) -> some View {
+        ZStack(alignment: .leading) {
+            RoundedRectangle(cornerRadius: itemRadius)
+                .fill(Studio.lighter)
+            if masks.isEmpty {
+                Text("Drag on the video to create a mask")
+                    .font(Studio.label)
+                    .foregroundStyle(Studio.textTertiary)
+                    .frame(maxWidth: .infinity)
+            }
+            ForEach(masks) { mask in
+                MaskTrackItem(mask: mask,
+                              duration: duration,
+                              width: width,
+                              height: trackHeight,
+                              radius: itemRadius,
+                              color: Self.maskColor,
+                              selected: mask.id == selectedMaskID,
+                              onSelect: { onSelectMask(mask.id) },
+                              onMove: { start, end in onMoveMask(mask.id, start, end) })
+            }
+        }
+        .frame(width: width, height: trackHeight)
+    }
+
     private func trackItem<Info: View>(color: Color, width: CGFloat, head: String,
                                        @ViewBuilder info: () -> Info) -> some View {
         ZStack {
@@ -941,6 +1276,96 @@ private struct StudioTimeline: View {
         .shadow(color: .black.opacity(0.5), radius: 2)
         .offset(x: px - 5)
         .allowsHitTesting(false)
+    }
+}
+
+/// A mask on the timeline: click to select, drag the body to move, drag an
+/// edge to trim (minimum 1 s), like Screen Studio's track items.
+private struct MaskTrackItem: View {
+    let mask: RecordingMask
+    let duration: Double
+    let width: CGFloat
+    let height: CGFloat
+    let radius: CGFloat
+    let color: Color
+    let selected: Bool
+    let onSelect: () -> Void
+    let onMove: (Double, Double) -> Void
+
+    private enum Grab { case body, start, end }
+    @State private var grab: Grab?
+    @State private var initial: (start: Double, end: Double)?
+
+    private var x0: CGFloat { CGFloat(mask.start / duration) * width }
+    private var x1: CGFloat { CGFloat(min(mask.end, duration) / duration) * width }
+
+    var body: some View {
+        let w = max(x1 - x0, 24)
+        ZStack {
+            RoundedRectangle(cornerRadius: radius)
+                .fill(LinearGradient(colors: [color, color.opacity(0.78)], startPoint: .top, endPoint: .bottom))
+                .overlay(RoundedRectangle(cornerRadius: radius)
+                    .strokeBorder(selected ? Color.white.opacity(0.9) : Color.white.opacity(0.28),
+                                  lineWidth: selected ? 1.5 : 1))
+                .shadow(color: .black.opacity(0.35), radius: 6, y: 2)
+                .opacity(mask.isDisabled ? 0.45 : 1)
+            VStack(spacing: 2) {
+                Text("Mask")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.white.opacity(0.6))
+                Label(mask.kind.label, systemImage: mask.kind == .sensitiveData ? "eye.slash.fill" : "rectangle.fill")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.white)
+                    .labelStyle(StudioTrackLabelStyle())
+            }
+            .padding(.horizontal, 10)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+            // Trim grips at both edges (visible on selection).
+            HStack {
+                Capsule().fill(Color.white.opacity(selected ? 0.9 : 0)).frame(width: 3, height: height * 0.45)
+                Spacer()
+                Capsule().fill(Color.white.opacity(selected ? 0.9 : 0)).frame(width: 3, height: height * 0.45)
+            }
+            .padding(.horizontal, 6)
+            .allowsHitTesting(false)
+        }
+        .frame(width: w, height: height)
+        .clipped()
+        .contentShape(RoundedRectangle(cornerRadius: radius))
+        .offset(x: x0)
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { value in
+                    if grab == nil {
+                        onSelect()
+                        initial = (mask.start, mask.end)
+                        let localX = value.startLocation.x
+                        grab = localX < 10 ? .start : (localX > w - 10 ? .end : .body)
+                    }
+                    guard let grab, let initial else { return }
+                    let dt = Double(value.translation.width / width) * duration
+                    let minDur = RecordingMask.minDuration
+                    switch grab {
+                    case .body:
+                        let length = initial.end - initial.start
+                        var start = initial.start + dt
+                        start = min(max(start, 0), max(duration - length, 0))
+                        onMove(start, start + length)
+                    case .start:
+                        let start = min(max(initial.start + dt, 0), initial.end - minDur)
+                        onMove(start, initial.end)
+                    case .end:
+                        let end = max(min(initial.end + dt, duration), initial.start + minDur)
+                        onMove(initial.start, end)
+                    }
+                }
+                .onEnded { _ in
+                    grab = nil
+                    initial = nil
+                }
+        )
+        .help(mask.kind.label)
     }
 }
 

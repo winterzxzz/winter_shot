@@ -166,6 +166,91 @@ enum OutputAspect: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// A rectangle in unit coordinates of the recording (0…1, top-left origin,
+/// as on screen). Used for the crop and for mask bounds.
+struct UnitRect: Codable, Equatable, Hashable {
+    var x: Double
+    var y: Double
+    var width: Double
+    var height: Double
+
+    static let full = UnitRect(x: 0, y: 0, width: 1, height: 1)
+
+    var isFull: Bool {
+        abs(x) < 1e-6 && abs(y) < 1e-6 && abs(width - 1) < 1e-6 && abs(height - 1) < 1e-6
+    }
+
+    /// Clamped so it stays inside the unit square with a minimum size.
+    func clamped(minWidth: Double = 0.01, minHeight: Double = 0.01) -> UnitRect {
+        var r = self
+        r.width = min(max(r.width, minWidth), 1)
+        r.height = min(max(r.height, minHeight), 1)
+        r.x = min(max(r.x, 0), 1 - r.width)
+        r.y = min(max(r.y, 0), 1 - r.height)
+        return r
+    }
+
+    /// The rect in pixels of a frame with a bottom-left origin (video / Core
+    /// Image convention).
+    func pixelRect(in size: CGSize) -> CGRect {
+        CGRect(x: x * size.width,
+               y: (1 - y - height) * size.height,
+               width: width * size.width,
+               height: height * size.height)
+    }
+}
+
+/// What a mask does to the region it covers — Screen Studio's two kinds.
+enum RecordingMaskKind: String, Codable, CaseIterable, Identifiable {
+    case sensitiveData, highlight
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .sensitiveData: return "Sensitive Data"
+        case .highlight: return "Highlight"
+        }
+    }
+}
+
+/// A timed region of the (cropped) recording that is blurred (sensitive
+/// data) or spotlighted (highlight: everything else is dimmed).
+struct RecordingMask: Codable, Equatable, Identifiable, Hashable {
+    var id = UUID()
+    var kind: RecordingMaskKind = .sensitiveData
+    /// Bounds in unit coordinates of the cropped recording.
+    var rect: UnitRect
+    /// Seconds from the first frame.
+    var start: Double
+    var end: Double
+    /// Blur radius in recording points (Screen Studio: 32).
+    var blur: Double = 32
+    /// Dim opacity outside a highlight mask (Screen Studio: 0.5).
+    var highlightOpacity: Double = 0.5
+    var isDisabled: Bool = false
+
+    static let defaultDuration = 3.0
+    static let minDuration = 1.0
+
+    var duration: Double { end - start }
+}
+
+extension RecordingEventLog {
+    /// The log re-expressed inside `rect` (frame pixels, bottom-left origin):
+    /// positions shift by the crop origin and the frame becomes the crop.
+    func cropped(to rect: CGRect) -> RecordingEventLog {
+        let full = CGRect(x: 0, y: 0, width: frameWidth, height: frameHeight)
+        guard !rect.equalTo(full) else { return self }
+        var log = self
+        log.frameWidth = Double(rect.width)
+        log.frameHeight = Double(rect.height)
+        let dx = Double(rect.minX), dy = Double(rect.minY)
+        log.cursorSamples = cursorSamples.map { CursorSample(t: $0.t, x: $0.x - dx, y: $0.y - dy) }
+        log.clicks = clicks.map { ClickEvent(t: $0.t, x: $0.x - dx, y: $0.y - dy) }
+        return log
+    }
+}
+
 /// Options for a Screen Studio-style export render. Defaults mirror Screen
 /// Studio's recovered defaults: 2× zoom, 1.5× cursor, 10% padding.
 struct RecordingExportOptions: Codable, Equatable {
@@ -173,6 +258,10 @@ struct RecordingExportOptions: Codable, Equatable {
     var background = RecordingBackground()
     /// Output canvas shape.
     var aspect: OutputAspect = .auto
+    /// Part of the recording that is shown (non-destructive crop).
+    var crop: UnitRect = .full
+    /// Blur / highlight regions.
+    var masks: [RecordingMask] = []
     /// Automatic zoom-in around clicks.
     var autoZoom: Bool = true
     /// Zoom magnification when zoomed in.
