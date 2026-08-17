@@ -220,6 +220,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Next runloop turn so the WindowOpener bridge has appeared.
             DispatchQueue.main.async { [weak self] in self?.openMain() }
         }
+        if let path = Self.launchValue(after: "--open-recording") {
+            RecordingController.shared.open(videoURL: URL(fileURLWithPath: path))
+        }
+        if let input = Self.launchValue(after: "--export-recording"),
+           let output = Self.launchValue(after: "--export-recording", offset: 2) {
+            // Headless render for scripted testing: export (with defaults, or
+            // the RecordingExportOptions JSON given by --export-options), then quit.
+            Task { @MainActor in
+                do {
+                    var options = RecordingExportOptions()
+                    if let path = Self.launchValue(after: "--export-options") {
+                        options = try JSONDecoder().decode(RecordingExportOptions.self,
+                                                           from: Data(contentsOf: URL(fileURLWithPath: path)))
+                    }
+                    try await RecordingController.export(videoURL: URL(fileURLWithPath: input),
+                                                         to: URL(fileURLWithPath: output),
+                                                         options: options)
+                    NSLog("WinterShot: exported %@", output)
+                    exit(0)
+                } catch {
+                    NSLog("WinterShot: export failed: %@", error.localizedDescription)
+                    exit(1)
+                }
+            }
+        }
+    }
+
+    private static func launchValue(after flag: String, offset: Int = 1) -> String? {
+        guard let index = CommandLine.arguments.firstIndex(of: flag),
+              CommandLine.arguments.indices.contains(index + offset) else { return nil }
+        return CommandLine.arguments[index + offset]
     }
 
     private static func launchCaptureMode() -> CaptureMode? {

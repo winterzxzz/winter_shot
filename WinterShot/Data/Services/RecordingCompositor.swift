@@ -1,14 +1,21 @@
 import AppKit
-import CoreGraphics
+import CoreImage
+import CoreVideo
+import Metal
 import QuartzCore
 
 /// Shared frame compositor for recordings: gradient backdrop, rounded
-/// corners, shadow, auto-zoom camera, smoothed synthetic cursor, and click
-/// ripples. Used by both the live preview and the exporter so the preview is
-/// exactly what ships.
+/// corners, shadow, auto-zoom camera, smoothed synthetic cursor, click
+/// ripples and motion blur. Used by both the live preview and the exporter
+/// so the preview is exactly what ships.
 ///
-/// Coordinates are video pixels with a bottom-left origin — the native
-/// orientation of a CGBitmapContext — matching the event log.
+/// Rendering is a Core Image graph evaluated on the GPU; the camera and
+/// cursor are simulated at a fixed 60 Hz tick that is independent of when
+/// source frames arrive — ScreenCaptureKit only delivers frames when the
+/// screen changes, so a zoom over a static screen must not wait for pixels.
+///
+/// Coordinates are video pixels with a bottom-left origin — Core Image's
+/// native orientation — matching the event log.
 final class RecordingCompositor {
     struct Geometry {
         let outputSize: CGSize
@@ -19,141 +26,203 @@ final class RecordingCompositor {
 
     let events: RecordingEventLog
     let options: RecordingExportOptions
+    let duration: Double
     let geometry: Geometry
 
-    private let cursorSprite: CursorSprite
+    /// Simulation tick — the export frame rate. The preview steps the same
+    /// clock so it shows exactly what the exporter renders.
+    static let tickRate = 60.0
+    private static let tick = 1.0 / tickRate
+    /// How far back a scrub re-simulates from (Screen Studio's influence time).
+    private static let influenceTime = 3.5
+
     private var camera: CameraRig
-    private var cursorTrack: CursorTrack
-    private var lastT: Double = -1
+    private var cursor: CursorTrack
+    private var simTime: Double = -1
+
+    private let backdrop: CIImage
+    private let mask: CIImage
+    private let cursorSprite: CursorSprite
+    private let rippleDisc: CIImage
+    private static let rippleDiscSize: CGFloat = 128
+
+    /// One Metal-backed context for every compositor; CIContext is
+    /// thread-safe and expensive to create.
+    static let context: CIContext = {
+        var options: [CIContextOption: Any] = [
+            .cacheIntermediates: false,
+            .name: "WinterShot.RecordingCompositor",
+        ]
+        if let device = MTLCreateSystemDefaultDevice() {
+            return CIContext(mtlDevice: device, options: options)
+        }
+        options[.useSoftwareRenderer] = false
+        return CIContext(options: options)
+    }()
+    static let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
 
     /// `maxWidth` bounds the longest output edge — pass
     /// `options.maxOutputWidth` for export, something smaller for preview.
     @MainActor
-    init(events: RecordingEventLog, options: RecordingExportOptions, maxWidth: CGFloat) {
+    init(events: RecordingEventLog, options: RecordingExportOptions, duration: Double, maxWidth: CGFloat) {
         self.events = events
         self.options = options
+        self.duration = duration
         self.geometry = Self.geometry(events: events, options: options, maxWidth: maxWidth)
+        let frame = CGSize(width: events.frameWidth, height: events.frameHeight)
+        self.camera = CameraRig(frame: frame, events: events, duration: duration, options: options)
+        self.cursor = CursorTrack(events: events)
         self.cursorSprite = CursorSprite.arrow()
-        self.camera = CameraRig(frame: CGSize(width: events.frameWidth, height: events.frameHeight),
-                                events: events, options: options)
-        self.cursorTrack = CursorTrack(events: events)
+        self.backdrop = Self.gpuResident(Self.makeBackdrop(geometry: geometry, events: events, options: options))
+        self.mask = Self.gpuResident(Self.makeMask(geometry: geometry))
+        self.rippleDisc = Self.gpuResident(Self.makeRippleDisc())
     }
 
+    /// Output canvas: the recording fitted into `maxWidth`, padded by a
+    /// ratio of its average dimension (Screen Studio's rule), optionally
+    /// forced to an aspect ratio by growing the canvas around the content —
+    /// then the whole thing is scaled so no edge exceeds `maxWidth`.
     static func geometry(events: RecordingEventLog,
                          options: RecordingExportOptions,
                          maxWidth: CGFloat) -> Geometry {
         let frame = CGSize(width: events.frameWidth, height: events.frameHeight)
-        let fit = min(1, maxWidth / max(frame.width, 1))
-        let content = CGSize(width: (frame.width * fit).rounded(.down),
-                             height: (frame.height * fit).rounded(.down))
-        let style = options.background
-        // Screen Studio pads by a ratio of the average dimension.
-        let pad = style.isEnabled ? (style.padding * (content.width + content.height) / 2).rounded() : 0
-        let outputSize = CGSize(width: even(content.width + pad * 2),
-                                height: even(content.height + pad * 2))
-        let radius = style.isEnabled
-            ? min(style.cornerRadius * fit, min(content.width, content.height) / 2)
-            : 0
+        let bg = options.background
+        // Work in recording pixels first.
+        var pad = CGFloat(bg.padding) * (frame.width + frame.height) / 2
+        var canvas = CGSize(width: frame.width + pad * 2, height: frame.height + pad * 2)
+        if let ratio = options.aspect.ratio {
+            let current = canvas.width / max(canvas.height, 1)
+            if current < ratio {
+                canvas.width = canvas.height * ratio
+            } else {
+                canvas.height = canvas.width / ratio
+            }
+        }
+        // Scale everything so the longer edge fits maxWidth (never upscale).
+        let scale = min(1, maxWidth / max(max(canvas.width, canvas.height), 1))
+        pad *= scale
+        let content = CGSize(width: (frame.width * scale).rounded(.down),
+                             height: (frame.height * scale).rounded(.down))
+        let outputSize = CGSize(width: even(canvas.width * scale), height: even(canvas.height * scale))
+        let origin = CGPoint(x: ((outputSize.width - content.width) / 2).rounded(),
+                             y: ((outputSize.height - content.height) / 2).rounded())
+        let radius = min(CGFloat(bg.cornerRadius) * scale * CGFloat(events.pixelScale),
+                         min(content.width, content.height) / 2)
         return Geometry(outputSize: outputSize,
-                        contentRect: CGRect(x: pad, y: pad, width: content.width, height: content.height),
-                        pad: pad,
-                        cornerRadius: radius)
+                        contentRect: CGRect(origin: origin, size: content),
+                        pad: pad.rounded(),
+                        cornerRadius: max(0, radius))
     }
 
     private static func even(_ value: CGFloat) -> CGFloat {
         max(2, (value / 2).rounded(.down) * 2)
     }
 
-    /// Renders the composed frame for time `t` into `context`, whose pixel
-    /// size must equal `geometry.outputSize`. Call with monotonically
-    /// increasing `t` for playback; a backward jump (scrub) re-simulates the
-    /// camera from the start so the pose is deterministic.
-    func render(frame frameImage: CGImage, at t: Double, into context: CGContext) {
-        if t < lastT {
-            camera.reset()
-            cursorTrack.reset()
-            var sim = 0.0
-            let step = 1.0 / 60.0
-            while sim < t {
-                _ = camera.step(to: sim, dt: step)
-                _ = cursorTrack.step(to: sim, dt: step)
-                sim += step
-            }
-            lastT = max(0, t - step)
-        }
-        let dt = lastT < 0 ? 1.0 / 60.0 : min(max(t - lastT, 1.0 / 240.0), 0.5)
-        lastT = t
+    // MARK: - Simulation
 
-        let visible = camera.step(to: t, dt: dt)
-        let cursorPose = options.showCursor ? cursorTrack.step(to: t, dt: dt) : nil
-        draw(frameImage: frameImage, at: t, visible: visible, cursor: cursorPose, into: context)
+    /// Steps the camera and cursor up to `t` on the fixed tick. A backward
+    /// jump (scrub) or a jump further ahead than the influence window resets
+    /// the springs at `t − 3.5 s` and re-simulates from there, so the pose at
+    /// any time is deterministic no matter how playback got there.
+    private func advance(to t: Double) {
+        let t = max(0, t)
+        if simTime < 0 || t < simTime - 1e-6 || t - simTime > Self.influenceTime + 1 {
+            simTime = max(0, t - Self.influenceTime)
+            camera.snap(to: simTime)
+            cursor.snap(to: simTime)
+        }
+        while simTime + Self.tick <= t + 1e-9 {
+            simTime += Self.tick
+            camera.step(to: simTime, dt: Self.tick)
+            cursor.step(to: simTime, dt: Self.tick)
+        }
     }
 
-    // MARK: - Drawing
+    // MARK: - Rendering
 
-    private func draw(frameImage: CGImage,
-                      at t: Double,
-                      visible: CGRect,
-                      cursor: CursorTrack.Pose?,
-                      into context: CGContext) {
-        let outputSize = geometry.outputSize
+    /// Renders the composed frame for time `t` into `output`, whose pixel
+    /// size must equal `geometry.outputSize`.
+    func render(frame: CVPixelBuffer, at t: Double, into output: CVPixelBuffer) {
+        let image = compose(frame: CIImage(cvPixelBuffer: frame), at: t)
+        Self.context.render(image, to: output,
+                            bounds: CGRect(origin: .zero, size: geometry.outputSize),
+                            colorSpace: Self.colorSpace)
+    }
+
+    /// Builds the composed frame for time `t` as a Core Image graph. The
+    /// source may be a downscaled proxy (preview): it is stretched to the
+    /// logical frame size the event log speaks in.
+    func compose(frame source: CIImage, at t: Double) -> CIImage {
+        advance(to: t)
+
         let contentRect = geometry.contentRect
-        let style = options.background
-        let pad = geometry.pad
-
-        let colors = style.isEnabled ? style.preset.cgGradientColors : [CGColor(gray: 0, alpha: 1)]
-        if let gradient = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB)!,
-                                     colors: (colors.count > 1 ? colors : [colors[0], colors[0]]) as CFArray,
-                                     locations: nil) {
-            context.drawLinearGradient(gradient,
-                                       start: CGPoint(x: 0, y: outputSize.height),
-                                       end: CGPoint(x: outputSize.width, y: 0),
-                                       options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+        let frameW = events.frameWidth
+        let frameH = events.frameHeight
+        let fit = Double(contentRect.width) / frameW
+        let cam = camera.pose
+        let prev = camera.previousPose
+        // Output px per video px, and video px → output px.
+        let k = cam.scale * fit
+        func out(_ p: CGPoint, pose: CameraRig.Pose = cam) -> CGPoint {
+            CGPoint(x: Double(contentRect.minX) + (Double(p.x) * pose.scale + Double(pose.position.x)) * fit,
+                    y: Double(contentRect.minY) + (Double(p.y) * pose.scale + Double(pose.position.y)) * fit)
         }
 
-        let contentPath = CGPath(roundedRect: contentRect,
-                                 cornerWidth: geometry.cornerRadius,
-                                 cornerHeight: geometry.cornerRadius,
-                                 transform: nil)
+        // Screen: clamp so blur never samples transparency at the frame
+        // edge, then map source px → output px in one transform.
+        let srcScale = frameW / max(Double(source.extent.width), 1)
+        let a = srcScale * k
+        let screenTransform = CGAffineTransform(a: a, b: 0, c: 0, d: a,
+                                                tx: Double(contentRect.minX) + Double(cam.position.x) * fit,
+                                                ty: Double(contentRect.minY) + Double(cam.position.y) * fit)
+        var zoomer = source.clampedToExtent().transformed(by: screenTransform)
 
-        if style.isEnabled, style.shadow, pad > 0 {
-            // Screen Studio shadow: distance 25, angle 90° (down), blur 20,
-            // alpha 0.75 — scaled from recording points to output pixels.
-            let k = contentRect.width / (events.frameWidth / events.pixelScale)
-            context.saveGState()
-            context.setShadow(offset: CGSize(width: 0, height: -25 * k),
-                              blur: 30 * k,
-                              color: CGColor(gray: 0, alpha: 0.75))
-            context.addPath(contentPath)
-            context.setFillColor(CGColor(gray: 0, alpha: 0.6))
-            context.fillPath()
-            context.restoreGState()
+        // Camera motion blur from the travel since the last tick — Screen
+        // Studio's rule: zoom blur about the anchor when the size change
+        // dominates, directional blur along the pan otherwise.
+        if options.motionBlur > 0, prev != cam {
+            let diag = (frameW * frameW + frameH * frameH).squareRoot() * fit
+            let sizeDelta = abs(cam.scale - prev.scale) * diag
+            let center = CGPoint(x: frameW / 2, y: frameH / 2)
+            let c1 = out(center, pose: prev)
+            let c2 = out(center, pose: cam)
+            let move = CGVector(dx: c2.x - c1.x, dy: c2.y - c1.y)
+            let moveLength = Double(hypot(move.dx, move.dy))
+            if sizeDelta > moveLength, sizeDelta >= 1, prev.scale > 0 {
+                // The fixed point of the scale between the two poses.
+                let ds = prev.scale - cam.scale
+                let anchor = abs(ds) > 1e-6
+                    ? out(CGPoint(x: Double(cam.position.x - prev.position.x) / ds,
+                                  y: Double(cam.position.y - prev.position.y) / ds))
+                    : out(center)
+                let strength = abs(1 - cam.scale / prev.scale) * options.motionBlur
+                // CIZoomBlur streaks ≈ 0.021 × distance × amount, so this
+                // amount reproduces each pixel's actual per-frame travel.
+                let amount = min(strength * 48, 4)
+                if amount > 0.05 {
+                    zoomer = zoomer.applyingFilter("CIZoomBlur", parameters: [
+                        kCIInputCenterKey: CIVector(x: anchor.x, y: anchor.y),
+                        kCIInputAmountKey: amount,
+                    ])
+                }
+            } else if moveLength >= 1 {
+                let v = moveLength * options.motionBlur
+                if v >= 1 {
+                    zoomer = zoomer.applyingFilter("CIMotionBlur", parameters: [
+                        kCIInputRadiusKey: min(v / 2, 24),
+                        kCIInputAngleKey: atan2(Double(move.dy), Double(move.dx)),
+                    ])
+                }
+            }
         }
 
-        context.saveGState()
-        context.addPath(contentPath)
-        context.clip()
-
-        // Map the camera's visible rect onto the content rect. The decoded
-        // image may be a downscaled proxy (preview), so stretch it to the
-        // logical frame size the event log speaks in.
-        let s = contentRect.width / visible.width
-        let drawRect = CGRect(x: contentRect.minX - visible.minX * s,
-                              y: contentRect.minY - visible.minY * s,
-                              width: events.frameWidth * s,
-                              height: events.frameHeight * s)
-        context.interpolationQuality = .high
-        context.draw(frameImage, in: drawRect)
-
+        // Click ripples — Screen Studio circle effect: 150 ms, scale
+        // 0.2 → 3.5, alpha keyframed [0, 0.05, 0.8, 1] → [0, 1, 0, 0] at 0.6
+        // strength, light-gray fill, base radius 16 × cursor size.
         if options.clickRipples {
-            // Screen Studio circle effect: 150 ms, scale 0.2 → 3.5, alpha
-            // keyframed [0, 0.05, 0.8, 1] → [0, 1, 0, 0] at 0.6 strength,
-            // light-gray fill, base radius 16 × cursor size.
             for ripple in activeRipples(at: t) {
-                let p = CGPoint(x: contentRect.minX + (ripple.center.x - visible.minX) * s,
-                                y: contentRect.minY + (ripple.center.y - visible.minY) * s)
-                let progress = CGFloat(ripple.age / 0.15)
-                let alphaKey: CGFloat
+                let progress = ripple.age / 0.15
+                let alphaKey: Double
                 if progress < 0.05 {
                     alphaKey = progress / 0.05
                 } else if progress < 0.8 {
@@ -161,33 +230,55 @@ final class RecordingCompositor {
                 } else {
                     alphaKey = 0
                 }
+                guard alphaKey > 0.001 else { continue }
                 let scaleKey = 0.2 + 3.3 * progress
-                let radius = 16 * options.cursorScale * events.pixelScale * s * scaleKey
-                context.setFillColor(CGColor(srgbRed: 0.867, green: 0.867, blue: 0.867,
-                                             alpha: 0.6 * alphaKey))
-                context.fillEllipse(in: CGRect(x: p.x - radius, y: p.y - radius,
-                                               width: radius * 2, height: radius * 2))
+                let radius = 16 * options.cursorScale * events.pixelScale * k * scaleKey
+                let c = out(ripple.center)
+                let s = radius * 2 / Double(Self.rippleDiscSize)
+                let transform = CGAffineTransform(translationX: -Self.rippleDiscSize / 2, y: -Self.rippleDiscSize / 2)
+                    .concatenating(CGAffineTransform(scaleX: s, y: s))
+                    .concatenating(CGAffineTransform(translationX: c.x, y: c.y))
+                let disc = rippleDisc
+                    .transformed(by: transform)
+                    .applyingFilter("CIColorMatrix", parameters: [
+                        "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 0.6 * alphaKey),
+                    ])
+                zoomer = disc.composited(over: zoomer)
             }
         }
 
-        if let cursor {
-            let p = CGPoint(x: contentRect.minX + (cursor.position.x - visible.minX) * s,
-                            y: contentRect.minY + (cursor.position.y - visible.minY) * s)
-            let k = events.pixelScale * options.cursorScale * s * cursor.scale
-            let w = cursorSprite.size.width * k
-            let h = cursorSprite.size.height * k
-            // Anchor the hotspot (given from the image's top-left) at p.
-            let origin = CGPoint(x: p.x - cursorSprite.hotSpot.x * k,
-                                 y: p.y - h + cursorSprite.hotSpot.y * k)
-            context.saveGState()
-            context.setShadow(offset: CGSize(width: 0, height: -2 * k),
-                              blur: 4 * k,
-                              color: CGColor(gray: 0, alpha: 0.35))
-            context.draw(cursorSprite.image, in: CGRect(origin: origin, size: CGSize(width: w, height: h)))
-            context.restoreGState()
+        // Cursor: sprite anchored at its hotspot, scaled with the zoom,
+        // pulsed and tilted, blurred along its on-screen travel (its own
+        // movement plus the camera's).
+        if options.showCursor, let pose = cursor.pose {
+            let c = out(pose.position)
+            let sprite = cursorSprite
+            let kc = events.pixelScale * options.cursorScale * k * pose.scale / Double(sprite.pixelsPerPoint)
+            let transform = CGAffineTransform(translationX: -sprite.hotSpotPixels.x, y: -sprite.hotSpotPixels.y)
+                .concatenating(CGAffineTransform(scaleX: kc, y: kc))
+                .concatenating(CGAffineTransform(rotationAngle: -pose.tilt * .pi / 180))
+                .concatenating(CGAffineTransform(translationX: c.x, y: c.y))
+            var image = sprite.image.transformed(by: transform)
+            if options.motionBlur > 0, let previous = cursor.previousPose {
+                let before = out(previous.position, pose: prev)
+                let dx = Double(c.x - before.x), dy = Double(c.y - before.y)
+                let d = (dx * dx + dy * dy).squareRoot() * options.motionBlur
+                if d > 1.5 {
+                    image = image.applyingFilter("CIMotionBlur", parameters: [
+                        kCIInputRadiusKey: min(d / 2, 24),
+                        kCIInputAngleKey: atan2(dy, dx),
+                    ])
+                }
+            }
+            zoomer = image.composited(over: zoomer)
         }
 
-        context.restoreGState()
+        return zoomer
+            .cropped(to: contentRect)
+            .applyingFilter("CIBlendWithMask", parameters: [
+                kCIInputBackgroundImageKey: backdrop,
+                kCIInputMaskImageKey: mask,
+            ])
     }
 
     private struct Ripple {
@@ -202,208 +293,216 @@ final class RecordingCompositor {
             return Ripple(center: CGPoint(x: click.x, y: click.y), age: age)
         }
     }
-}
 
-// MARK: - Springs
+    // MARK: - Static layers
 
-/// Damped spring (stiffness/damping/mass), integrated with semi-implicit
-/// Euler in 1 ms substeps — the exact integrator Screen Studio uses, with its
-/// recovered constants.
-struct MotionSpring {
-    let stiffness: Double
-    let damping: Double
-    let mass: Double
+    /// Bakes an image into an IOSurface-backed pixel buffer once, so Core
+    /// Image binds it as a GPU texture on every frame instead of re-uploading
+    /// CGImage bytes each time (which dominated the per-frame cost).
+    static func gpuResident(_ image: CIImage) -> CIImage {
+        let extent = image.extent.integral
+        guard !extent.isEmpty, extent.width < 16384, extent.height < 16384 else { return image }
+        var buffer: CVPixelBuffer?
+        let attributes: [String: Any] = [
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any],
+        ]
+        CVPixelBufferCreate(nil, Int(extent.width), Int(extent.height),
+                            kCVPixelFormatType_32BGRA, attributes as CFDictionary, &buffer)
+        guard let buffer else { return image }
+        context.render(image, to: buffer, bounds: extent, colorSpace: colorSpace)
+        return CIImage(cvPixelBuffer: buffer, options: [.colorSpace: colorSpace])
+            .transformed(by: CGAffineTransform(translationX: extent.minX, y: extent.minY))
+    }
 
-    /// Screen zoom/pan.
-    static let screenMovement = MotionSpring(stiffness: 200, damping: 40, mass: 2.25)
-    /// Cursor movement (default).
-    static let mouseMovement = MotionSpring(stiffness: 470, damping: 70, mass: 3)
-    /// Cursor movement right after a click (snappier).
-    static let mouseAfterClick = MotionSpring(stiffness: 530, damping: 40, mass: 1)
-    /// Cursor scale pulse on click.
-    static let mouseClick = MotionSpring(stiffness: 700, damping: 30, mass: 1)
-
-    func step(_ value: inout CGFloat, _ velocity: inout CGFloat, toward target: CGFloat, dt: Double) {
-        var remaining = dt
-        while remaining > 0 {
-            let h = min(remaining, 0.001)
-            let a = (-(Double(value) - Double(target)) * stiffness - Double(velocity) * damping) / mass
-            velocity += CGFloat(a * h)
-            value += velocity * CGFloat(h)
-            remaining -= h
+    /// The backdrop — wallpaper, gradient, solid color or custom image, with
+    /// optional blur — plus the content's drop shadow, drawn once per
+    /// geometry: nothing behind the content ever moves.
+    private static func makeBackdrop(geometry: Geometry,
+                                     events: RecordingEventLog,
+                                     options: RecordingExportOptions) -> CIImage {
+        let size = geometry.outputSize
+        let bg = options.background
+        let contentRect = geometry.contentRect
+        let bounds = CGRect(origin: .zero, size: size)
+        guard let context = CGContext(data: nil,
+                                      width: Int(size.width), height: Int(size.height),
+                                      bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: colorSpace,
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue) else {
+            return CIImage(color: CIColor(red: 0, green: 0, blue: 0)).cropped(to: bounds)
         }
-    }
-}
 
-// MARK: - Camera
-
-/// Auto-zoom camera: each click opens a zoom window ([t−0.3 s, t+2.5 s],
-/// merged when less than 2.5 s apart — Screen Studio's follow-click-groups
-/// timing); scale and center chase their targets on the screen-movement
-/// spring. Stepped frame by frame in presentation order.
-struct CameraRig {
-    private let frame: CGSize
-    private let zoomLevel: CGFloat
-    private let windows: [(start: Double, end: Double)]
-    private let clicks: [(t: Double, point: CGPoint)]
-
-    private var scale: CGFloat = 1
-    private var scaleVelocity: CGFloat = 0
-    private var center: CGPoint
-    private var centerVelocity: CGVector = .zero
-
-    private let spring = MotionSpring.screenMovement
-
-    init(frame: CGSize, events: RecordingEventLog, options: RecordingExportOptions) {
-        self.frame = frame
-        self.zoomLevel = max(1, options.autoZoom ? options.zoomLevel : 1)
-        self.center = CGPoint(x: frame.width / 2, y: frame.height / 2)
-
-        let relClicks = events.clicks
-            .map { (t: $0.t - events.firstFrameTime, point: CGPoint(x: $0.x, y: $0.y)) }
-            .sorted { $0.t < $1.t }
-        self.clicks = relClicks
-        self.windows = Self.zoomWindows(events: events)
-    }
-
-    /// Screen Studio's auto-zoom timing: a window per click of
-    /// [t−0.3 s, t+2.5 s], windows less than 2.5 s apart merged into one — so
-    /// pauses while typing or reading don't pump the camera in and out.
-    /// Shared with the timeline UI, which draws these as segments.
-    static func zoomWindows(events: RecordingEventLog) -> [(start: Double, end: Double)] {
-        let times = events.clicks.map { $0.t - events.firstFrameTime }.sorted()
-        var merged: [(Double, Double)] = []
-        for t in times {
-            let start = t - 0.3
-            let end = t + 2.5
-            if var last = merged.last, start <= last.1 + 2.5 {
-                last.1 = max(last.1, end)
-                merged[merged.count - 1] = last
-            } else {
-                merged.append((start, end))
+        // Base layer.
+        var picture: CGImage?
+        switch bg.kind {
+        case .wallpaper:
+            if let wallpaper = WallpaperLibrary.shared.wallpaper(id: bg.wallpaperID) {
+                picture = WallpaperLibrary.shared.image(for: wallpaper, maxPixelSize: max(size.width, size.height))
             }
-        }
-        return merged.map { (start: max(0, $0.0), end: $0.1) }
-    }
-
-    mutating func reset() {
-        scale = 1
-        scaleVelocity = 0
-        center = CGPoint(x: frame.width / 2, y: frame.height / 2)
-        centerVelocity = .zero
-    }
-
-    /// Advances the smoothed camera and returns the visible rect in video pixels.
-    mutating func step(to t: Double, dt: Double) -> CGRect {
-        var targetScale: CGFloat = 1
-        var targetCenter = CGPoint(x: frame.width / 2, y: frame.height / 2)
-
-        if zoomLevel > 1, windows.contains(where: { t >= $0.start && t <= $0.end }) {
-            targetScale = zoomLevel
-            // Chase the most recent click, looking slightly ahead so the zoom
-            // arrives with the click instead of after it.
-            if let click = clicks.last(where: { $0.t <= t + 0.4 }) {
-                targetCenter = click.point
+        case .image:
+            if let path = bg.imagePath {
+                picture = WallpaperLibrary.decode(URL(fileURLWithPath: path), maxPixelSize: max(size.width, size.height))
             }
+        case .gradient, .color:
+            break
         }
-
-        spring.step(&scale, &scaleVelocity, toward: targetScale, dt: dt)
-        spring.step(&center.x, &centerVelocity.dx, toward: targetCenter.x, dt: dt)
-        spring.step(&center.y, &centerVelocity.dy, toward: targetCenter.y, dt: dt)
-        scale = min(max(scale, 1), zoomLevel == 1 ? 1 : zoomLevel)
-
-        let w = frame.width / scale
-        let h = frame.height / scale
-        let x = min(max(center.x, w / 2), frame.width - w / 2) - w / 2
-        let y = min(max(center.y, h / 2), frame.height - h / 2) - h / 2
-        return CGRect(x: x, y: y, width: w, height: h)
-    }
-}
-
-// MARK: - Cursor
-
-/// Smoothed synthetic cursor, Screen Studio-style: the raw 120 Hz log is
-/// interpolated at frame times, then the drawn cursor chases it on the
-/// mouse-movement spring (snappier for 175 ms after a click), and the sprite
-/// pulses to 0.8× scale for 130 ms on every click.
-struct CursorTrack {
-    struct Pose {
-        var position: CGPoint
-        /// Click-pulse scale multiplier (1 at rest, dips toward 0.8 on click).
-        var scale: CGFloat
-    }
-
-    private let samples: [(t: Double, point: CGPoint)]
-    private let clickTimes: [Double]
-    private var position: CGPoint?
-    private var velocity: CGVector = .zero
-    private var pulseScale: CGFloat = 1
-    private var pulseVelocity: CGFloat = 0
-    private var index = 0
-
-    init(events: RecordingEventLog) {
-        samples = events.cursorSamples
-            .map { (t: $0.t - events.firstFrameTime, point: CGPoint(x: $0.x, y: $0.y)) }
-            .sorted { $0.t < $1.t }
-        clickTimes = events.clicks.map { $0.t - events.firstFrameTime }.sorted()
-    }
-
-    mutating func reset() {
-        position = nil
-        velocity = .zero
-        pulseScale = 1
-        pulseVelocity = 0
-        index = 0
-    }
-
-    mutating func step(to t: Double, dt: Double) -> Pose? {
-        guard !samples.isEmpty else { return nil }
-        while index < samples.count - 1, samples[index + 1].t <= t { index += 1 }
-        let raw: CGPoint
-        if index < samples.count - 1 {
-            let a = samples[index], b = samples[index + 1]
-            let span = max(b.t - a.t, .ulpOfOne)
-            let f = CGFloat(min(max((t - a.t) / span, 0), 1))
-            raw = CGPoint(x: a.point.x + (b.point.x - a.point.x) * f,
-                          y: a.point.y + (b.point.y - a.point.y) * f)
+        if let picture {
+            var image = CIImage(cgImage: picture)
+            // Aspect-fill the canvas.
+            let scale = max(size.width / image.extent.width, size.height / image.extent.height)
+            image = image.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+            image = image.transformed(by: CGAffineTransform(translationX: (size.width - image.extent.width) / 2 - image.extent.minX,
+                                                            y: (size.height - image.extent.height) / 2 - image.extent.minY))
+            if bg.blur > 0.001 {
+                let radius = bg.blur * 0.03 * Double(max(size.width, size.height))
+                image = image.clampedToExtent()
+                    .applyingFilter("CIGaussianBlur", parameters: [kCIInputRadiusKey: radius])
+            }
+            if let rendered = self.context.createCGImage(image.cropped(to: bounds), from: bounds,
+                                                         format: .BGRA8, colorSpace: colorSpace) {
+                context.draw(rendered, in: bounds)
+            }
+        } else if bg.kind == .gradient || bg.kind == .wallpaper || bg.kind == .image {
+            // Gradient (or a missing picture) — top-left → bottom-right.
+            let stops = bg.gradient.isEmpty ? GradientPreset.all[0].colors : bg.gradient
+            let colors = (stops.count > 1 ? stops : [stops[0], stops[0]]).map { $0.cgColor }
+            if let gradient = CGGradient(colorsSpace: colorSpace, colors: colors as CFArray, locations: nil) {
+                context.drawLinearGradient(gradient,
+                                           start: CGPoint(x: 0, y: size.height),
+                                           end: CGPoint(x: size.width, y: 0),
+                                           options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+            }
         } else {
-            raw = samples[index].point
+            context.setFillColor(bg.color.cgColor)
+            context.fill(bounds)
         }
 
-        let sinceClick = t - (clickTimes.last(where: { $0 <= t }) ?? -.infinity)
-
-        guard var current = position else {
-            position = raw
-            return Pose(position: raw, scale: 1)
+        // Screen Studio shadow: distance 25, angle 90° (down), blur 20 —
+        // scaled from recording points to output pixels, alpha 0.75 × intensity.
+        if bg.shadow > 0.001, bg.hasVisibleBackdrop {
+            let k = contentRect.width / (events.frameWidth / events.pixelScale)
+            let path = CGPath(roundedRect: contentRect,
+                              cornerWidth: geometry.cornerRadius,
+                              cornerHeight: geometry.cornerRadius,
+                              transform: nil)
+            context.saveGState()
+            context.setShadow(offset: CGSize(width: 0, height: -25 * k),
+                              blur: 30 * k,
+                              color: CGColor(gray: 0, alpha: 0.75 * bg.shadow))
+            context.addPath(path)
+            context.setFillColor(CGColor(gray: 0, alpha: 0.6))
+            context.fillPath()
+            context.restoreGState()
         }
-        let spring = sinceClick <= 0.175 ? MotionSpring.mouseAfterClick : MotionSpring.mouseMovement
-        spring.step(&current.x, &velocity.dx, toward: raw.x, dt: dt)
-        spring.step(&current.y, &velocity.dy, toward: raw.y, dt: dt)
-        position = current
+        guard let image = context.makeImage() else {
+            return CIImage(color: CIColor(red: 0, green: 0, blue: 0)).cropped(to: bounds)
+        }
+        return CIImage(cgImage: image)
+    }
 
-        // Click pulse: chase 0.8 for 130 ms after a mousedown, then recover.
-        let pulseTarget: CGFloat = sinceClick <= 0.13 ? 0.8 : 1
-        MotionSpring.mouseClick.step(&pulseScale, &pulseVelocity, toward: pulseTarget, dt: dt)
+    /// White rounded content rect on black — the blend mask that clips the
+    /// screen to its corners.
+    private static func makeMask(geometry: Geometry) -> CIImage {
+        let size = geometry.outputSize
+        guard let context = CGContext(data: nil,
+                                      width: Int(size.width), height: Int(size.height),
+                                      bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: colorSpace,
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue) else {
+            return CIImage(color: CIColor(red: 1, green: 1, blue: 1)).cropped(to: CGRect(origin: .zero, size: size))
+        }
+        context.setFillColor(CGColor(gray: 0, alpha: 1))
+        context.fill(CGRect(origin: .zero, size: size))
+        context.setFillColor(CGColor(gray: 1, alpha: 1))
+        context.addPath(CGPath(roundedRect: geometry.contentRect,
+                               cornerWidth: geometry.cornerRadius,
+                               cornerHeight: geometry.cornerRadius,
+                               transform: nil))
+        context.fillPath()
+        guard let image = context.makeImage() else {
+            return CIImage(color: CIColor(red: 1, green: 1, blue: 1)).cropped(to: CGRect(origin: .zero, size: size))
+        }
+        return CIImage(cgImage: image)
+    }
 
-        return Pose(position: current, scale: min(max(pulseScale, 0.6), 1.15))
+    /// Light-gray disc used for click ripples, alpha-scaled per frame.
+    private static func makeRippleDisc() -> CIImage {
+        let n = Int(rippleDiscSize)
+        guard let context = CGContext(data: nil, width: n, height: n,
+                                      bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: colorSpace,
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue) else {
+            return CIImage.empty()
+        }
+        context.setFillColor(CGColor(srgbRed: 0.867, green: 0.867, blue: 0.867, alpha: 1))
+        context.fillEllipse(in: CGRect(x: 1, y: 1, width: n - 2, height: n - 2))
+        guard let image = context.makeImage() else { return CIImage.empty() }
+        return CIImage(cgImage: image)
     }
 }
 
-/// The synthetic cursor artwork, captured from AppKit on the main actor.
+/// The synthetic cursor artwork, captured from AppKit on the main actor and
+/// pre-rendered with its drop shadow at 4 px per point so it stays crisp when
+/// the camera zooms in.
 struct CursorSprite {
-    let image: CGImage
-    /// Size in points and the hotspot measured from the image's top-left.
-    let size: CGSize
-    let hotSpot: CGPoint
+    let image: CIImage
+    /// Bitmap pixels per cursor point.
+    let pixelsPerPoint: CGFloat
+    /// Hotspot in bitmap pixels from the bitmap's bottom-left corner.
+    let hotSpotPixels: CGPoint
 
     @MainActor
     static func arrow() -> CursorSprite {
         let cursor = NSCursor.arrow
-        var rect = CGRect(origin: .zero, size: cursor.image.size)
-        let cgImage = cursor.image.cgImage(forProposedRect: &rect, context: nil, hints: nil)
-        return CursorSprite(image: cgImage ?? Self.fallback(),
-                            size: cursor.image.size,
-                            hotSpot: cursor.hotSpot)
+        let size = cursor.image.size
+        let hotSpot = cursor.hotSpot // points, from the image's top-left
+        var rect = CGRect(origin: .zero, size: size)
+        let cgImage = cursor.image.cgImage(forProposedRect: &rect, context: nil, hints: nil) ?? fallback()
+        return render(cgImage, size: size, hotSpot: hotSpot)
+    }
+
+    private static func render(_ cgImage: CGImage, size: CGSize, hotSpot: CGPoint) -> CursorSprite {
+        let scale: CGFloat = 4
+        let padPt: CGFloat = 6 // room for the shadow
+        let width = Int((size.width + padPt * 2) * scale)
+        let height = Int((size.height + padPt * 2) * scale)
+        let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
+        guard let context = CGContext(data: nil, width: width, height: height,
+                                      bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: colorSpace,
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue) else {
+            return CursorSprite(image: CIImage(cgImage: cgImage), pixelsPerPoint: 1,
+                                hotSpot: hotSpot, imageHeight: CGFloat(cgImage.height))
+        }
+        context.interpolationQuality = .high
+        context.setShadow(offset: CGSize(width: 0, height: -1.5 * scale), blur: 3 * scale,
+                          color: CGColor(gray: 0, alpha: 0.35))
+        let drawRect = CGRect(x: padPt * scale, y: padPt * scale,
+                              width: size.width * scale, height: size.height * scale)
+        context.draw(cgImage, in: drawRect)
+        guard let rendered = context.makeImage() else {
+            return CursorSprite(image: CIImage(cgImage: cgImage), pixelsPerPoint: 1,
+                                hotSpot: hotSpot, imageHeight: CGFloat(cgImage.height))
+        }
+        // Hotspot: measured from the top-left in points → bitmap px from bottom-left.
+        let hx = (padPt + hotSpot.x) * scale
+        let hy = CGFloat(height) - (padPt + hotSpot.y) * scale
+        return CursorSprite(image: RecordingCompositor.gpuResident(CIImage(cgImage: rendered)),
+                            pixelsPerPoint: scale,
+                            hotSpotPixels: CGPoint(x: hx, y: hy))
+    }
+
+    private init(image: CIImage, pixelsPerPoint: CGFloat, hotSpotPixels: CGPoint) {
+        self.image = image
+        self.pixelsPerPoint = pixelsPerPoint
+        self.hotSpotPixels = hotSpotPixels
+    }
+
+    /// Unpadded fallback when the shadowed bitmap can't be built.
+    private init(image: CIImage, pixelsPerPoint: CGFloat, hotSpot: CGPoint, imageHeight: CGFloat) {
+        self.image = image
+        self.pixelsPerPoint = pixelsPerPoint
+        self.hotSpotPixels = CGPoint(x: hotSpot.x, y: imageHeight - hotSpot.y)
     }
 
     private static func fallback() -> CGImage {
@@ -417,27 +516,5 @@ struct CursorSprite {
         context.closePath()
         context.fillPath()
         return context.makeImage()!
-    }
-}
-
-// MARK: - Preset colors
-
-extension BackgroundPreset {
-    /// CGColor mirror of `gradientColors` (Presentation) — keep the RGB values
-    /// in sync with BeautifyRenderer.swift.
-    var cgGradientColors: [CGColor] {
-        func rgb(_ r: Double, _ g: Double, _ b: Double) -> CGColor {
-            CGColor(srgbRed: r, green: g, blue: b, alpha: 1)
-        }
-        switch self {
-        case .none: return [CGColor(gray: 0, alpha: 0)]
-        case .graphite: return [rgb(0.22, 0.23, 0.27), rgb(0.09, 0.09, 0.12)]
-        case .midnight: return [rgb(0.13, 0.16, 0.35), rgb(0.05, 0.05, 0.15)]
-        case .ocean: return [rgb(0.15, 0.55, 0.85), rgb(0.10, 0.20, 0.55)]
-        case .sunset: return [rgb(0.98, 0.55, 0.35), rgb(0.75, 0.20, 0.55)]
-        case .forest: return [rgb(0.20, 0.60, 0.40), rgb(0.05, 0.30, 0.25)]
-        case .candy: return [rgb(0.95, 0.60, 0.85), rgb(0.45, 0.35, 0.90)]
-        case .snow: return [rgb(0.96, 0.96, 0.98), rgb(0.82, 0.84, 0.90)]
-        }
     }
 }

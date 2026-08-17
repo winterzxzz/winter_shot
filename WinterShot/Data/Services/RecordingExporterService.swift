@@ -1,11 +1,16 @@
 import AppKit
 import AVFoundation
-import CoreGraphics
-import VideoToolbox
+import CoreImage
+import CoreVideo
 
-/// Offline export: decodes the raw recording and renders each frame through
-/// the shared RecordingCompositor — the same pipeline the live preview uses —
-/// into a polished H.264 movie.
+/// Offline export: decodes the raw recording and renders a constant-rate
+/// movie through the shared RecordingCompositor — the same pipeline the live
+/// preview uses.
+///
+/// ScreenCaptureKit only emits a frame when the screen changes, so the raw
+/// recording is variable-rate with long gaps while nothing moves. The camera
+/// animates through those gaps, so output frames are produced on a fixed
+/// clock and each one composites the latest source frame at or before it.
 final class RecordingExporterService: RecordingRenderer {
     enum ExportError: LocalizedError {
         case noVideoTrack
@@ -24,21 +29,25 @@ final class RecordingExporterService: RecordingRenderer {
                 options: RecordingExportOptions,
                 to destination: URL,
                 progress: @escaping @Sendable (Double) -> Void) async throws {
-        let compositor = await RecordingCompositor(events: events,
-                                                   options: options,
-                                                   maxWidth: options.maxOutputWidth)
-        let outputSize = compositor.geometry.outputSize
-
         let asset = AVURLAsset(url: recording.videoURL)
         guard let track = try await asset.loadTracks(withMediaType: .video).first else {
             throw ExportError.noVideoTrack
         }
-        let duration = try await asset.load(.duration).seconds
-        let nominalFrameRate = try await track.load(.nominalFrameRate)
+        let assetDuration = try await asset.load(.duration).seconds
+        let duration = max(recording.duration, assetDuration)
+
+        let compositor = await RecordingCompositor(events: events,
+                                                   options: options,
+                                                   duration: duration,
+                                                   maxWidth: options.maxOutputWidth)
+        let outputSize = compositor.geometry.outputSize
+        let fps = RecordingCompositor.tickRate
+        let timescale: CMTimeScale = 600
 
         let reader = try AVAssetReader(asset: asset)
         let readerOutput = AVAssetReaderTrackOutput(track: track, outputSettings: [
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any],
         ])
         readerOutput.alwaysCopiesSampleData = false
         guard reader.canAdd(readerOutput) else { throw ExportError.renderFailed("reader setup") }
@@ -52,7 +61,8 @@ final class RecordingExporterService: RecordingRenderer {
             AVVideoHeightKey: Int(outputSize.height),
             AVVideoCompressionPropertiesKey: [
                 AVVideoAverageBitRateKey: 12_000_000,
-                AVVideoExpectedSourceFrameRateKey: Int(max(nominalFrameRate, 30)),
+                AVVideoExpectedSourceFrameRateKey: Int(fps),
+                AVVideoMaxKeyFrameIntervalKey: Int(fps) * 2,
                 AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
             ],
         ])
@@ -61,6 +71,7 @@ final class RecordingExporterService: RecordingRenderer {
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
             kCVPixelBufferWidthKey as String: Int(outputSize.width),
             kCVPixelBufferHeightKey as String: Int(outputSize.height),
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any],
         ])
         guard writer.canAdd(input) else { throw ExportError.renderFailed("writer setup") }
         writer.add(input)
@@ -72,51 +83,70 @@ final class RecordingExporterService: RecordingRenderer {
             throw ExportError.renderFailed(reader.error?.localizedDescription ?? "could not read recording")
         }
 
-        var firstPTS: CMTime?
-
-        while let sampleBuffer = readerOutput.copyNextSampleBuffer() {
-            guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { continue }
-            let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-            if firstPTS == nil { firstPTS = pts }
-            let t = (pts - firstPTS!).seconds
-
-            var frameImage: CGImage?
-            VTCreateCGImageFromCVPixelBuffer(pixelBuffer, options: nil, imageOut: &frameImage)
-            guard let frameImage else { continue }
-
-            guard let pool = adaptor.pixelBufferPool else {
-                throw ExportError.renderFailed("no pixel buffer pool")
+        // Source frames, pulled on demand: `current` is the newest frame at
+        // or before the output time, `pending` the next one not yet due.
+        guard let firstSample = readerOutput.copyNextSampleBuffer(),
+              let firstBuffer = CMSampleBufferGetImageBuffer(firstSample) else {
+            writer.cancelWriting()
+            throw ExportError.renderFailed(reader.error?.localizedDescription ?? "the recording has no frames")
+        }
+        let firstPTS = CMSampleBufferGetPresentationTimeStamp(firstSample)
+        var current: CVPixelBuffer = firstBuffer
+        var pending: (buffer: CVPixelBuffer, t: Double)? = nil
+        func pullNext() {
+            pending = nil
+            while let sample = readerOutput.copyNextSampleBuffer() {
+                guard let buffer = CMSampleBufferGetImageBuffer(sample) else { continue }
+                let t = (CMSampleBufferGetPresentationTimeStamp(sample) - firstPTS).seconds
+                pending = (buffer, t)
+                return
             }
+        }
+        pullNext()
+
+        guard let pool = adaptor.pixelBufferPool else {
+            writer.cancelWriting()
+            throw ExportError.renderFailed("no pixel buffer pool")
+        }
+
+        let frameCount = max(1, Int((duration * fps).rounded(.up)))
+        for n in 0..<frameCount {
+            if Task.isCancelled {
+                reader.cancelReading()
+                writer.cancelWriting()
+                throw CancellationError()
+            }
+            let t = Double(n) / fps
+            while let next = pending, next.t <= t + 1e-6 {
+                current = next.buffer
+                pullNext()
+            }
+
             var outBuffer: CVPixelBuffer?
             CVPixelBufferPoolCreatePixelBuffer(nil, pool, &outBuffer)
-            guard let outBuffer else { throw ExportError.renderFailed("could not create frame buffer") }
-
-            CVPixelBufferLockBaseAddress(outBuffer, [])
-            if let context = CGContext(data: CVPixelBufferGetBaseAddress(outBuffer),
-                                       width: Int(outputSize.width),
-                                       height: Int(outputSize.height),
-                                       bitsPerComponent: 8,
-                                       bytesPerRow: CVPixelBufferGetBytesPerRow(outBuffer),
-                                       space: CGColorSpace(name: CGColorSpace.sRGB)!,
-                                       bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
-                                           | CGBitmapInfo.byteOrder32Little.rawValue) {
-                compositor.render(frame: frameImage, at: t, into: context)
+            guard let outBuffer else {
+                writer.cancelWriting()
+                throw ExportError.renderFailed("could not create frame buffer")
             }
-            CVPixelBufferUnlockBaseAddress(outBuffer, [])
+            compositor.render(frame: current, at: t, into: outBuffer)
 
             while !input.isReadyForMoreMediaData {
                 try await Task.sleep(nanoseconds: 2_000_000)
             }
-            guard adaptor.append(outBuffer, withPresentationTime: pts - firstPTS!) else {
-                throw ExportError.renderFailed(writer.error?.localizedDescription ?? "could not append frame")
+            let pts = CMTime(value: CMTimeValue((t * Double(timescale)).rounded()), timescale: timescale)
+            guard adaptor.append(outBuffer, withPresentationTime: pts) else {
+                let reason = writer.error?.localizedDescription ?? "could not append frame"
+                writer.cancelWriting()
+                throw ExportError.renderFailed(reason)
             }
-            if duration > 0 { progress(min(t / duration, 1)) }
+            if n % 6 == 0 { progress(min(t / max(duration, 0.001), 1)) }
         }
 
         if reader.status == .failed {
             writer.cancelWriting()
             throw ExportError.renderFailed(reader.error?.localizedDescription ?? "reader failed")
         }
+        reader.cancelReading()
         input.markAsFinished()
         await writer.finishWriting()
         guard writer.status == .completed else {

@@ -1,6 +1,7 @@
 import SwiftUI
 import AVFoundation
-import VideoToolbox
+import CoreVideo
+import IOSurface
 
 /// Owns the AVPlayer driving the polished preview: play/pause, looping, and
 /// a published playhead for the transport bar.
@@ -12,18 +13,23 @@ final class PreviewTransport: ObservableObject {
 
     @Published var isPlaying = false
     @Published var time: Double = 0
+    /// Playback rate for the preview (export is unaffected).
+    @Published var speed: Float = 1 {
+        didSet { if isPlaying { player.rate = speed } }
+    }
 
     private var timeObserver: Any?
     private var endObserver: Any?
 
     init(recording: Recording) {
         let item = AVPlayerItem(url: recording.videoURL)
-        // Decode at preview scale — compositing a full 5K frame per tick is
-        // what makes the preview stutter, and the preview never shows more
-        // than ~1500 px anyway.
-        item.preferredMaximumResolution = CGSize(width: 1920, height: 1200)
+        // Bound the decode size on 5K/6K displays; the compositor samples the
+        // decoded frame on the GPU, so this only trades sharpness at 2× zoom
+        // against decoder bandwidth.
+        item.preferredMaximumResolution = CGSize(width: 3200, height: 2000)
         videoOutput = AVPlayerItemVideoOutput(pixelBufferAttributes: [
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any],
         ])
         item.add(videoOutput)
         player = AVPlayer(playerItem: item)
@@ -40,8 +46,9 @@ final class PreviewTransport: ObservableObject {
             object: item, queue: .main
         ) { [weak self] _ in
             MainActor.assumeIsolated {
-                self?.player.seek(to: .zero, toleranceBefore: .zero, toleranceAfter: .zero)
-                self?.player.play()
+                guard let self else { return }
+                self.player.seek(to: .zero, toleranceBefore: .zero, toleranceAfter: .zero)
+                self.player.rate = self.speed
             }
         }
     }
@@ -55,13 +62,13 @@ final class PreviewTransport: ObservableObject {
         if isPlaying {
             player.pause()
         } else {
-            player.play()
+            player.rate = speed
         }
         isPlaying.toggle()
     }
 
     func play() {
-        player.play()
+        player.rate = speed
         isPlaying = true
     }
 
@@ -89,29 +96,41 @@ struct CompositedPreview: NSViewRepresentable {
     }
 }
 
+/// Composites on every display refresh — not just when the player decodes a
+/// new frame — so the camera keeps gliding across the long static stretches
+/// of a ScreenCaptureKit recording. Frames are rendered by Core Image on the
+/// GPU into IOSurface-backed buffers that the layer displays directly.
 final class RecordingPreviewNSView: NSView {
     private let transport: PreviewTransport
     private let events: RecordingEventLog
     private var options: RecordingExportOptions
 
     private var compositor: RecordingCompositor
-    private var bitmap: CGContext?
     private var displayLink: CADisplayLink?
-    private var lastFrame: (image: CGImage, t: Double)?
+    private var lastFrame: CVPixelBuffer?
+    private var lastRenderedTime: Double = -1
 
-    /// Preview render width — smaller than export for 60 fps CPU compositing.
-    private static let previewWidth: CGFloat = 1100
+    /// Triple-buffered render targets: the layer shows one while the next is
+    /// drawn.
+    private var targets: [CVPixelBuffer] = []
+    private var targetIndex = 0
+
+    /// Preview render width — enough for a Retina canvas without decoding
+    /// more than needed.
+    private static let previewWidth: CGFloat = 1600
 
     init(transport: PreviewTransport, events: RecordingEventLog, options: RecordingExportOptions) {
         self.transport = transport
         self.events = events
         self.options = options
-        self.compositor = RecordingCompositor(events: events, options: options, maxWidth: Self.previewWidth)
+        self.compositor = RecordingCompositor(events: events, options: options,
+                                              duration: transport.duration,
+                                              maxWidth: Self.previewWidth)
         super.init(frame: .zero)
         wantsLayer = true
         layer?.contentsGravity = .resizeAspect
         layer?.backgroundColor = .clear
-        rebuildBitmap()
+        rebuildTargets()
     }
 
     @available(*, unavailable)
@@ -120,24 +139,32 @@ final class RecordingPreviewNSView: NSView {
     func apply(options: RecordingExportOptions) {
         guard options != self.options else { return }
         self.options = options
-        compositor = RecordingCompositor(events: events, options: options, maxWidth: Self.previewWidth)
-        rebuildBitmap()
-        // Re-render the frozen frame immediately so paused edits are live too.
-        if let lastFrame {
-            renderAndDisplay(frame: lastFrame.image, t: lastFrame.t, forceResimulate: true)
+        // A fresh compositor re-simulates the camera up to the current time,
+        // so paused edits are live too.
+        compositor = RecordingCompositor(events: events, options: options,
+                                         duration: transport.duration,
+                                         maxWidth: Self.previewWidth)
+        rebuildTargets()
+        if let lastFrame, lastRenderedTime >= 0 {
+            renderAndDisplay(frame: lastFrame, t: lastRenderedTime)
         }
     }
 
-    private func rebuildBitmap() {
+    private func rebuildTargets() {
         let size = compositor.geometry.outputSize
-        bitmap = CGContext(data: nil,
-                           width: Int(size.width),
-                           height: Int(size.height),
-                           bitsPerComponent: 8,
-                           bytesPerRow: 0,
-                           space: CGColorSpace(name: CGColorSpace.sRGB)!,
-                           bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
-                               | CGBitmapInfo.byteOrder32Little.rawValue)
+        let attributes: [String: Any] = [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+            kCVPixelBufferWidthKey as String: Int(size.width),
+            kCVPixelBufferHeightKey as String: Int(size.height),
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any],
+        ]
+        targets = (0..<3).compactMap { _ in
+            var buffer: CVPixelBuffer?
+            CVPixelBufferCreate(nil, Int(size.width), Int(size.height),
+                                kCVPixelFormatType_32BGRA, attributes as CFDictionary, &buffer)
+            return buffer
+        }
+        targetIndex = 0
     }
 
     override func viewDidMoveToWindow() {
@@ -152,24 +179,29 @@ final class RecordingPreviewNSView: NSView {
 
     @objc private func tick() {
         let itemTime = transport.videoOutput.itemTime(forHostTime: CACurrentMediaTime())
-        guard transport.videoOutput.hasNewPixelBuffer(forItemTime: itemTime),
-              let pixelBuffer = transport.videoOutput.copyPixelBuffer(forItemTime: itemTime,
-                                                                      itemTimeForDisplay: nil) else { return }
-        var frameImage: CGImage?
-        VTCreateCGImageFromCVPixelBuffer(pixelBuffer, options: nil, imageOut: &frameImage)
-        guard let frameImage else { return }
-        renderAndDisplay(frame: frameImage, t: itemTime.seconds, forceResimulate: false)
+        guard itemTime.isValid, itemTime.seconds.isFinite else { return }
+        var newFrame = false
+        if transport.videoOutput.hasNewPixelBuffer(forItemTime: itemTime),
+           let pixelBuffer = transport.videoOutput.copyPixelBuffer(forItemTime: itemTime,
+                                                                   itemTimeForDisplay: nil) {
+            lastFrame = pixelBuffer
+            newFrame = true
+        }
+        guard let frame = lastFrame else { return }
+        let t = itemTime.seconds
+        // Paused and nothing new: keep the last composite.
+        guard newFrame || abs(t - lastRenderedTime) > 1e-4 else { return }
+        renderAndDisplay(frame: frame, t: t)
     }
 
-    private func renderAndDisplay(frame: CGImage, t: Double, forceResimulate: Bool) {
-        guard let bitmap else { return }
-        lastFrame = (frame, t)
-        if forceResimulate {
-            // A tiny backward nudge makes the compositor re-simulate the
-            // camera deterministically up to t.
-            compositor.render(frame: frame, at: max(0, t - 0.001), into: bitmap)
+    private func renderAndDisplay(frame: CVPixelBuffer, t: Double) {
+        guard !targets.isEmpty else { return }
+        targetIndex = (targetIndex + 1) % targets.count
+        let target = targets[targetIndex]
+        compositor.render(frame: frame, at: t, into: target)
+        lastRenderedTime = t
+        if let surface = CVPixelBufferGetIOSurface(target)?.takeUnretainedValue() {
+            layer?.contents = surface
         }
-        compositor.render(frame: frame, at: t, into: bitmap)
-        layer?.contents = bitmap.makeImage()
     }
 }

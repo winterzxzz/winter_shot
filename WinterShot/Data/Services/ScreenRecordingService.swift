@@ -155,7 +155,7 @@ final class ScreenRecordingService: ScreenRecorder {
         return (recording, log)
     }
 
-    static func sidecarURL(for videoURL: URL) -> URL {
+    nonisolated static func sidecarURL(for videoURL: URL) -> URL {
         videoURL.deletingPathExtension().appendingPathExtension("wsrec.json")
     }
 }
