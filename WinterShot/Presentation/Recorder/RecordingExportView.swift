@@ -99,6 +99,7 @@ struct RecordingExportView: View {
     @State private var cropAspect: CropAspect = .any
     @State private var cropStill: CGImage?
     @State private var wallpaperCategory: String = WallpaperLibrary.shared.categories.first ?? ""
+    @State private var videoThumb: CGImage?
     @StateObject private var transport: PreviewTransport
     @State private var isExporting = false
     @State private var progress: Double = 0
@@ -737,6 +738,7 @@ struct RecordingExportView: View {
                         .labelsHidden()
                 }
             case .image: imageFields
+            case .video: videoFields
             }
         }
         StudioSection(isLast: true) {
@@ -833,6 +835,37 @@ struct RecordingExportView: View {
         }
     }
 
+    @ViewBuilder private var videoFields: some View {
+        StudioField("Video", description: "Any video on your Mac, scaled to fill the canvas. It loops when shorter than the recording; its sound is not used.") {
+            HStack(spacing: 10) {
+                if let thumb = videoThumb {
+                    Image(decorative: thumb, scale: 1)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 64, height: 40)
+                        .clipShape(RoundedRectangle(cornerRadius: Studio.radius))
+                        .overlay(RoundedRectangle(cornerRadius: Studio.radius).strokeBorder(Studio.border))
+                }
+                StudioButton(options.background.videoPath == nil ? "Choose video…" : "Change video…",
+                             icon: "film", kind: .secondary, wide: options.background.videoPath == nil) {
+                    chooseVideo()
+                }
+            }
+            .task(id: options.background.videoPath) {
+                guard let path = options.background.videoPath else {
+                    videoThumb = nil
+                    return
+                }
+                videoThumb = await RecordingStills.frame(of: URL(fileURLWithPath: path), at: 0,
+                                                         maxSize: CGSize(width: 320, height: 200))
+            }
+        }
+        StudioField("Background blur") {
+            StudioSlider(value: $options.background.blur, in: 0...1, step: 0.05,
+                         resetValue: 0) { String(format: "%.0f%%", $0 * 100) }
+        }
+    }
+
     private func chooseImage() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.image]
@@ -840,6 +873,15 @@ struct RecordingExportView: View {
         panel.canChooseDirectories = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
         options.background.imagePath = url.path
+    }
+
+    private func chooseVideo() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.movie]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        options.background.videoPath = url.path
     }
 
     private var paddingPercent: Binding<Double> {
@@ -944,6 +986,8 @@ struct RecordingExportView: View {
                        showMasks: !options.masks.isEmpty || editMode == .mask,
                        selectedMaskID: selectedMaskID,
                        onSeek: { t in transport.seek(to: t) },
+                       onPreview: { t in transport.previewSeek(to: t) },
+                       onPreviewEnd: { transport.endPreview() },
                        onSelectMask: { selectMask($0) },
                        onMoveMask: { id, start, end in
                            updateMask(id) { $0.start = start; $0.end = end }
@@ -1163,6 +1207,8 @@ private struct StudioTimeline: View {
     let showMasks: Bool
     let selectedMaskID: UUID?
     let onSeek: (Double) -> Void
+    let onPreview: (Double) -> Void
+    let onPreviewEnd: () -> Void
     let onSelectMask: (UUID?) -> Void
     let onMoveMask: (UUID, Double, Double) -> Void
 
@@ -1191,6 +1237,19 @@ private struct StudioTimeline: View {
                 playhead(width: width)
             }
             .contentShape(Rectangle())
+            // Hover preview, like Screen Studio: while paused, the preview
+            // follows the pointer without moving the real playhead, and
+            // snaps back to it when the pointer leaves the timeline.
+            .onContinuousHover { phase in
+                switch phase {
+                case .active(let location):
+                    let f = min(max(location.x / width, 0), 1)
+                    onPreview(f * duration)
+                case .ended:
+                    onPreviewEnd()
+                }
+            }
+            // Click or drag commits the playhead to that position.
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in

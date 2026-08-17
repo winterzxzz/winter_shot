@@ -466,7 +466,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					73E739B9C72F3EDDE6CEB305 = {
-						DevelopmentTeam = H72HDR4743;
+						DevelopmentTeam = 3YQ3747D5H;
 						ProvisioningStyle = Manual;
 					};
 				};
@@ -650,7 +650,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = H72HDR4743;
+				DEVELOPMENT_TEAM = 3YQ3747D5H;
 				ENABLE_HARDENED_RUNTIME = NO;
 				INFOPLIST_FILE = WinterShot/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -734,7 +734,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = H72HDR4743;
+				DEVELOPMENT_TEAM = 3YQ3747D5H;
 				ENABLE_HARDENED_RUNTIME = NO;
 				INFOPLIST_FILE = WinterShot/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

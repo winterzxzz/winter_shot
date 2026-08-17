@@ -40,6 +40,9 @@ final class RecordingExporterService: RecordingRenderer {
                                                    options: options,
                                                    duration: duration,
                                                    maxWidth: options.maxOutputWidth)
+        // A video background decodes on demand; wait for it to open so the
+        // first exported frame already shows it.
+        await compositor.prepareBackground()
         let outputSize = compositor.geometry.outputSize
         let fps = RecordingCompositor.tickRate
         let timescale: CMTimeScale = 600

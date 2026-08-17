@@ -1,4 +1,5 @@
 import AppKit
+import AVFoundation
 import CoreImage
 import CoreVideo
 import Metal
@@ -41,6 +42,11 @@ final class RecordingCompositor {
     private var simTime: Double = -1
 
     private let backdrop: CIImage
+    /// For video backgrounds the backdrop can't be baked: the sampler decodes
+    /// the background clip and `shadowOverlay` carries the (still static)
+    /// drop shadow that must sit on top of it.
+    private let backgroundVideo: BackgroundVideoSampler?
+    private let shadowOverlay: CIImage?
     private let mask: CIImage
     /// One pre-rendered sprite per pointer kind (built on the main actor at init).
     private let cursorSprites: [CursorKind: CursorSprite]
@@ -88,7 +94,16 @@ final class RecordingCompositor {
             sprites[kind] = CursorSprite.make(kind, tint: options.cursorTint)
         }
         self.cursorSprites = sprites
-        self.backdrop = Self.gpuResident(Self.makeBackdrop(geometry: geometry, events: events, options: options))
+        if options.background.kind == .video, let path = options.background.videoPath {
+            self.backgroundVideo = BackgroundVideoSampler(url: URL(fileURLWithPath: path))
+            self.shadowOverlay = Self.gpuResident(Self.makeShadowOverlay(geometry: geometry,
+                                                                         events: events, options: options))
+        } else {
+            self.backgroundVideo = nil
+            self.shadowOverlay = nil
+        }
+        self.backdrop = Self.gpuResident(Self.makeBackdrop(geometry: geometry, events: events, options: options,
+                                                           shadowInBackdrop: backgroundVideo == nil))
         self.mask = Self.gpuResident(Self.makeMask(geometry: geometry))
         self.rippleDisc = Self.gpuResident(Self.makeRippleDisc())
     }
@@ -313,9 +328,46 @@ final class RecordingCompositor {
         return zoomer
             .cropped(to: contentRect)
             .applyingFilter("CIBlendWithMask", parameters: [
-                kCIInputBackgroundImageKey: backdrop,
+                kCIInputBackgroundImageKey: currentBackdrop(at: t),
                 kCIInputMaskImageKey: mask,
             ])
+    }
+
+    /// The layer behind the content at `t`: the baked backdrop, or — for a
+    /// video background — the looped clip frame aspect-filled over it (the
+    /// bake shows through until the clip is ready) under the static shadow.
+    private func currentBackdrop(at t: Double) -> CIImage {
+        guard let backgroundVideo else { return backdrop }
+        var background = backdrop
+        if let frame = backgroundVideo.frame(at: t) {
+            let size = geometry.outputSize
+            var video = frame
+            let scale = max(size.width / max(video.extent.width, 1),
+                            size.height / max(video.extent.height, 1))
+            video = video.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+            video = video.transformed(by: CGAffineTransform(translationX: (size.width - video.extent.width) / 2 - video.extent.minX,
+                                                            y: (size.height - video.extent.height) / 2 - video.extent.minY))
+            if options.background.blur > 0.001 {
+                let radius = options.background.blur * 0.03 * Double(max(size.width, size.height))
+                video = video.clampedToExtent()
+                    .applyingFilter("CIGaussianBlur", parameters: [kCIInputRadiusKey: radius])
+            }
+            background = video.cropped(to: CGRect(origin: .zero, size: size))
+        }
+        if let shadowOverlay { background = shadowOverlay.composited(over: background) }
+        return background
+    }
+
+    /// Blocks until the background clip (if any) can deliver frames — the
+    /// exporter calls this so its very first frame already has the video.
+    func prepareBackground() async {
+        await backgroundVideo?.prepare()
+    }
+
+    /// True while a video background is still opening; the preview keeps
+    /// rendering through this so the clip pops in as soon as it's ready.
+    var awaitingBackgroundVideo: Bool {
+        backgroundVideo.map { !$0.isSettled } ?? false
     }
 
     // MARK: - Masks
@@ -430,7 +482,8 @@ final class RecordingCompositor {
     /// geometry: nothing behind the content ever moves.
     private static func makeBackdrop(geometry: Geometry,
                                      events: RecordingEventLog,
-                                     options: RecordingExportOptions) -> CIImage {
+                                     options: RecordingExportOptions,
+                                     shadowInBackdrop: Bool = true) -> CIImage {
         let size = geometry.outputSize
         let bg = options.background
         let contentRect = geometry.contentRect
@@ -454,7 +507,9 @@ final class RecordingCompositor {
             if let path = bg.imagePath {
                 picture = WallpaperLibrary.decode(URL(fileURLWithPath: path), maxPixelSize: max(size.width, size.height))
             }
-        case .gradient, .color:
+        case .gradient, .color, .video:
+            // Video backgrounds are sampled per frame in `currentBackdrop`;
+            // the bake is just the solid fill shown until the clip opens.
             break
         }
         if let picture {
@@ -488,26 +543,55 @@ final class RecordingCompositor {
             context.fill(bounds)
         }
 
-        // Screen Studio shadow: distance 25, angle 90° (down), blur 20 —
-        // scaled from recording points to output pixels, alpha 0.75 × intensity.
-        if bg.shadow > 0.001, bg.hasVisibleBackdrop {
-            let k = contentRect.width / (events.frameWidth / events.pixelScale)
-            let path = CGPath(roundedRect: contentRect,
-                              cornerWidth: geometry.cornerRadius,
-                              cornerHeight: geometry.cornerRadius,
-                              transform: nil)
-            context.saveGState()
-            context.setShadow(offset: CGSize(width: 0, height: -25 * k),
-                              blur: 30 * k,
-                              color: CGColor(gray: 0, alpha: 0.75 * bg.shadow))
-            context.addPath(path)
-            context.setFillColor(CGColor(gray: 0, alpha: 0.6))
-            context.fillPath()
-            context.restoreGState()
+        if shadowInBackdrop {
+            drawShadow(in: context, geometry: geometry, events: events, options: options)
         }
         guard let image = context.makeImage() else {
             return CIImage(color: CIColor(red: 0, green: 0, blue: 0)).cropped(to: bounds)
         }
+        return CIImage(cgImage: image)
+    }
+
+    /// Screen Studio shadow: distance 25, angle 90° (down), blur 20 —
+    /// scaled from recording points to output pixels, alpha 0.75 × intensity.
+    /// The fill under the shadow is fully covered by the content later.
+    private static func drawShadow(in context: CGContext,
+                                   geometry: Geometry,
+                                   events: RecordingEventLog,
+                                   options: RecordingExportOptions) {
+        let bg = options.background
+        guard bg.shadow > 0.001, bg.hasVisibleBackdrop else { return }
+        let contentRect = geometry.contentRect
+        let k = contentRect.width / (events.frameWidth / events.pixelScale)
+        let path = CGPath(roundedRect: contentRect,
+                          cornerWidth: geometry.cornerRadius,
+                          cornerHeight: geometry.cornerRadius,
+                          transform: nil)
+        context.saveGState()
+        context.setShadow(offset: CGSize(width: 0, height: -25 * k),
+                          blur: 30 * k,
+                          color: CGColor(gray: 0, alpha: 0.75 * bg.shadow))
+        context.addPath(path)
+        context.setFillColor(CGColor(gray: 0, alpha: 0.6))
+        context.fillPath()
+        context.restoreGState()
+    }
+
+    /// The drop shadow alone on a clear canvas — composited over the live
+    /// video background every frame, since it can't be baked into it.
+    private static func makeShadowOverlay(geometry: Geometry,
+                                          events: RecordingEventLog,
+                                          options: RecordingExportOptions) -> CIImage {
+        let size = geometry.outputSize
+        guard let context = CGContext(data: nil,
+                                      width: Int(size.width), height: Int(size.height),
+                                      bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: colorSpace,
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue) else {
+            return CIImage.empty()
+        }
+        drawShadow(in: context, geometry: geometry, events: events, options: options)
+        guard let image = context.makeImage() else { return CIImage.empty() }
         return CIImage(cgImage: image)
     }
 
@@ -549,6 +633,115 @@ final class RecordingCompositor {
         context.fillEllipse(in: CGRect(x: 1, y: 1, width: n - 2, height: n - 2))
         guard let image = context.makeImage() else { return CIImage.empty() }
         return CIImage(cgImage: image)
+    }
+}
+
+/// Decodes a background clip for the compositor: `frame(at:)` returns the
+/// clip frame for output time `t`, looping when the clip is shorter than the
+/// recording. Decoding is sequential (an AVAssetReader), which matches both
+/// the preview (forward playback) and the faster-than-realtime exporter; a
+/// backward scrub or a loop wrap just reopens the reader from zero. Audio is
+/// never read. Frames are decoded once and reused while `t` stays within the
+/// same clip frame, so preview and export show identical pixels.
+final class BackgroundVideoSampler {
+    /// Track and duration land from an async load; `frame(at:)` returns nil
+    /// until then (or forever, if the file has no video track).
+    private let lock = NSLock()
+    private var loaded: (asset: AVURLAsset, track: AVAssetTrack, duration: Double)?
+    private var failed = false
+    private var loadTask: Task<Void, Never>?
+
+    // Reader state — touched only by the render thread via `frame(at:)`.
+    private var reader: AVAssetReader?
+    private var output: AVAssetReaderTrackOutput?
+    private var current: (local: Double, image: CIImage)?
+    private var pending: (local: Double, image: CIImage)?
+
+    init(url: URL) {
+        loadTask = Task { [weak self] in
+            let asset = AVURLAsset(url: url)
+            let track = try? await asset.loadTracks(withMediaType: .video).first
+            let duration = (try? await asset.load(.duration).seconds) ?? 0
+            guard let self else { return }
+            self.lock.withLock {
+                if let track, duration > 0.01 {
+                    self.loaded = (asset, track, duration)
+                } else {
+                    self.failed = true
+                }
+            }
+        }
+    }
+
+    deinit {
+        loadTask?.cancel()
+        reader?.cancelReading()
+    }
+
+    /// Whether opening has finished, successfully or not.
+    var isSettled: Bool {
+        lock.lock(); defer { lock.unlock() }
+        return loaded != nil || failed
+    }
+
+    func prepare() async {
+        await loadTask?.value
+    }
+
+    /// Latest decoded frame at or before the looped clip time for `t`.
+    func frame(at t: Double) -> CIImage? {
+        lock.lock()
+        let loaded = self.loaded
+        lock.unlock()
+        guard let (asset, track, duration) = loaded else { return nil }
+        let local = max(0, t).truncatingRemainder(dividingBy: duration)
+
+        // A wrap or a backward scrub lands before the current frame: reopen.
+        if let current, local + 1e-6 < current.local {
+            reader?.cancelReading()
+            reader = nil
+            output = nil
+            self.current = nil
+            pending = nil
+        }
+        if reader == nil, !startReader(asset: asset, track: track) { return current?.image }
+
+        // Advance: promote pending frames due at or before `local`, pulling
+        // more until one is still in the future (or the clip runs out).
+        while true {
+            if let next = pending {
+                guard next.local <= local + 1e-6 else { break }
+                current = next
+                pending = nil
+            } else if let output,
+                      let sample = output.copyNextSampleBuffer(),
+                      let buffer = CMSampleBufferGetImageBuffer(sample) {
+                pending = (CMSampleBufferGetPresentationTimeStamp(sample).seconds,
+                           CIImage(cvPixelBuffer: buffer))
+            } else {
+                // Clip exhausted — hold the last frame until `local` wraps.
+                reader?.cancelReading()
+                reader = nil
+                output = nil
+                break
+            }
+        }
+        return current?.image
+    }
+
+    private func startReader(asset: AVURLAsset, track: AVAssetTrack) -> Bool {
+        guard let reader = try? AVAssetReader(asset: asset) else { return false }
+        let output = AVAssetReaderTrackOutput(track: track, outputSettings: [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:] as [String: Any],
+        ])
+        output.alwaysCopiesSampleData = false
+        guard reader.canAdd(output) else { return false }
+        reader.add(output)
+        guard reader.startReading() else { return false }
+        self.reader = reader
+        self.output = output
+        return true
     }
 }
 

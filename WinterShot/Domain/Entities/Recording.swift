@@ -131,7 +131,7 @@ struct RGBAColor: Codable, Equatable, Hashable {
 
 /// What is painted behind the recording.
 enum RecordingBackgroundKind: String, Codable, CaseIterable, Identifiable {
-    case wallpaper, gradient, color, image
+    case wallpaper, gradient, color, image, video
     var id: String { rawValue }
 
     var label: String {
@@ -140,6 +140,7 @@ enum RecordingBackgroundKind: String, Codable, CaseIterable, Identifiable {
         case .gradient: return "Gradient"
         case .color: return "Color"
         case .image: return "Image"
+        case .video: return "Video"
         }
     }
 }
@@ -176,6 +177,10 @@ struct RecordingBackground: Codable, Equatable {
     var color: RGBAColor = RGBAColor(r: 0.09, g: 0.10, b: 0.16)
     /// Absolute path of a custom image (kind == .image).
     var imagePath: String? = nil
+    /// Absolute path of a custom video (kind == .video). It is aspect-filled
+    /// like an image, loops when shorter than the recording, and its audio
+    /// is never used.
+    var videoPath: String? = nil
     /// Blur applied to wallpaper / image backdrops, 0…1.
     var blur: Double = 0
     /// Padding as a ratio of the average content dimension (0.10 = 10 %).

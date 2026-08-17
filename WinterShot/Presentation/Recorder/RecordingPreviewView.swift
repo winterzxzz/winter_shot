@@ -4,8 +4,8 @@ import Combine
 import CoreVideo
 import IOSurface
 
-/// Owns the AVPlayer driving the polished preview: play/pause, looping, and
-/// a published playhead for the transport bar.
+/// Owns the AVPlayer driving the polished preview: play/pause (single pass,
+/// no looping) and a published playhead for the transport bar.
 @MainActor
 final class PreviewTransport: ObservableObject {
     let player: AVPlayer
@@ -13,7 +13,14 @@ final class PreviewTransport: ObservableObject {
     let duration: Double
 
     @Published var isPlaying = false
+    /// Position shown in the preview. During a hover preview this is the
+    /// transient cursor time; otherwise it tracks the committed playhead.
     @Published var time: Double = 0
+    /// The committed playhead — where playback resumes and where a hover
+    /// preview snaps back to. Moves only on play, commit seeks, or clicks.
+    private var headTime: Double = 0
+    /// True while the pointer is hovering the timeline (paused preview).
+    private var isPreviewing = false
     /// Playback rate for the preview (export is unaffected).
     @Published var speed: Float = 1 {
         didSet { if isPlaying { player.rate = speed } }
@@ -36,15 +43,21 @@ final class PreviewTransport: ObservableObject {
         item.add(videoOutput)
         player = AVPlayer(playerItem: item)
         player.isMuted = true
-        // Keep the rate when the item runs out; the end notification below
-        // rewinds it, so the preview loops instead of stalling at the end.
-        player.actionAtItemEnd = .none
+        // Stop at the end of the clip; play() rewinds when the playhead is
+        // parked there, so the play button doubles as replay.
+        player.actionAtItemEnd = .pause
         duration = recording.duration
 
         timeObserver = player.addPeriodicTimeObserver(
             forInterval: CMTime(value: 1, timescale: 30), queue: .main
         ) { [weak self] cmTime in
-            MainActor.assumeIsolated { self?.time = cmTime.seconds }
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.time = cmTime.seconds
+                // Keep the committed playhead in sync except while a hover
+                // preview is temporarily driving the player.
+                if !self.isPreviewing { self.headTime = self.time }
+            }
         }
         endObserver = NotificationCenter.default.addObserver(
             forName: AVPlayerItem.didPlayToEndTimeNotification,
@@ -52,14 +65,9 @@ final class PreviewTransport: ObservableObject {
         ) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self else { return }
-                // Rewind, then (only once the seek has landed) make sure we
-                // are still rolling — setting the rate mid-seek is ignored.
-                self.player.seek(to: .zero, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
-                    Task { @MainActor [weak self] in
-                        guard let self, self.isPlaying else { return }
-                        self.player.rate = self.speed
-                    }
-                }
+                // Play once: park the playhead at the end and flip the
+                // transport to paused so the play button reads as replay.
+                self.isPlaying = false
             }
         }
         // Mirror the player's real state so the play/pause button never lies
@@ -88,21 +96,46 @@ final class PreviewTransport: ObservableObject {
     }
 
     func play() {
+        isPreviewing = false
         // If we're parked at the very end, start over instead of doing nothing.
         if let item = player.currentItem, item.duration.isNumeric,
            item.currentTime() >= item.duration - CMTime(value: 1, timescale: 30) {
             player.seek(to: .zero, toleranceBefore: .zero, toleranceAfter: .zero)
+            headTime = 0
+            time = 0
         }
         player.rate = speed
         isPlaying = true
     }
 
-    /// Moves the playhead; playback state is left as it is (scrubbing while
-    /// playing keeps playing).
-    func seek(to seconds: Double) {
+    private func move(to seconds: Double) {
         let target = CMTime(seconds: seconds, preferredTimescale: 600)
         player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)
         time = seconds
+    }
+
+    /// Commits the playhead to `seconds`. Used by clicks, the transport bar,
+    /// and jump-to-mask — this is the position playback resumes from.
+    func seek(to seconds: Double) {
+        isPreviewing = false
+        headTime = seconds
+        move(to: seconds)
+    }
+
+    /// Screen Studio-style hover preview: while paused, follow the pointer
+    /// without disturbing the committed playhead. Ignored during playback.
+    func previewSeek(to seconds: Double) {
+        guard !isPlaying else { return }
+        isPreviewing = true
+        move(to: seconds)
+    }
+
+    /// Pointer left the timeline: snap the preview back to the committed
+    /// playhead. No-op if we weren't previewing.
+    func endPreview() {
+        guard isPreviewing else { return }
+        isPreviewing = false
+        move(to: headTime)
     }
 }
 
@@ -136,6 +169,7 @@ final class RecordingPreviewNSView: NSView {
     private var displayLink: CADisplayLink?
     private var lastFrame: CVPixelBuffer?
     private var lastRenderedTime: Double = -1
+    private var wasAwaitingBackground = false
 
     /// Triple-buffered render targets: the layer shows one while the next is
     /// drawn.
@@ -216,8 +250,12 @@ final class RecordingPreviewNSView: NSView {
         }
         guard let frame = lastFrame else { return }
         let t = itemTime.seconds
-        // Paused and nothing new: keep the last composite.
-        guard newFrame || abs(t - lastRenderedTime) > 1e-4 else { return }
+        // Paused and nothing new: keep the last composite — unless a video
+        // background is still opening (render through it, plus one extra
+        // tick once it settles, so the clip appears without a transport nudge).
+        let awaiting = compositor.awaitingBackgroundVideo
+        defer { wasAwaitingBackground = awaiting }
+        guard newFrame || abs(t - lastRenderedTime) > 1e-4 || awaiting || wasAwaitingBackground else { return }
         renderAndDisplay(frame: frame, t: t)
     }
 
