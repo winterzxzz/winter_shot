@@ -15,8 +15,8 @@ targets:
       path: WinterShot/Info.plist
       properties:
         CFBundleDisplayName: WinterShot
-        CFBundleShortVersionString: "0.1.0"
-        CFBundleVersion: "1"
+        CFBundleShortVersionString: "0.2.0"
+        CFBundleVersion: "2"
         LSUIElement: true
         LSMinimumSystemVersion: "14.0"
         NSHumanReadableCopyright: "MIT License"
