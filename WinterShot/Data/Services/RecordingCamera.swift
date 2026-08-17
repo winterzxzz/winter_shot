@@ -247,9 +247,11 @@ struct CursorTrack {
         var scale: Double
         /// Tilt in degrees, positive = clockwise on screen.
         var tilt: Double
+        /// The pointer the app was showing (nil when the log has no types).
+        var kind: CursorKind? = nil
     }
 
-    private let samples: [(t: Double, point: CGPoint)]
+    private let samples: [(t: Double, point: CGPoint, kind: CursorKind?)]
     private let clickTimes: [Double]
     private let pixelScale: Double
 
@@ -269,22 +271,36 @@ struct CursorTrack {
 
     init(events: RecordingEventLog) {
         samples = events.cursorSamples
-            .map { (t: $0.t - events.firstFrameTime, point: CGPoint(x: $0.x, y: $0.y)) }
+            .map { (t: $0.t - events.firstFrameTime, point: CGPoint(x: $0.x, y: $0.y),
+                    kind: $0.kind.flatMap(CursorKind.init(rawValue:))) }
             .sorted { $0.t < $1.t }
         clickTimes = events.clicks.map { $0.t - events.firstFrameTime }.sorted()
         pixelScale = max(events.pixelScale, 1)
+    }
+
+    /// Index of the last sample at or before `t` (binary search).
+    private func sampleIndex(at t: Double) -> Int? {
+        guard !samples.isEmpty else { return nil }
+        if t <= samples[0].t { return 0 }
+        var lo = 0, hi = samples.count - 1
+        while lo < hi {
+            let mid = (lo + hi + 1) / 2
+            if samples[mid].t <= t { lo = mid } else { hi = mid - 1 }
+        }
+        return lo
+    }
+
+    /// The pointer kind recorded at `t` (nil for logs without types).
+    func rawKind(at t: Double) -> CursorKind? {
+        guard let i = sampleIndex(at: t) else { return nil }
+        return samples[i].kind
     }
 
     /// Raw (unsmoothed) cursor position at `t`, linearly interpolated.
     func rawPosition(at t: Double) -> CGPoint? {
         guard let first = samples.first else { return nil }
         if t <= first.t { return first.point }
-        // Binary search for the last sample at or before t.
-        var lo = 0, hi = samples.count - 1
-        while lo < hi {
-            let mid = (lo + hi + 1) / 2
-            if samples[mid].t <= t { lo = mid } else { hi = mid - 1 }
-        }
+        guard let lo = sampleIndex(at: t) else { return nil }
         let a = samples[lo]
         guard lo + 1 < samples.count else { return a.point }
         let b = samples[lo + 1]
@@ -313,7 +329,7 @@ struct CursorTrack {
 
     mutating func snap(to t: Double) {
         guard let raw = rawPosition(at: t) else { pose = nil; previousPose = nil; return }
-        pose = Pose(position: raw, scale: 1, tilt: targetTilt(at: t, raw: raw))
+        pose = Pose(position: raw, scale: 1, tilt: targetTilt(at: t, raw: raw), kind: rawKind(at: t))
         previousPose = pose
         velocity = .zero
         pulseVelocity = 0
@@ -341,6 +357,7 @@ struct CursorTrack {
 
         MotionSpring.mouseMovement.step(&current.tilt, &tiltVelocity,
                                         toward: targetTilt(at: t, raw: raw), dt: dt)
+        current.kind = rawKind(at: t)
         pose = current
     }
 }

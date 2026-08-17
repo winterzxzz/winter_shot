@@ -866,6 +866,10 @@ struct RecordingExportView: View {
 
     // MARK: Cursor & Animations
 
+    private var recordingHasCursorTypes: Bool {
+        events.cursorSamples.contains { $0.kind != nil }
+    }
+
     @ViewBuilder private var cursorPanel: some View {
         StudioSection {
             StudioRow("Smooth cursor", description: "Replace the recorded pointer with a synthetic one that glides between positions.") {
@@ -878,6 +882,27 @@ struct RecordingExportView: View {
             .disabled(!options.showCursor)
             .opacity(options.showCursor ? 1 : 0.4)
         }
+        StudioSection {
+            StudioRow("Follow the app's cursor",
+                      description: recordingHasCursorTypes
+                        ? "Show the pointer the app was showing — text cursor over text, hand over links, resize arrows at edges."
+                        : "This recording has no pointer types (recorded before they were captured); the pointer below is used.") {
+                StudioToggle(isOn: $options.followRecordedCursor)
+            }
+            .disabled(!recordingHasCursorTypes)
+            .opacity(recordingHasCursorTypes ? 1 : 0.6)
+            StudioField("Pointer", description: options.followRecordedCursor && recordingHasCursorTypes
+                        ? "Used wherever the app's pointer isn't one of the standard ones."
+                        : nil) {
+                CursorKindGrid(selection: $options.cursorType, tint: options.cursorTint)
+            }
+            StudioField("Color") {
+                StudioSegmented(selection: $options.cursorTint,
+                                options: CursorTint.allCases.map { ($0, $0.label) })
+            }
+        }
+        .disabled(!options.showCursor)
+        .opacity(options.showCursor ? 1 : 0.4)
         StudioSection(isLast: true) {
             StudioRow("Click effect", description: "A quick circle where the mouse was pressed.") {
                 StudioToggle(isOn: $options.clickRipples)
@@ -1019,6 +1044,51 @@ struct RecordingExportView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Cursor picker
+
+/// The standard macOS pointers as selectable tiles, drawn from the same
+/// NSCursor artwork the compositor renders.
+private struct CursorKindGrid: View {
+    @Binding var selection: CursorKind
+    let tint: CursorTint
+
+    var body: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 6), spacing: 6) {
+            ForEach(CursorKind.allCases) { kind in
+                let selected = kind == selection
+                Button {
+                    withAnimation(.easeOut(duration: 0.15)) { selection = kind }
+                } label: {
+                    let light = kind.isLight(under: tint)
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 7)
+                            .fill(light ? Color.black.opacity(0.7) : Color.white.opacity(0.9))
+                        Image(nsImage: kind.nsCursor.image)
+                            .resizable()
+                            .interpolation(.high)
+                            .scaledToFit()
+                            .frame(width: 22, height: 22)
+                            .colorInvert(kind.needsInversion(for: tint))
+                    }
+                    .frame(height: 40)
+                    .overlay(RoundedRectangle(cornerRadius: 7)
+                        .strokeBorder(selected ? Studio.primaryText : Color.white.opacity(0.08),
+                                      lineWidth: selected ? 2 : 1))
+                    .contentShape(RoundedRectangle(cornerRadius: 7))
+                }
+                .buttonStyle(.plain)
+                .help(kind.label)
+            }
+        }
+    }
+}
+
+private extension View {
+    @ViewBuilder func colorInvert(_ on: Bool) -> some View {
+        if on { self.colorInvert() } else { self }
     }
 }
 

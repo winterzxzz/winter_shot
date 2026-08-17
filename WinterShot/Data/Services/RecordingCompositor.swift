@@ -42,7 +42,8 @@ final class RecordingCompositor {
 
     private let backdrop: CIImage
     private let mask: CIImage
-    private let cursorSprite: CursorSprite
+    /// One pre-rendered sprite per pointer kind (built on the main actor at init).
+    private let cursorSprites: [CursorKind: CursorSprite]
     private let rippleDisc: CIImage
     private static let rippleDiscSize: CGFloat = 128
 
@@ -82,7 +83,11 @@ final class RecordingCompositor {
         let frame = CGSize(width: events.frameWidth, height: events.frameHeight)
         self.camera = CameraRig(frame: frame, events: events, duration: duration, options: options)
         self.cursor = CursorTrack(events: events)
-        self.cursorSprite = CursorSprite.arrow()
+        var sprites: [CursorKind: CursorSprite] = [:]
+        for kind in CursorKind.allCases {
+            sprites[kind] = CursorSprite.make(kind, tint: options.cursorTint)
+        }
+        self.cursorSprites = sprites
         self.backdrop = Self.gpuResident(Self.makeBackdrop(geometry: geometry, events: events, options: options))
         self.mask = Self.gpuResident(Self.makeMask(geometry: geometry))
         self.rippleDisc = Self.gpuResident(Self.makeRippleDisc())
@@ -283,7 +288,8 @@ final class RecordingCompositor {
         // movement plus the camera's).
         if options.showCursor, let pose = cursor.pose {
             let c = out(pose.position)
-            let sprite = cursorSprite
+            let kind = (options.followRecordedCursor ? pose.kind : nil) ?? options.cursorType
+            let sprite = cursorSprites[kind] ?? cursorSprites[.arrow]!
             let kc = events.pixelScale * options.cursorScale * k * pose.scale / Double(sprite.pixelsPerPoint)
             let transform = CGAffineTransform(translationX: -sprite.hotSpotPixels.x, y: -sprite.hotSpotPixels.y)
                 .concatenating(CGAffineTransform(scaleX: kc, y: kc))
@@ -557,13 +563,27 @@ struct CursorSprite {
     let hotSpotPixels: CGPoint
 
     @MainActor
-    static func arrow() -> CursorSprite {
-        let cursor = NSCursor.arrow
-        let size = cursor.image.size
-        let hotSpot = cursor.hotSpot // points, from the image's top-left
+    static func arrow() -> CursorSprite { make(.arrow, tint: .system) }
+
+    /// Sprite for a standard pointer, optionally inverted to a white pointer
+    /// with a dark outline.
+    @MainActor
+    static func make(_ kind: CursorKind, tint: CursorTint) -> CursorSprite {
+        let cursor = kind.nsCursor
+        var size = cursor.image.size
+        var hotSpot = cursor.hotSpot // points, from the image's top-left
         var rect = CGRect(origin: .zero, size: size)
-        let cgImage = cursor.image.cgImage(forProposedRect: &rect, context: nil, hints: nil) ?? fallback()
-        return render(cgImage, size: size, hotSpot: hotSpot)
+        var cgImage = cursor.image.cgImage(forProposedRect: &rect, context: nil, hints: nil)
+        if cgImage == nil || size.width < 1 {
+            cgImage = fallback()
+            size = CGSize(width: 16, height: 24)
+            hotSpot = CGPoint(x: 1, y: 1)
+        }
+        if kind.needsInversion(for: tint), let source = cgImage {
+            let inverted = CIImage(cgImage: source).applyingFilter("CIColorInvert")
+            cgImage = RecordingCompositor.context.createCGImage(inverted, from: inverted.extent) ?? source
+        }
+        return render(cgImage ?? fallback(), size: size, hotSpot: hotSpot)
     }
 
     private static func render(_ cgImage: CGImage, size: CGSize, hotSpot: CGPoint) -> CursorSprite {

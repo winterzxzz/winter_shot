@@ -14,6 +14,7 @@ final class ScreenRecordingService: ScreenRecorder {
         case notRecording
         case screenCaptureUnavailable
         case displayNotFound
+        case regionTooSmall
         case writerFailed(String)
 
         var errorDescription: String? {
@@ -22,6 +23,7 @@ final class ScreenRecordingService: ScreenRecorder {
             case .notRecording: return "No recording is in progress."
             case .screenCaptureUnavailable: return "Screen capture is unavailable. Check Screen Recording permission."
             case .displayNotFound: return "Could not find the display to record."
+            case .regionTooSmall: return "The selected region is too small to record."
             case .writerFailed(let reason): return "Could not write the recording: \(reason)"
             }
         }
@@ -42,7 +44,7 @@ final class ScreenRecordingService: ScreenRecorder {
         self.store = store
     }
 
-    func start() async throws {
+    func start(target: RecordingTarget) async throws {
         guard !isRecording else { throw RecordingError.alreadyRecording }
 
         let content: SCShareableContent
@@ -52,11 +54,21 @@ final class ScreenRecordingService: ScreenRecorder {
             throw RecordingError.screenCaptureUnavailable
         }
 
-        // Record the display under the cursor; fall back to the main display.
-        let mouse = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first(where: { $0.frame.contains(mouse) }) ?? NSScreen.main
+        // Record the display holding the target region, or the one under the
+        // cursor for full-screen; fall back to the main display.
+        let screen: NSScreen?
+        switch target {
+        case .screen:
+            let mouse = NSEvent.mouseLocation
+            screen = NSScreen.screens.first(where: { $0.frame.contains(mouse) }) ?? NSScreen.main
+        case .region(let cgRect):
+            screen = NSScreen.screens.first(where: { display in
+                guard let id = Self.displayID(of: display) else { return false }
+                return CGDisplayBounds(id).contains(CGPoint(x: cgRect.midX, y: cgRect.midY))
+            }) ?? NSScreen.main
+        }
         guard let screen,
-              let displayID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID,
+              let displayID = Self.displayID(of: screen),
               let display = content.displays.first(where: { $0.displayID == displayID }) else {
             throw RecordingError.displayNotFound
         }
@@ -66,12 +78,40 @@ final class ScreenRecordingService: ScreenRecorder {
         let filter = SCContentFilter(display: display, excludingWindows: ownWindows)
 
         let scale = screen.backingScaleFactor
-        let pixelSize = CGSize(width: (screen.frame.width * scale).rounded(),
+
+        // For a region target, crop the display capture to the selection.
+        // `screenFrame` becomes the region's AppKit rect so the cursor
+        // sampler's global→pixel mapping stays correct.
+        var screenFrame = screen.frame
+        var pixelSize = CGSize(width: (screen.frame.width * scale).rounded(),
                                height: (screen.frame.height * scale).rounded())
+        var sourceRect: CGRect?
+        if case .region(let cgRect) = target {
+            let displayBounds = CGDisplayBounds(displayID)
+            var rect = cgRect.intersection(displayBounds).integral.intersection(displayBounds)
+            // The H.264 writer needs even pixel dimensions; shave the region
+            // (never grow it) and keep the source rect in exact proportion.
+            rect.size.width = (rect.width * scale / 2).rounded(.down) * 2 / scale
+            rect.size.height = (rect.height * scale / 2).rounded(.down) * 2 / scale
+            guard rect.width * scale >= 32, rect.height * scale >= 32 else {
+                throw RecordingError.regionTooSmall
+            }
+            sourceRect = CGRect(x: rect.minX - displayBounds.minX,
+                                y: rect.minY - displayBounds.minY,
+                                width: rect.width, height: rect.height)
+            pixelSize = CGSize(width: rect.width * scale, height: rect.height * scale)
+            // Global CG rect (top-left origin) → global AppKit rect.
+            let primaryHeight = CGDisplayBounds(CGMainDisplayID()).height
+            screenFrame = CGRect(x: rect.minX, y: primaryHeight - rect.maxY,
+                                 width: rect.width, height: rect.height)
+        }
 
         let configuration = SCStreamConfiguration()
         configuration.width = Int(pixelSize.width)
         configuration.height = Int(pixelSize.height)
+        if let sourceRect {
+            configuration.sourceRect = sourceRect
+        }
         configuration.minimumFrameInterval = CMTime(value: 1, timescale: 60)
         configuration.queueDepth = 6
         configuration.pixelFormat = kCVPixelFormatType_32BGRA
@@ -100,7 +140,7 @@ final class ScreenRecordingService: ScreenRecorder {
         let output = StreamOutput(sink: sink)
         let session = RecordingSession(id: UUID(),
                                        videoURL: videoURL,
-                                       screenFrame: screen.frame,
+                                       screenFrame: screenFrame,
                                        pixelScale: scale,
                                        pixelSize: pixelSize)
 
@@ -157,6 +197,10 @@ final class ScreenRecordingService: ScreenRecorder {
 
     nonisolated static func sidecarURL(for videoURL: URL) -> URL {
         videoURL.deletingPathExtension().appendingPathExtension("wsrec.json")
+    }
+
+    private static func displayID(of screen: NSScreen) -> CGDirectDisplayID? {
+        screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID
     }
 }
 
@@ -283,9 +327,12 @@ private final class RecordingSession {
         clickMonitors.removeAll()
     }
 
+    private let cursorTypes = CursorTypeIdentifier()
+
     private func sampleCursor() {
         let p = videoPoint(from: NSEvent.mouseLocation)
-        cursorSamples.append(CursorSample(t: CACurrentMediaTime(), x: p.x, y: p.y))
+        cursorSamples.append(CursorSample(t: CACurrentMediaTime(), x: p.x, y: p.y,
+                                          kind: cursorTypes.current()?.rawValue))
     }
 
     private func recordClick() {
@@ -316,5 +363,63 @@ private final class RecordingSession {
         encoder.outputFormatting = [.sortedKeys]
         try encoder.encode(log).write(to: url, options: .atomic)
         FileScreenshotStore.hide(url)
+    }
+}
+
+
+// MARK: - Cursor type
+
+/// Names the pointer currently shown anywhere on screen by matching
+/// `NSCursor.currentSystem` against the standard cursors' bitmaps — the
+/// same standard set Screen Studio records. Unknown / custom pointers map to
+/// nil (the compositor then falls back to the chosen pointer).
+@MainActor
+final class CursorTypeIdentifier {
+    private var table: [Data: CursorKind] = [:]
+    private var lastTiff: Data?
+    private var lastKind: CursorKind?
+
+    init() { rebuild() }
+
+    private func rebuild() {
+        table.removeAll()
+        for kind in CursorKind.allCases {
+            let image = kind.nsCursor.image
+            guard image.size.width > 0, let tiff = image.tiffRepresentation else { continue }
+            table[tiff] = kind
+        }
+    }
+
+    func current() -> CursorKind? {
+        guard let cursor = NSCursor.currentSystem, let tiff = cursor.image.tiffRepresentation else { return nil }
+        if tiff == lastTiff { return lastKind }
+        var kind = table[tiff]
+        if kind == nil, table.count < CursorKind.allCases.count {
+            // Some standard cursor images load lazily; retry once they exist.
+            rebuild()
+            kind = table[tiff]
+        }
+        lastTiff = tiff
+        lastKind = kind
+        return kind
+    }
+}
+
+extension CursorKind {
+    var nsCursor: NSCursor {
+        switch self {
+        case .arrow: return .arrow
+        case .iBeam: return .iBeam
+        case .pointingHand: return .pointingHand
+        case .crosshair: return .crosshair
+        case .openHand: return .openHand
+        case .closedHand: return .closedHand
+        case .resizeLeftRight: return .resizeLeftRight
+        case .resizeUpDown: return .resizeUpDown
+        case .contextualMenu: return .contextualMenu
+        case .operationNotAllowed: return .operationNotAllowed
+        case .dragCopy: return .dragCopy
+        case .dragLink: return .dragLink
+        }
     }
 }

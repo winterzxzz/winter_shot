@@ -23,6 +23,73 @@ struct CursorSample: Codable, Hashable {
     var t: Double
     var x: Double
     var y: Double
+    /// The pointer the app was showing at that moment (`CursorKind` raw
+    /// value); nil in logs recorded before types were sampled.
+    var kind: String? = nil
+}
+
+/// The standard macOS pointers the synthetic cursor can take.
+enum CursorKind: String, Codable, CaseIterable, Identifiable {
+    case arrow, iBeam, pointingHand, crosshair, openHand, closedHand
+    case resizeLeftRight, resizeUpDown, contextualMenu, operationNotAllowed, dragCopy, dragLink
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .arrow: return "Arrow"
+        case .iBeam: return "Text"
+        case .pointingHand: return "Hand"
+        case .crosshair: return "Crosshair"
+        case .openHand: return "Open hand"
+        case .closedHand: return "Grab"
+        case .resizeLeftRight: return "Resize ↔"
+        case .resizeUpDown: return "Resize ↕"
+        case .contextualMenu: return "Menu"
+        case .operationNotAllowed: return "Not allowed"
+        case .dragCopy: return "Copy"
+        case .dragLink: return "Link"
+        }
+    }
+}
+
+/// Pointer coloring. macOS's own set mixes dark pointers (arrow, text…)
+/// with light ones (the hands); `light` / `dark` make every pointer light or
+/// dark by inverting only the kinds that need it.
+enum CursorTint: String, Codable, CaseIterable, Identifiable {
+    case system, light, dark
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .system: return "macOS"
+        case .light: return "Light"
+        case .dark: return "Dark"
+        }
+    }
+}
+
+extension CursorKind {
+    /// Whether macOS draws this pointer light-on-dark (the hand cursors).
+    var isNativelyLight: Bool {
+        switch self {
+        case .pointingHand, .openHand, .closedHand: return true
+        default: return false
+        }
+    }
+
+    /// Whether the pointer must be inverted to match `tint`.
+    func needsInversion(for tint: CursorTint) -> Bool {
+        switch tint {
+        case .system: return false
+        case .light: return !isNativelyLight
+        case .dark: return isNativelyLight
+        }
+    }
+
+    /// Whether the pointer ends up light under `tint`.
+    func isLight(under tint: CursorTint) -> Bool {
+        isNativelyLight != needsInversion(for: tint)
+    }
 }
 
 /// A mouse click (left button down) at a moment in time, in video pixels
@@ -270,6 +337,13 @@ struct RecordingExportOptions: Codable, Equatable {
     var showCursor: Bool = true
     /// Cursor size multiplier (1 = natural).
     var cursorScale: Double = 1.5
+    /// Pointer drawn when not following the recording (and the fallback for
+    /// recordings without cursor types).
+    var cursorType: CursorKind = .arrow
+    /// Mirror the pointer the app was showing (I-beam over text, hand over
+    /// links, resize arrows…) when the recording captured it.
+    var followRecordedCursor: Bool = true
+    var cursorTint: CursorTint = .system
     /// Show expanding ripple on clicks.
     var clickRipples: Bool = true
     /// Motion blur strength (0 = off, 1 = Screen Studio's default) applied
