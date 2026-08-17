@@ -5,8 +5,8 @@ import Foundation
 struct StartRecordingUseCase {
     let recorder: ScreenRecorder
 
-    func execute() async throws {
-        try await recorder.start()
+    func execute(target: RecordingTarget) async throws {
+        try await recorder.start(target: target)
     }
 }
 

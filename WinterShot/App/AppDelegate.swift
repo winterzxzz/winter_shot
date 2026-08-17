@@ -88,7 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let isRecording = RecordingController.shared.isRecording
-        let record = NSMenuItem(title: isRecording ? "Stop Recording" : "Record Screen",
+        let record = NSMenuItem(title: isRecording ? "Stop Recording" : "Start Recording…",
                                 action: #selector(toggleRecordingFromMenu),
                                 keyEquivalent: "")
         record.target = self

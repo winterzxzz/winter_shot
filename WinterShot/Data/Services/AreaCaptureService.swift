@@ -52,4 +52,22 @@ final class AreaCaptureService {
                                height: selection.rect.height * scale).integral
         return selection.backdrop.image.cropping(to: pixelRect)
     }
+
+    /// Presents the same frozen-screen selector but returns the chosen rect
+    /// in global CoreGraphics coordinates (origin top-left) instead of
+    /// cropping pixels — used to pick a region to record. Nil on cancel.
+    func pickRegion() async throws -> CGRect? {
+        let content: SCShareableContent
+        do {
+            content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        } catch {
+            throw AreaCaptureError.screenCaptureUnavailable
+        }
+
+        let backdrops = try await DisplayFreezer().freeze(content: content)
+        let windows = WindowCaptureService.orderedPickableWindows(in: content)
+        guard let selection = await picker.pickArea(backdrops: backdrops, windows: windows) else { return nil }
+        return selection.rect.offsetBy(dx: selection.backdrop.frame.minX,
+                                       dy: selection.backdrop.frame.minY)
+    }
 }

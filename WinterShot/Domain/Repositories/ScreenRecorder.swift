@@ -5,9 +5,9 @@ import Foundation
 @MainActor
 protocol ScreenRecorder: AnyObject {
     var isRecording: Bool { get }
-    /// Starts capturing the display under the cursor. The system cursor is
-    /// excluded from the pixels; its motion is logged for synthetic rendering.
-    func start() async throws
+    /// Starts capturing the given target. The system cursor is excluded from
+    /// the pixels; its motion is logged for synthetic rendering.
+    func start(target: RecordingTarget) async throws
     /// Stops capture and returns the finished recording with its event log.
     func stop() async throws -> (Recording, RecordingEventLog)
 }

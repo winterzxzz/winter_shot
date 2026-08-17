@@ -64,6 +64,22 @@ final class WindowCaptureService {
         return try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
     }
 
+    /// Presents the same frozen-screen selector but returns the picked
+    /// window's frame in global CoreGraphics coordinates instead of capturing
+    /// pixels — used to pick a window to record. Nil on cancel.
+    func pickWindowRegion() async throws -> CGRect? {
+        let content: SCShareableContent
+        do {
+            content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        } catch {
+            throw WindowCaptureError.screenCaptureUnavailable
+        }
+
+        let windows = Self.orderedPickableWindows(in: content)
+        let backdrops = try await DisplayFreezer().freeze(content: content)
+        return await picker.pickWindow(windows: windows, backdrops: backdrops)?.frame
+    }
+
     // MARK: - Enumeration
 
     /// Pickable windows in front-to-back order (CGWindowList order), so hover

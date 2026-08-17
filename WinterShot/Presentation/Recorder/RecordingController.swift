@@ -31,22 +31,46 @@ final class RecordingController {
         isStarting = true
         Task { @MainActor in
             defer { isStarting = false }
-            // The timer widget goes up first: the recorder excludes the app's
-            // windows from the capture, but only those already on screen when
-            // the stream's filter is built. The short pause lets the window
-            // server register the panel before ScreenCaptureKit enumerates.
-            RecordingHUDController.shared.show()
-            try? await Task.sleep(nanoseconds: 150_000_000)
             do {
-                try await DIContainer.shared.startRecordingUseCase.execute()
-                isRecording = true
-                RecordingHUDController.shared.beginTimer()
-                onStateChange?(true)
+                guard let target = try await pickTarget() else { return }
+                // The timer widget goes up first: the recorder excludes the
+                // app's windows from the capture, but only those already on
+                // screen when the stream's filter is built. The short pause
+                // lets the window server register the panel before
+                // ScreenCaptureKit enumerates.
+                RecordingHUDController.shared.show()
+                try? await Task.sleep(nanoseconds: 150_000_000)
+                do {
+                    try await DIContainer.shared.startRecordingUseCase.execute(target: target)
+                    isRecording = true
+                    RecordingHUDController.shared.beginTimer()
+                    onStateChange?(true)
+                } catch {
+                    RecordingHUDController.shared.dismiss()
+                    throw error
+                }
             } catch {
-                RecordingHUDController.shared.dismiss()
                 NSLog("WinterShot: recording start failed: %@", error.localizedDescription)
                 presentError(error)
             }
+        }
+    }
+
+    /// Asks what to record (area / window / screen) and, for the first two,
+    /// runs the matching frozen-screen picker. Nil when the user cancels at
+    /// either step.
+    private func pickTarget() async throws -> RecordingTarget? {
+        switch await RecordingTargetChooser.shared.choose() {
+        case nil:
+            return nil
+        case .screen:
+            return .screen
+        case .area:
+            guard let rect = try await DIContainer.shared.areaCaptureService.pickRegion() else { return nil }
+            return .region(rect)
+        case .window:
+            guard let rect = try await DIContainer.shared.windowCaptureService.pickWindowRegion() else { return nil }
+            return .region(rect)
         }
     }
 

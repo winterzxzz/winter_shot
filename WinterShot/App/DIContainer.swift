@@ -9,6 +9,9 @@ final class DIContainer {
     // Data layer
     private let store: FileScreenshotStore
     private let captureService: SystemScreenCaptureService
+    // Also drive the record-target pickers (area rect / window frame).
+    let windowCaptureService: WindowCaptureService
+    let areaCaptureService: AreaCaptureService
 
     // Domain protocols (exposed as abstractions, not implementations)
     let screenshotRepository: ScreenshotRepository
@@ -56,8 +59,8 @@ final class DIContainer {
     private init() {
         store = FileScreenshotStore()
         captureService = SystemScreenCaptureService()
-        let windowCaptureService = WindowCaptureService(picker: WindowPickerOverlayPresenter())
-        let areaCaptureService = AreaCaptureService(picker: AreaPickerOverlayPresenter())
+        windowCaptureService = WindowCaptureService(picker: WindowPickerOverlayPresenter())
+        areaCaptureService = AreaCaptureService(picker: AreaPickerOverlayPresenter())
         screenshotRepository = ScreenshotRepositoryImpl(captureService: captureService,
                                                         windowCaptureService: windowCaptureService,
                                                         areaCaptureService: areaCaptureService,
