@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import Combine
 import CoreVideo
 import IOSurface
 
@@ -20,6 +21,7 @@ final class PreviewTransport: ObservableObject {
 
     private var timeObserver: Any?
     private var endObserver: Any?
+    private var statusObserver: AnyCancellable?
 
     init(recording: Recording) {
         let item = AVPlayerItem(url: recording.videoURL)
@@ -34,6 +36,9 @@ final class PreviewTransport: ObservableObject {
         item.add(videoOutput)
         player = AVPlayer(playerItem: item)
         player.isMuted = true
+        // Keep the rate when the item runs out; the end notification below
+        // rewinds it, so the preview loops instead of stalling at the end.
+        player.actionAtItemEnd = .none
         duration = recording.duration
 
         timeObserver = player.addPeriodicTimeObserver(
@@ -47,10 +52,25 @@ final class PreviewTransport: ObservableObject {
         ) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self else { return }
-                self.player.seek(to: .zero, toleranceBefore: .zero, toleranceAfter: .zero)
-                self.player.rate = self.speed
+                // Rewind, then (only once the seek has landed) make sure we
+                // are still rolling — setting the rate mid-seek is ignored.
+                self.player.seek(to: .zero, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
+                    Task { @MainActor [weak self] in
+                        guard let self, self.isPlaying else { return }
+                        self.player.rate = self.speed
+                    }
+                }
             }
         }
+        // Mirror the player's real state so the play/pause button never lies
+        // (e.g. if the system pauses playback for us).
+        statusObserver = player.publisher(for: \.timeControlStatus)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] status in
+                guard let self else { return }
+                let playing = status != .paused
+                if self.isPlaying != playing { self.isPlaying = playing }
+            }
     }
 
     deinit {
@@ -61,17 +81,24 @@ final class PreviewTransport: ObservableObject {
     func togglePlayback() {
         if isPlaying {
             player.pause()
+            isPlaying = false
         } else {
-            player.rate = speed
+            play()
         }
-        isPlaying.toggle()
     }
 
     func play() {
+        // If we're parked at the very end, start over instead of doing nothing.
+        if let item = player.currentItem, item.duration.isNumeric,
+           item.currentTime() >= item.duration - CMTime(value: 1, timescale: 30) {
+            player.seek(to: .zero, toleranceBefore: .zero, toleranceAfter: .zero)
+        }
         player.rate = speed
         isPlaying = true
     }
 
+    /// Moves the playhead; playback state is left as it is (scrubbing while
+    /// playing keeps playing).
     func seek(to seconds: Double) {
         let target = CMTime(seconds: seconds, preferredTimescale: 600)
         player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)

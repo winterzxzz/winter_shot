@@ -304,18 +304,13 @@ struct MaskOverlayView: View {
                 let frame = viewRect(mask.rect)
                 let selected = mask.id == selectedID
                 let live = time >= mask.start && time <= mask.end
+                // Outline only — no label, so the mask never covers its own
+                // content; the sidebar and the Masks track name the kind.
                 RoundedRectangle(cornerRadius: 3)
                     .strokeBorder(selected ? Color.white : Self.maskColor.opacity(live ? 1 : 0.6),
                                   style: StrokeStyle(lineWidth: selected ? 1.5 : 1, dash: selected ? [] : [5, 4]))
                     .frame(width: frame.width, height: frame.height)
                     .offset(x: frame.minX, y: frame.minY)
-                    .allowsHitTesting(false)
-                Text(mask.kind.label)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 5).padding(.vertical, 2)
-                    .background(selected ? Studio.primary : Self.maskColor, in: RoundedRectangle(cornerRadius: 4))
-                    .offset(x: frame.minX + 4, y: frame.minY + 4)
                     .allowsHitTesting(false)
                 if selected {
                     RectHandlesView(frame: frame)

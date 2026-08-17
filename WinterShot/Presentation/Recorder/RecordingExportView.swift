@@ -1168,6 +1168,12 @@ private struct StudioTimeline: View {
     }
 
     private func label(for t: Double) -> String {
+        // Sub-second ticks (short recordings) get tenths so labels stay unique.
+        if tickStep < 1 {
+            let whole = Int(t)
+            let tenths = Int(((t - Double(whole)) * 10).rounded())
+            return String(format: "%d:%02d.%d", whole / 60, whole % 60, tenths)
+        }
         let total = Int(t.rounded())
         return String(format: "%d:%02d", total / 60, total % 60)
     }
