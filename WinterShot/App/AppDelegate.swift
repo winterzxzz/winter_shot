@@ -238,6 +238,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+        if CommandLine.arguments.contains("--show-recording-hud") {
+            // Shows the recording timer widget without capturing (testing).
+            RecordingHUDController.shared.show()
+            RecordingHUDController.shared.beginTimer()
+        }
         // Shows the post-capture thumbnail card for each image; repeat the
         // flag to exercise the stacked column (testing).
         for path in Self.launchValues(after: "--preview-image") {

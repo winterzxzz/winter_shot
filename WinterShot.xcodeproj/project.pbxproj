@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0896CCE91C388FBB08EFBDDD /* RecognizeTextUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F0D6CA0AA37132847DC6F05 /* RecognizeTextUseCase.swift */; };
 		0D4ABB33D0BB8B5971A74744 /* LoadAnnotationsUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E667FD01FD84A910203159 /* LoadAnnotationsUseCase.swift */; };
+		0F8A4C52EA73C4EC32A0DFA4 /* RecordingHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4C4E07EEE2765E607408937 /* RecordingHUD.swift */; };
 		12F60D26C7151202921C16F8 /* RecordingPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8DACF3C2D4B2E8F05474299 /* RecordingPreviewView.swift */; };
 		130825299C83A385AC61A2F2 /* EditorOverlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = 716794FAB3D897411DE3E712 /* EditorOverlays.swift */; };
 		155D92684D223C7B7E3BA0F6 /* OCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F85EC6544D33B3801E3926E /* OCRService.swift */; };
@@ -133,6 +134,7 @@
 		969FBD8818DD7B02683B8D7B /* WindowPickerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPickerOverlay.swift; sourceTree = "<group>"; };
 		9C22DBA2EA5FB10EB3FEAF22 /* UpdateInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateInstaller.swift; sourceTree = "<group>"; };
 		9F44A30B804B90627C25BA56 /* CapturePreviewManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturePreviewManager.swift; sourceTree = "<group>"; };
+		A4C4E07EEE2765E607408937 /* RecordingHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingHUD.swift; sourceTree = "<group>"; };
 		AE90A5F13F739D1C3992B078 /* FileScreenshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileScreenshotStore.swift; sourceTree = "<group>"; };
 		B216D6352B84AEF5F5186AE9 /* CaptureMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureMode.swift; sourceTree = "<group>"; };
 		B5C70BAAD5A3AE9B44697E8D /* PinWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinWindowManager.swift; sourceTree = "<group>"; };
@@ -179,6 +181,7 @@
 				5922AC83A2FCD9346C287369 /* RecordingController.swift */,
 				3C1176D102B5328AD76A32C8 /* RecordingExportView.swift */,
 				3854AF6795A6E833942A5FED /* RecordingExportWindowController.swift */,
+				A4C4E07EEE2765E607408937 /* RecordingHUD.swift */,
 				B8DACF3C2D4B2E8F05474299 /* RecordingPreviewView.swift */,
 				37D06329D752525D65196300 /* StudioUI.swift */,
 			);
@@ -545,6 +548,7 @@
 				7528A0E792A46DF0930D31A7 /* RecordingExportView.swift in Sources */,
 				577B81ABD38F37821D1572F2 /* RecordingExportWindowController.swift in Sources */,
 				24637C63E2E54083FED1EAA8 /* RecordingExporterService.swift in Sources */,
+				0F8A4C52EA73C4EC32A0DFA4 /* RecordingHUD.swift in Sources */,
 				12F60D26C7151202921C16F8 /* RecordingPreviewView.swift in Sources */,
 				9CCBE6E68F7606DA2637D778 /* SaveAnnotationsUseCase.swift in Sources */,
 				1C30A9DDDA5B7D5865BC2177 /* ScreenRecorder.swift in Sources */,

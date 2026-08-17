@@ -13,6 +13,7 @@ final class RecordingController {
     var onStateChange: ((Bool) -> Void)?
 
     private(set) var isRecording = false
+    private var isStarting = false
     private var exportWindows: [RecordingExportWindowController] = []
 
     private init() {}
@@ -26,13 +27,23 @@ final class RecordingController {
     }
 
     func start() {
-        guard !isRecording else { return }
+        guard !isRecording, !isStarting else { return }
+        isStarting = true
         Task { @MainActor in
+            defer { isStarting = false }
+            // The timer widget goes up first: the recorder excludes the app's
+            // windows from the capture, but only those already on screen when
+            // the stream's filter is built. The short pause lets the window
+            // server register the panel before ScreenCaptureKit enumerates.
+            RecordingHUDController.shared.show()
+            try? await Task.sleep(nanoseconds: 150_000_000)
             do {
                 try await DIContainer.shared.startRecordingUseCase.execute()
                 isRecording = true
+                RecordingHUDController.shared.beginTimer()
                 onStateChange?(true)
             } catch {
+                RecordingHUDController.shared.dismiss()
                 NSLog("WinterShot: recording start failed: %@", error.localizedDescription)
                 presentError(error)
             }
@@ -42,6 +53,7 @@ final class RecordingController {
     func stop() {
         guard isRecording else { return }
         isRecording = false
+        RecordingHUDController.shared.dismiss()
         onStateChange?(false)
         Task { @MainActor in
             do {
