@@ -26,11 +26,13 @@ targets:
         SWIFT_VERSION: "5.0"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        # Sign with the local Apple Development cert (by hash — the two
-        # revoked twins share its name) so the signature is stable across
-        # rebuilds and TCC permissions stick. Fall back to "-" if absent.
-        CODE_SIGN_IDENTITY: "2E8C8843523E16FAF9C2A0EEFE944335933E5C16"
-        DEVELOPMENT_TEAM: DA9KW67BQV
+        # Sign with the local Apple Development cert of the personal team so
+        # the code-signing requirement — and therefore the Screen Recording /
+        # TCC grants — stays the same across rebuilds and reinstalls. Pinned
+        # by team, not by cert hash, so a renewed cert keeps building. (Every
+        # cert of the older team 3YQ3747D5H is revoked in this keychain.)
+        CODE_SIGN_IDENTITY: "Apple Development"
+        DEVELOPMENT_TEAM: H72HDR4743
         CODE_SIGN_STYLE: Manual
         ENABLE_HARDENED_RUNTIME: NO
         COMBINE_HIDPI_IMAGES: YES
