@@ -2,36 +2,43 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// After a capture succeeds, floats a thumbnail at the left edge of the
-/// screen (like the system screenshot preview). It carries the same quick
-/// actions as a library card: close, annotate, copy, pin, delete. It can be
-/// dragged into other apps, and slides away on its own after a few seconds
-/// (paused while the pointer is over it).
+/// After a capture succeeds, floats a thumbnail card at the bottom-left of
+/// the screen the pointer is on (like the system screenshot preview). Rapid
+/// captures don't replace each other: each new card appears at the bottom
+/// and pushes the earlier ones up into a column. Every card carries the same
+/// quick actions as a library card: close, annotate, copy, pin, delete. Cards
+/// can be dragged into other apps, follow the pointer to another display
+/// while showing, and slide away on their own after the delay chosen in
+/// Settings (paused while the pointer is over that card). Card size also
+/// comes from Settings.
 @MainActor
 final class CapturePreviewManager {
     static let shared = CapturePreviewManager()
 
-    private var panel: NSPanel?
-    private var dismissTimer: Timer?
-    private static let lifetime: TimeInterval = 6
+    private final class Entry {
+        let id = UUID()
+        let panel: NSPanel
+        var dismissTimer: Timer?
+        init(panel: NSPanel) { self.panel = panel }
+    }
 
-    /// Shows the preview for a screenshot. `onOpen` runs when it is clicked.
+    /// Newest first; index 0 sits at the bottom of the column.
+    private var entries: [Entry] = []
+    private var screenTracker: Timer?
+    private var currentScreen: NSScreen?
+    private static let edgeInset = NSPoint(x: 16, y: 24)
+    private static let stackSpacing: CGFloat = 12
+
+    /// Shows a preview card for a screenshot. `onOpen` runs when it is clicked.
     func show(screenshot: Screenshot, onOpen: @escaping (Screenshot) -> Void) {
-        dismiss()
-
         guard let image = NSImage(contentsOf: screenshot.imageURL),
-              let screen = NSScreen.main else {
+              let screen = Self.screenUnderPointer() else {
             // No thumbnail to show — keep the old behavior and open directly.
             onOpen(screenshot)
             return
         }
 
-        let maxThumb = CGSize(width: 260, height: 200)
-        let scale = min(maxThumb.width / max(image.size.width, 1),
-                        maxThumb.height / max(image.size.height, 1),
-                        1)
-        let size = NSSize(width: max(image.size.width * scale, 180),
-                          height: image.size.height * scale)
+        let size = AppPreferences.shared.previewSize.cardSize
 
         let panel = NSPanel(
             contentRect: NSRect(origin: .zero, size: size),
@@ -43,69 +50,162 @@ final class CapturePreviewManager {
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.hasShadow = true
+        panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
+
+        let entry = Entry(panel: panel)
 
         let view = CapturePreviewView(
             image: image,
             fileURL: screenshot.imageURL,
-            onOpen: { [weak self] in
-                self?.dismiss()
+            cardSize: size,
+            onOpen: { [weak self, weak entry] in
+                self?.close(entry)
                 onOpen(screenshot)
             },
-            onCopy: { [weak self] in
+            onCopy: { [weak self, weak entry] in
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.writeObjects([image])
-                self?.dismiss()
+                self?.close(entry)
             },
-            onPin: { [weak self] in
+            onPin: { [weak self, weak entry] in
                 PinWindowManager.shared.pin(image: image)
-                self?.dismiss()
+                self?.close(entry)
             },
-            onDelete: { [weak self] in
+            onDelete: { [weak self, weak entry] in
                 try? DIContainer.shared.deleteScreenshotUseCase.execute(screenshot)
-                self?.dismiss()
+                self?.close(entry)
             },
-            onClose: { [weak self] in
-                self?.dismiss()
+            onClose: { [weak self, weak entry] in
+                self?.close(entry)
             },
-            onHoverChange: { [weak self] hovering in
+            onHoverChange: { [weak self, weak entry] hovering in
+                guard let entry else { return }
                 if hovering {
-                    self?.dismissTimer?.invalidate()
-                    self?.dismissTimer = nil
+                    entry.dismissTimer?.invalidate()
+                    entry.dismissTimer = nil
                 } else {
-                    self?.scheduleDismiss()
+                    self?.scheduleDismiss(of: entry)
                 }
             }
         )
         panel.contentView = NSHostingView(rootView: view)
 
-        let origin = NSPoint(x: screen.visibleFrame.minX + 16,
-                             y: screen.visibleFrame.minY + 24)
-        panel.setFrameOrigin(origin)
+        // The new card takes the bottom slot; the ones already up slide out
+        // of its way. Seat it there before the layout pass so it doesn't
+        // animate in from the panel's default origin.
+        panel.setFrameOrigin(NSPoint(x: screen.visibleFrame.minX + Self.edgeInset.x,
+                                     y: screen.visibleFrame.minY + Self.edgeInset.y))
+        entries.insert(entry, at: 0)
+        currentScreen = screen
+        trimToFit(on: screen)
+        layout(on: screen, animated: true)
         panel.orderFrontRegardless()
-        self.panel = panel
 
-        scheduleDismiss()
+        scheduleDismiss(of: entry)
+        startFollowingPointer()
     }
 
-    private func scheduleDismiss() {
-        dismissTimer?.invalidate()
-        dismissTimer = Timer.scheduledTimer(withTimeInterval: Self.lifetime, repeats: false) { [weak self] _ in
-            Task { @MainActor in self?.dismiss() }
+    /// The screen containing the mouse pointer — where the user actually is,
+    /// which on a multi-display setup is not always `NSScreen.main`.
+    private static func screenUnderPointer() -> NSScreen? {
+        let mouse = NSEvent.mouseLocation
+        return NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main ?? NSScreen.screens.first
+    }
+
+    /// Stacks the column up from the bottom-left corner. The bottom card is
+    /// pinned to the corner; each card above it starts past the previous
+    /// card's top edge.
+    private func layout(on screen: NSScreen, animated: Bool) {
+        let x = screen.visibleFrame.minX + Self.edgeInset.x
+        var y = screen.visibleFrame.minY + Self.edgeInset.y
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = animated ? 0.22 : 0
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            for entry in entries {
+                let target = NSRect(origin: NSPoint(x: x, y: y), size: entry.panel.frame.size)
+                if entry.panel.frame.origin == target.origin || context.duration == 0 {
+                    entry.panel.setFrame(target, display: true)
+                } else {
+                    entry.panel.animator().setFrame(target, display: true)
+                }
+                y = target.maxY + Self.stackSpacing
+            }
         }
     }
 
-    func dismiss() {
-        dismissTimer?.invalidate()
-        dismissTimer = nil
-        panel?.close()
-        panel = nil
+    /// Drops the oldest cards (top of the column) when the stack would run
+    /// off the screen.
+    private func trimToFit(on screen: NSScreen) {
+        let available = screen.visibleFrame.height - Self.edgeInset.y * 2
+        func columnHeight() -> CGFloat {
+            entries.reduce(0) { $0 + $1.panel.frame.height }
+                + CGFloat(max(0, entries.count - 1)) * Self.stackSpacing
+        }
+        while entries.count > 1, columnHeight() > available {
+            close(entries.last)
+        }
+    }
+
+    /// While cards are up, hop to whichever display the pointer moves to,
+    /// so they're never left behind on a screen the user has walked away from.
+    private func startFollowingPointer() {
+        guard screenTracker == nil else { return }
+        screenTracker = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.followPointer() }
+        }
+    }
+
+    private func followPointer() {
+        guard !entries.isEmpty, let screen = Self.screenUnderPointer(),
+              screen.frame != currentScreen?.frame else { return }
+        currentScreen = screen
+        trimToFit(on: screen)
+        layout(on: screen, animated: false)
+        for entry in entries {
+            entry.panel.orderFrontRegardless()
+        }
+    }
+
+    private func scheduleDismiss(of entry: Entry) {
+        entry.dismissTimer?.invalidate()
+        let lifetime = AppPreferences.shared.previewAutoHideSeconds
+        let id = entry.id
+        entry.dismissTimer = Timer.scheduledTimer(withTimeInterval: lifetime, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                self.close(self.entries.first { $0.id == id })
+            }
+        }
+    }
+
+    /// Removes one card; the ones above it settle down into the gap.
+    private func close(_ entry: Entry?) {
+        guard let entry, let index = entries.firstIndex(where: { $0 === entry }) else { return }
+        entry.dismissTimer?.invalidate()
+        entry.dismissTimer = nil
+        entry.panel.close()
+        entries.remove(at: index)
+        if entries.isEmpty {
+            screenTracker?.invalidate()
+            screenTracker = nil
+            currentScreen = nil
+        } else if let screen = currentScreen {
+            layout(on: screen, animated: true)
+        }
+    }
+
+    func dismissAll() {
+        while let entry = entries.first {
+            close(entry)
+        }
     }
 }
 
 private struct CapturePreviewView: View {
     let image: NSImage
     let fileURL: URL
+    let cardSize: NSSize
     let onOpen: () -> Void
     let onCopy: () -> Void
     let onPin: () -> Void
@@ -116,14 +216,27 @@ private struct CapturePreviewView: View {
     @State private var hovering = false
 
     var body: some View {
-        Image(nsImage: image)
-            .resizable()
-            .scaledToFit()
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.white.opacity(hovering ? 0.9 : 0.5), lineWidth: 2)
-            )
+        ZStack {
+            // Fixed card filled edge to edge by the capture (aspect fill), so
+            // every thumbnail — a tall sliver or a wide banner — has the same
+            // footprint. Only this base image zooms on hover, clipped by the
+            // card's corners; the border and controls stay put.
+            Color.black
+            Image(nsImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(width: cardSize.width, height: cardSize.height)
+                .scaleEffect(hovering ? 1.06 : 1)
+                .animation(.easeOut(duration: 0.2), value: hovering)
+            // A soft scrim behind the action bar keeps it readable on bright captures.
+            LinearGradient(colors: [.clear, .black.opacity(0.45)], startPoint: .center, endPoint: .bottom)
+        }
+        .frame(width: cardSize.width, height: cardSize.height)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(Color.white.opacity(hovering ? 0.9 : 0.5), lineWidth: 2)
+        )
             .overlay(alignment: .topTrailing) {
                 Button(action: onClose) {
                     Image(systemName: "xmark")
@@ -150,8 +263,6 @@ private struct CapturePreviewView: View {
                 .overlay(Capsule().strokeBorder(.white.opacity(0.18), lineWidth: 1))
                 .padding(.bottom, 8)
             }
-            .scaleEffect(hovering ? 1.02 : 1)
-            .animation(.easeOut(duration: 0.15), value: hovering)
             .onHover { value in
                 hovering = value
                 onHoverChange(value)

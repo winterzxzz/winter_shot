@@ -223,6 +223,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let path = Self.launchValue(after: "--open-recording") {
             RecordingController.shared.open(videoURL: URL(fileURLWithPath: path))
         }
+        if let filename = Self.launchValue(after: "--ocr") {
+            // Runs OCR on a library capture through the app's own pipeline and quits (testing).
+            Task { @MainActor in
+                do {
+                    guard let shot = try DIContainer.shared.fetchHistoryUseCase.execute()
+                        .first(where: { $0.filename == filename }) else { NSLog("WinterShot: --ocr found no capture named %@", filename); exit(1) }
+                    let text = try await DIContainer.shared.recognizeTextUseCase.execute(imageURL: shot.imageURL)
+                    print(text)
+                    exit(0)
+                } catch {
+                    NSLog("WinterShot: OCR failed: %@", error.localizedDescription)
+                    exit(1)
+                }
+            }
+        }
+        // Shows the post-capture thumbnail card for each image; repeat the
+        // flag to exercise the stacked column (testing).
+        for path in Self.launchValues(after: "--preview-image") {
+            let shot = Screenshot(id: UUID(), imageURL: URL(fileURLWithPath: path), createdAt: Date(), mode: .area)
+            CapturePreviewManager.shared.show(screenshot: shot) { [weak self] s in self?.openMain(with: s) }
+        }
         if let input = Self.launchValue(after: "--export-recording"),
            let output = Self.launchValue(after: "--export-recording", offset: 2) {
             // Headless render for scripted testing: export (with defaults, or
@@ -251,6 +272,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let index = CommandLine.arguments.firstIndex(of: flag),
               CommandLine.arguments.indices.contains(index + offset) else { return nil }
         return CommandLine.arguments[index + offset]
+    }
+
+    /// The value after every occurrence of a repeatable flag.
+    private static func launchValues(after flag: String) -> [String] {
+        let arguments = CommandLine.arguments
+        return arguments.indices.compactMap { index in
+            guard arguments[index] == flag, arguments.indices.contains(index + 1) else { return nil }
+            return arguments[index + 1]
+        }
     }
 
     private static func launchCaptureMode() -> CaptureMode? {
