@@ -63,7 +63,7 @@ WinterShot/
 
 **Data flow:** View → ViewModel → UseCase → Repository protocol → Data implementation. ViewModels never touch the file system or Vision directly; Domain types never import SwiftUI.
 
-**Storage:** captures live in `~/Library/Application Support/WinterShot/Captures/` as an immutable PNG plus a JSON sidecar holding metadata and editable annotations.
+**Storage:** captures live in `~/Library/Application Support/WinterShot/Captures/` as an immutable PNG plus a JSON sidecar holding metadata and editable annotations (recordings: an MP4 plus a `.wsrec.json` event log). Sidecars sit next to their file so the pair can't drift apart, but are flagged hidden so Finder shows only pictures and movies — press ⌘⇧. in Finder to reveal them.
 
 ## Roadmap
 

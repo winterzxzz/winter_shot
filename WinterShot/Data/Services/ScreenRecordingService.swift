@@ -315,5 +315,6 @@ private final class RecordingSession {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         try encoder.encode(log).write(to: url, options: .atomic)
+        FileScreenshotStore.hide(url)
     }
 }

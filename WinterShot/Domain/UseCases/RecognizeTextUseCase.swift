@@ -4,7 +4,7 @@ import Foundation
 struct RecognizeTextUseCase {
     let ocrService: OCRService
 
-    func execute(imageURL: URL) async throws -> String {
-        try await ocrService.recognizeText(in: imageURL)
+    func execute(imageURL: URL, region: CGRect? = nil) async throws -> String {
+        try await ocrService.recognizeText(in: imageURL, region: region)
     }
 }

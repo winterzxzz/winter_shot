@@ -27,7 +27,7 @@ struct CapturesSidebarView: View {
                 .font(.system(size: 11, weight: .semibold))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 2)
-                .background(.white.opacity(0.12), in: Capsule())
+                .background(.primary.opacity(0.1), in: Capsule())
                 .foregroundStyle(.secondary)
             Spacer()
         }
@@ -123,7 +123,7 @@ private struct CaptureCard: View {
             ZStack {
                 // Bounded base so wide thumbnails can't blow out the card layout;
                 // the image only ever paints inside the clipped overlay.
-                Color.white.opacity(0.06)
+                Color.primary.opacity(0.06)
                 .frame(height: 140)
                 .frame(maxWidth: .infinity)
                 .overlay {
@@ -136,7 +136,7 @@ private struct CaptureCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: 9))
                 .overlay(
                     RoundedRectangle(cornerRadius: 9)
-                        .strokeBorder(isSelected ? Color.accentColor : .white.opacity(0.12),
+                        .strokeBorder(isSelected ? Color.accentColor : .primary.opacity(0.12),
                                       lineWidth: isSelected ? 2 : 1)
                 )
                 .overlay(alignment: .topTrailing) {

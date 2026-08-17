@@ -21,8 +21,18 @@ final class EditorViewModel: ObservableObject {
     @Published var currentColor: AnnotationColor = .red
     @Published var lineWidth: Double = 4
     @Published var selectedAnnotationID: Annotation.ID?
-    @Published var statusMessage: String?
+    /// Transient status shown as a toast in the editor; clears itself.
+    @Published var statusMessage: String? {
+        didSet { scheduleStatusClear() }
+    }
+    private var statusClearTask: Task<Void, Never>?
     @Published var zoomMode: ZoomMode = .fit
+
+    // OCR result shown in the toolbar popover.
+    @Published var showOCRResult = false
+    @Published var isRecognizingText = false
+    @Published var ocrText: String?
+    @Published var ocrError: String?
     /// The scale the canvas last rendered at; drives the zoom label in fit mode.
     @Published var renderedScale: CGFloat = 1
 
@@ -383,22 +393,45 @@ final class EditorViewModel: ObservableObject {
         }
     }
 
+    private func scheduleStatusClear() {
+        statusClearTask?.cancel()
+        guard statusMessage != nil else { return }
+        statusClearTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 3_200_000_000)
+            guard !Task.isCancelled else { return }
+            self?.statusMessage = nil
+        }
+    }
+
     // MARK: - OCR
 
-    func copyRecognizedText() async {
-        statusMessage = "Recognizing text…"
+    /// Runs on-device OCR over the visible (cropped) capture, shows the text
+    /// in the toolbar popover and puts it on the pasteboard.
+    func recognizeText() async {
+        showOCRResult = true
+        isRecognizingText = true
+        ocrError = nil
+        ocrText = nil
+        defer { isRecognizingText = false }
         do {
-            let text = try await recognizeTextUseCase.execute(imageURL: screenshot.imageURL)
+            let text = try await recognizeTextUseCase.execute(imageURL: screenshot.imageURL, region: crop)
+            ocrText = text
             if text.isEmpty {
                 statusMessage = "No text found in this screenshot."
             } else {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(text, forType: .string)
-                statusMessage = "Copied \(text.count) characters of recognized text."
+                copyRecognizedText()
             }
         } catch {
+            ocrError = error.localizedDescription
             statusMessage = "OCR failed: \(error.localizedDescription)"
         }
+    }
+
+    func copyRecognizedText() {
+        guard let text = ocrText, !text.isEmpty else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        statusMessage = "Copied \(text.count) characters of recognized text."
     }
 
     // MARK: - Flatten, export, share

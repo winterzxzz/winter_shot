@@ -23,15 +23,40 @@ struct EditorView: View {
                     textEditor
                 }
                 Spacer()
+                if let message = viewModel.statusMessage {
+                    statusToast(message)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
                 zoomBar
             }
             .padding(.top, 14)
             .padding(.bottom, 18)
+            .animation(.easeOut(duration: 0.2), value: viewModel.statusMessage)
+        }
+        .onAppear {
+            // Test hook: run OCR as soon as the editor opens (screenshots).
+            if ProcessInfo.processInfo.environment["WS_EDITOR_OCR"] != nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    Task { await viewModel.recognizeText() }
+                }
+            }
         }
         .onDeleteCommand { viewModel.deleteSelected() }
         .onExitCommand {
             if viewModel.isCropping { viewModel.cancelCrop() }
         }
+    }
+
+    private func statusToast(_ message: String) -> some View {
+        Text(message)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(.black.opacity(0.78), in: Capsule())
+            .overlay(Capsule().strokeBorder(.white.opacity(0.12)))
+            .padding(.bottom, 4)
+            .environment(\.colorScheme, .dark)
     }
 
     private var cropBar: some View {
@@ -68,6 +93,7 @@ struct EditorView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 10))
+        .environment(\.colorScheme, .dark)
     }
 
     private var textEditor: some View {
@@ -80,6 +106,7 @@ struct EditorView: View {
         .padding(.vertical, 6)
         .frame(width: 220)
         .background(.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 8))
+        .environment(\.colorScheme, .dark)
     }
 
     private var zoomBar: some View {
@@ -123,6 +150,7 @@ struct EditorView: View {
         .padding(.vertical, 9)
         .background(.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.white.opacity(0.08)))
+        .environment(\.colorScheme, .dark)
     }
 
     private var barDivider: some View {

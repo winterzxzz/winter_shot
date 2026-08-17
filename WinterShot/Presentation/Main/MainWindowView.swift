@@ -47,7 +47,6 @@ struct MainWindowView: View {
                 .padding(.horizontal, 10)
             }
         }
-        .preferredColorScheme(.dark)
         .onAppear {
             viewModel.reload()
             consumePending()
@@ -64,7 +63,7 @@ struct MainWindowView: View {
             .foregroundStyle(.secondary)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
-            .background(.white.opacity(0.08), in: Capsule())
+            .background(.primary.opacity(0.08), in: Capsule())
             .help(updateBadgeHelp)
 
         if case .available(let release) = updateChecker.state {
@@ -95,7 +94,7 @@ struct MainWindowView: View {
             .foregroundStyle(.secondary)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .background(.white.opacity(0.08), in: Capsule())
+            .background(.primary.opacity(0.08), in: Capsule())
             .help("Installing the update — the app restarts when it's done")
         }
     }

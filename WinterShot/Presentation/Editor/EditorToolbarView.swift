@@ -70,8 +70,11 @@ struct EditorToolbarView: View {
 
             pillDivider
 
-            iconButton(icon: "text.viewfinder", label: "Copy Text (OCR)") {
-                Task { await viewModel.copyRecognizedText() }
+            iconButton(icon: "text.viewfinder", label: "Recognize Text (OCR)") {
+                Task { await viewModel.recognizeText() }
+            }
+            .popover(isPresented: $viewModel.showOCRResult, arrowEdge: .bottom) {
+                OCRResultPopover(viewModel: viewModel)
             }
 
             iconButton(icon: "pin", label: "Pin to Screen") {
@@ -123,6 +126,8 @@ struct EditorToolbarView: View {
         .background(.black.opacity(0.82), in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.white.opacity(0.08)))
         .shadow(color: .black.opacity(0.35), radius: 14, y: 6)
+        // The pill is a dark HUD in every theme; keep its text/icons light.
+        .environment(\.colorScheme, .dark)
     }
 
     private var colorPopover: some View {
@@ -247,7 +252,7 @@ private struct BeautifyPopover: View {
             Group {
                 if preset == .none {
                     Circle()
-                        .fill(.white.opacity(0.08))
+                        .fill(.primary.opacity(0.08))
                         .overlay(Image(systemName: "slash.circle")
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary))
@@ -261,12 +266,77 @@ private struct BeautifyPopover: View {
             .frame(width: 24, height: 24)
             .overlay(
                 Circle().strokeBorder(
-                    viewModel.backdrop.preset == preset ? Color.accentColor : .white.opacity(0.2),
+                    viewModel.backdrop.preset == preset ? Color.accentColor : .primary.opacity(0.2),
                     lineWidth: viewModel.backdrop.preset == preset ? 2 : 1
                 )
             )
         }
         .buttonStyle(.plain)
         .help(preset.rawValue.capitalized)
+    }
+}
+
+
+/// The OCR result: recognized text (selectable, scrollable), a character
+/// count, and Copy — text is also copied automatically when recognition
+/// finishes.
+private struct OCRResultPopover: View {
+    @ObservedObject var viewModel: EditorViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("Recognized text", systemImage: "text.viewfinder")
+                    .font(.system(size: 12, weight: .semibold))
+                Spacer()
+                if let text = viewModel.ocrText, !text.isEmpty {
+                    Text("\(text.count) characters")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Group {
+                if viewModel.isRecognizingText {
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small)
+                        Text("Recognizing text…").foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 80)
+                } else if let error = viewModel.ocrError {
+                    Text("OCR failed: \(error)")
+                        .foregroundStyle(.red)
+                        .frame(maxWidth: .infinity, minHeight: 80, alignment: .topLeading)
+                } else if let text = viewModel.ocrText, !text.isEmpty {
+                    ScrollView {
+                        Text(text)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .topLeading)
+                            .padding(8)
+                    }
+                    .frame(height: min(240, max(96, CGFloat(text.split(separator: "\n").count) * 17 + 20)))
+                    .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+                } else {
+                    Text("No text found in this screenshot.")
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, minHeight: 80)
+                }
+            }
+            .font(.system(size: 12))
+            HStack {
+                if viewModel.crop != nil {
+                    Text("Limited to the cropped area")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("Copy") { viewModel.copyRecognizedText() }
+                    .disabled((viewModel.ocrText ?? "").isEmpty)
+                    .keyboardShortcut("c", modifiers: .command)
+                Button("Done") { viewModel.showOCRResult = false }
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(14)
+        .frame(width: 360)
     }
 }
