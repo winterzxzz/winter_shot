@@ -38,7 +38,7 @@ final class RecordingController {
                 // screen when the stream's filter is built. The short pause
                 // lets the window server register the panel before
                 // ScreenCaptureKit enumerates.
-                RecordingHUDController.shared.show()
+                RecordingHUDController.shared.show(on: Self.screen(for: target))
                 try? await Task.sleep(nanoseconds: 150_000_000)
                 do {
                     try await DIContainer.shared.startRecordingUseCase.execute(target: target)
@@ -56,15 +56,19 @@ final class RecordingController {
         }
     }
 
-    /// Asks what to record (area / window / screen) and, for the first two,
-    /// runs the matching frozen-screen picker. Nil when the user cancels at
-    /// either step.
+    /// Asks what to record (area / window / screen) and runs the matching
+    /// picker. Nil when the user cancels at either step.
     private func pickTarget() async throws -> RecordingTarget? {
         switch await RecordingTargetChooser.shared.choose() {
         case nil:
             return nil
         case .screen:
-            return .screen
+            // With several displays "under the cursor" can only ever mean the
+            // display holding the chooser pill, so ask which one to record. A
+            // single display needs no ask.
+            guard NSScreen.screens.count > 1 else { return .screen }
+            guard let bounds = await RecordingScreenPicker.shared.pickScreenRegion() else { return nil }
+            return .region(bounds)
         case .area:
             guard let rect = try await DIContainer.shared.areaCaptureService.pickRegion() else { return nil }
             return .region(rect)
@@ -87,6 +91,16 @@ final class RecordingController {
                 NSLog("WinterShot: recording stop failed: %@", error.localizedDescription)
                 presentError(error)
             }
+        }
+    }
+
+    /// The display a region target records on — the timer widget belongs
+    /// there, not on whichever screen the pointer ended up on.
+    private static func screen(for target: RecordingTarget) -> NSScreen? {
+        guard case .region(let rect) = target else { return nil }
+        return NSScreen.screens.first { screen in
+            guard let id = RecordingScreenPicker.displayID(of: screen) else { return false }
+            return CGDisplayBounds(id).contains(CGPoint(x: rect.midX, y: rect.midY))
         }
     }
 

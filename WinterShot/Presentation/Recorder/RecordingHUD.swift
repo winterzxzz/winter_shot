@@ -19,13 +19,15 @@ final class RecordingHUDController {
 
     private init() {}
 
-    /// Puts the widget up in its 00:00 state on the screen under the pointer
-    /// (the one the recorder is about to capture). Call before the capture
-    /// stream starts so the panel stays out of the recording.
-    func show() {
+    /// Puts the widget up in its 00:00 state on the given screen — the one
+    /// about to be recorded — or the screen under the pointer when nil. Call
+    /// before the capture stream starts so the panel stays out of the
+    /// recording.
+    func show(on preferredScreen: NSScreen? = nil) {
         dismiss()
         let mouse = NSEvent.mouseLocation
-        guard let screen = NSScreen.screens.first(where: { $0.frame.contains(mouse) })
+        guard let screen = preferredScreen
+            ?? NSScreen.screens.first(where: { $0.frame.contains(mouse) })
             ?? NSScreen.main ?? NSScreen.screens.first else { return }
         model.elapsedText = "00:00"
 
