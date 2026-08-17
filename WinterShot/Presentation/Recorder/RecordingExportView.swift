@@ -966,12 +966,52 @@ struct RecordingExportView: View {
             .disabled(!options.autoZoom)
             .opacity(options.autoZoom ? 1 : 0.4)
         }
-        StudioSection(isLast: true) {
+        StudioSection {
             StudioField("Motion blur", description: "Cinematic blur while the screen zooms or pans and the cursor moves.") {
                 StudioSlider(value: $options.motionBlur, in: 0...1, step: 0.05,
                              resetValue: Self.defaults.motionBlur) { String(format: "%.0f%%", $0 * 100) }
             }
         }
+        StudioSection(isLast: true) {
+            StudioField("Background music", description: "A music track from your Mac, mixed under the export. It loops when shorter than the recording; the exported video carries the sound.") {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 10) {
+                        StudioButton(options.backgroundAudioPath == nil ? "Choose music…" : "Change music…",
+                                     icon: "music.note", kind: .secondary,
+                                     wide: options.backgroundAudioPath == nil) {
+                            chooseAudio()
+                        }
+                        if options.backgroundAudioPath != nil {
+                            StudioButton("Remove", icon: "xmark", kind: .secondary) {
+                                options.backgroundAudioPath = nil
+                            }
+                        }
+                    }
+                    if let path = options.backgroundAudioPath {
+                        Text((path as NSString).lastPathComponent)
+                            .font(Studio.label)
+                            .foregroundStyle(Studio.textTertiary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                }
+            }
+            StudioField("Music volume") {
+                StudioSlider(value: $options.backgroundAudioVolume, in: 0...1, step: 0.05,
+                             resetValue: Self.defaults.backgroundAudioVolume) { String(format: "%.0f%%", $0 * 100) }
+            }
+            .disabled(options.backgroundAudioPath == nil)
+            .opacity(options.backgroundAudioPath == nil ? 0.4 : 1)
+        }
+    }
+
+    private func chooseAudio() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.audio]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        options.backgroundAudioPath = url.path
     }
 
     // MARK: - Timeline

@@ -78,6 +78,17 @@ final class RecordingExporterService: RecordingRenderer {
         ])
         guard writer.canAdd(input) else { throw ExportError.renderFailed("writer setup") }
         writer.add(input)
+
+        // Optional background music, looped to cover the clip and mixed at the
+        // chosen volume. Its own audio reader runs after the video frames.
+        var audio: (reader: AVAssetReader, output: AVAssetReaderAudioMixOutput, input: AVAssetWriterInput)?
+        if let musicPath = options.backgroundAudioPath {
+            audio = try await Self.makeAudioMix(musicPath: musicPath,
+                                                volume: options.backgroundAudioVolume,
+                                                duration: duration,
+                                                writer: writer)
+        }
+
         guard writer.startWriting() else {
             throw ExportError.renderFailed(writer.error?.localizedDescription ?? "could not start writing")
         }
@@ -112,10 +123,17 @@ final class RecordingExporterService: RecordingRenderer {
             throw ExportError.renderFailed("no pixel buffer pool")
         }
 
+        // Feed the looped music on its own queue, concurrently with the video
+        // frames below, so both writer inputs advance together.
+        let audioPump: Task<Void, Never>? = audio.map { a in
+            Task.detached { await Self.pumpAudio(a) }
+        }
+
         let frameCount = max(1, Int((duration * fps).rounded(.up)))
         for n in 0..<frameCount {
             if Task.isCancelled {
                 reader.cancelReading()
+                audio?.reader.cancelReading()
                 writer.cancelWriting()
                 throw CancellationError()
             }
@@ -151,10 +169,100 @@ final class RecordingExporterService: RecordingRenderer {
         }
         reader.cancelReading()
         input.markAsFinished()
+
+        // The music was fed on its own queue in parallel with the video (the
+        // writer stalls the video input if a second track never receives data);
+        // wait for it to drain before finishing.
+        await audioPump?.value
+
         await writer.finishWriting()
         guard writer.status == .completed else {
             throw ExportError.renderFailed(writer.error?.localizedDescription ?? "unknown error")
         }
         progress(1)
+    }
+
+    /// Drains the looped-music reader into its writer input on a private
+    /// queue, returning once the track is fully appended.
+    private static func pumpAudio(
+        _ audio: (reader: AVAssetReader, output: AVAssetReaderAudioMixOutput, input: AVAssetWriterInput)
+    ) async {
+        guard audio.reader.startReading() else {
+            audio.input.markAsFinished()
+            return
+        }
+        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+            let queue = DispatchQueue(label: "com.winterzxzz.wintershot.audiomix")
+            audio.input.requestMediaDataWhenReady(on: queue) {
+                while audio.input.isReadyForMoreMediaData {
+                    guard let sample = audio.output.copyNextSampleBuffer(),
+                          audio.input.append(sample) else {
+                        audio.input.markAsFinished()
+                        cont.resume()
+                        return
+                    }
+                }
+            }
+        }
+    }
+
+    /// Builds a reader that yields the music file looped to `duration` at the
+    /// given volume, plus an AAC writer input added to `writer`. Returns nil if
+    /// the file has no audio track.
+    private static func makeAudioMix(musicPath: String,
+                                     volume: Double,
+                                     duration: Double,
+                                     writer: AVAssetWriter) async throws
+        -> (reader: AVAssetReader, output: AVAssetReaderAudioMixOutput, input: AVAssetWriterInput)? {
+        let musicAsset = AVURLAsset(url: URL(fileURLWithPath: musicPath))
+        guard let musicTrack = try await musicAsset.loadTracks(withMediaType: .audio).first else {
+            return nil
+        }
+        let musicDuration = try await musicAsset.load(.duration)
+        guard musicDuration.seconds > 0.01 else { return nil }
+
+        // Tile the track end to end until it covers the whole recording.
+        let composition = AVMutableComposition()
+        guard let compTrack = composition.addMutableTrack(
+            withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else { return nil }
+        let target = CMTime(seconds: duration, preferredTimescale: 600)
+        var cursor = CMTime.zero
+        while cursor < target {
+            let remaining = target - cursor
+            let chunk = CMTimeMinimum(musicDuration, remaining)
+            try compTrack.insertTimeRange(CMTimeRange(start: .zero, duration: chunk),
+                                          of: musicTrack, at: cursor)
+            cursor = cursor + chunk
+        }
+
+        let mix = AVMutableAudioMix()
+        let params = AVMutableAudioMixInputParameters(track: compTrack)
+        params.setVolume(Float(max(0, min(1, volume))), at: .zero)
+        mix.inputParameters = [params]
+
+        let reader = try AVAssetReader(asset: composition)
+        let output = AVAssetReaderAudioMixOutput(audioTracks: [compTrack], audioSettings: [
+            AVFormatIDKey: kAudioFormatLinearPCM,
+            AVSampleRateKey: 44_100,
+            AVNumberOfChannelsKey: 2,
+            AVLinearPCMBitDepthKey: 16,
+            AVLinearPCMIsFloatKey: false,
+            AVLinearPCMIsBigEndianKey: false,
+            AVLinearPCMIsNonInterleaved: false,
+        ])
+        output.audioMix = mix
+        guard reader.canAdd(output) else { return nil }
+        reader.add(output)
+
+        let input = AVAssetWriterInput(mediaType: .audio, outputSettings: [
+            AVFormatIDKey: kAudioFormatMPEG4AAC,
+            AVSampleRateKey: 44_100,
+            AVNumberOfChannelsKey: 2,
+            AVEncoderBitRateKey: 128_000,
+        ])
+        input.expectsMediaDataInRealTime = false
+        guard writer.canAdd(input) else { return nil }
+        writer.add(input)
+        return (reader, output, input)
     }
 }

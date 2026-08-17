@@ -356,4 +356,9 @@ struct RecordingExportOptions: Codable, Equatable {
     var motionBlur: Double = 1
     /// Longest output edge in pixels; source is downscaled to fit.
     var maxOutputWidth: Double = 1920
+    /// Absolute path of a music track mixed under the export. It loops when
+    /// shorter than the recording and is trimmed to length. Nil = no music.
+    var backgroundAudioPath: String? = nil
+    /// Volume of the background music, 0…1.
+    var backgroundAudioVolume: Double = 0.7
 }
