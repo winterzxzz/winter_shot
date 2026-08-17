@@ -62,11 +62,14 @@
 		BBE1528808F70A2DBC6C3A36 /* SetBackgroundUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 410B4F55604E2E005A588A98 /* SetBackgroundUseCase.swift */; };
 		BE3BF672E93B2FEE4A36A497 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BCCE4DABB934077BE3CFAFB /* AppPreferences.swift */; };
 		CBF9FEF6D22F1ADDF4583F61 /* NotchPanelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06154281D95F62A09C646DCC /* NotchPanelManager.swift */; };
+		CF7A8646257466E5C504A510 /* RecordingCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C49735E3E2784F3BF9F296 /* RecordingCamera.swift */; };
+		CFFC4C49D2698C5E04B13ED9 /* WallpaperLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07B49B3E2C961C4C322E3779 /* WallpaperLibrary.swift */; };
 		D076F868B1781BAB4E1211D6 /* WinterShotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9096208A2FBF0271F06E0C /* WinterShotApp.swift */; };
 		D36E093D9DA2A9A127D152C3 /* EscapeCancelMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDB7B9EB2B656D386473D27C /* EscapeCancelMonitor.swift */; };
 		DEBE62A7779E90ADBA4A323C /* MainViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CAE2E95F28A951A7115C3C /* MainViewModel.swift */; };
 		E00B8108EA40EEB90C382281 /* AnnotationColor+SwiftUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A61C6A0175A2C34DD0D543 /* AnnotationColor+SwiftUI.swift */; };
 		E4EA7B71DD0E0E37F032478D /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D395F59189A7CBB61BCDECB3 /* OnboardingView.swift */; };
+		ED44E62AC676B854C5AD0EB0 /* StudioUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37D06329D752525D65196300 /* StudioUI.swift */; };
 		EE3993997CB1F2CB93D9D8DB /* RecordScreenUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E6E82C860D04D3D66CB1124 /* RecordScreenUseCase.swift */; };
 		F228065A0E5808839AB8AB33 /* DisplayFreezer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDAFC25C044A66DF7219D653 /* DisplayFreezer.swift */; };
 		F2E765791CE53DFB5A8936C3 /* HotkeyRecorderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 342ED9FCD459D49EFEF1CFD0 /* HotkeyRecorderView.swift */; };
@@ -81,6 +84,7 @@
 		036BF601111B474D5B59C780 /* SystemScreenCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemScreenCaptureService.swift; sourceTree = "<group>"; };
 		03E667FD01FD84A910203159 /* LoadAnnotationsUseCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadAnnotationsUseCase.swift; sourceTree = "<group>"; };
 		06154281D95F62A09C646DCC /* NotchPanelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchPanelManager.swift; sourceTree = "<group>"; };
+		07B49B3E2C961C4C322E3779 /* WallpaperLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperLibrary.swift; sourceTree = "<group>"; };
 		081C10403C97414E515B2B89 /* WindowOpener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowOpener.swift; sourceTree = "<group>"; };
 		092BDC9C41BF6768F07573BA /* ScreenRecordingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenRecordingService.swift; sourceTree = "<group>"; };
 		09D9E79352A4F3D535132EA2 /* VisionOCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisionOCRService.swift; sourceTree = "<group>"; };
@@ -89,6 +93,7 @@
 		0BF7610B72022C543758A9D9 /* Annotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Annotation.swift; sourceTree = "<group>"; };
 		141BA95984926C8A3F5A1AE6 /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
 		1BCCE4DABB934077BE3CFAFB /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
+		20C49735E3E2784F3BF9F296 /* RecordingCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingCamera.swift; sourceTree = "<group>"; };
 		20EDBC135B97FBE45E8D9774 /* WindowCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowCaptureService.swift; sourceTree = "<group>"; };
 		21F0C2ABEAF3AE55B9FE8DF5 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
 		24B12F1DA98451A3EF2BFCD6 /* OnboardingWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWindowController.swift; sourceTree = "<group>"; };
@@ -98,6 +103,7 @@
 		2F0A25D68246DF430D50A5DE /* CapturesSidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturesSidebarView.swift; sourceTree = "<group>"; };
 		33CAE2E95F28A951A7115C3C /* MainViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewModel.swift; sourceTree = "<group>"; };
 		342ED9FCD459D49EFEF1CFD0 /* HotkeyRecorderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyRecorderView.swift; sourceTree = "<group>"; };
+		37D06329D752525D65196300 /* StudioUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudioUI.swift; sourceTree = "<group>"; };
 		3854AF6795A6E833942A5FED /* RecordingExportWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingExportWindowController.swift; sourceTree = "<group>"; };
 		3ABA7C765089FB3689351F3D /* DIContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DIContainer.swift; sourceTree = "<group>"; };
 		3C1176D102B5328AD76A32C8 /* RecordingExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingExportView.swift; sourceTree = "<group>"; };
@@ -171,6 +177,7 @@
 				3C1176D102B5328AD76A32C8 /* RecordingExportView.swift */,
 				3854AF6795A6E833942A5FED /* RecordingExportWindowController.swift */,
 				B8DACF3C2D4B2E8F05474299 /* RecordingPreviewView.swift */,
+				37D06329D752525D65196300 /* StudioUI.swift */,
 			);
 			path = Recorder;
 			sourceTree = "<group>";
@@ -400,12 +407,14 @@
 				BDAFC25C044A66DF7219D653 /* DisplayFreezer.swift */,
 				FBDADA3A9CC5BD28C982EBFC /* GitHubUpdateService.swift */,
 				D68C1EB5C4AB5BC9260D1BC5 /* GlobalHotkeyService.swift */,
+				20C49735E3E2784F3BF9F296 /* RecordingCamera.swift */,
 				4F2C85BBB3B7986A9C6BE3E1 /* RecordingCompositor.swift */,
 				4CDCE549FCA7A124F561D866 /* RecordingExporterService.swift */,
 				092BDC9C41BF6768F07573BA /* ScreenRecordingService.swift */,
 				036BF601111B474D5B59C780 /* SystemScreenCaptureService.swift */,
 				9C22DBA2EA5FB10EB3FEAF22 /* UpdateInstaller.swift */,
 				09D9E79352A4F3D535132EA2 /* VisionOCRService.swift */,
+				07B49B3E2C961C4C322E3779 /* WallpaperLibrary.swift */,
 				20EDBC135B97FBE45E8D9774 /* WindowCaptureService.swift */,
 			);
 			path = Services;
@@ -442,7 +451,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					73E739B9C72F3EDDE6CEB305 = {
-						DevelopmentTeam = DA9KW67BQV;
+						DevelopmentTeam = H72HDR4743;
 						ProvisioningStyle = Manual;
 					};
 				};
@@ -526,6 +535,7 @@
 				0896CCE91C388FBB08EFBDDD /* RecognizeTextUseCase.swift in Sources */,
 				EE3993997CB1F2CB93D9D8DB /* RecordScreenUseCase.swift in Sources */,
 				F80E9ADFD59260635659DCAD /* Recording.swift in Sources */,
+				CF7A8646257466E5C504A510 /* RecordingCamera.swift in Sources */,
 				F42ABD982420D6C72E3E2FEA /* RecordingCompositor.swift in Sources */,
 				9108600B04B8F7802F10624E /* RecordingController.swift in Sources */,
 				7528A0E792A46DF0930D31A7 /* RecordingExportView.swift in Sources */,
@@ -541,10 +551,12 @@
 				BBE1528808F70A2DBC6C3A36 /* SetBackgroundUseCase.swift in Sources */,
 				56B9B5A4E3988FA975655241 /* SetCropUseCase.swift in Sources */,
 				52C2E7B5EE9C939D67AB5D05 /* SettingsView.swift in Sources */,
+				ED44E62AC676B854C5AD0EB0 /* StudioUI.swift in Sources */,
 				9BA1C90F55DADE80DE784454 /* SystemScreenCaptureService.swift in Sources */,
 				7B94C47F0C3A3FACEC9F5432 /* UpdateChecker.swift in Sources */,
 				3FC0FB281DA223CA40AB8518 /* UpdateInstaller.swift in Sources */,
 				AA14A4CB3BA0E380680E0BFD /* VisionOCRService.swift in Sources */,
+				CFFC4C49D2698C5E04B13ED9 /* WallpaperLibrary.swift in Sources */,
 				49985723090FC67B79A365B3 /* WindowCaptureService.swift in Sources */,
 				66F076040B797CC955E11F77 /* WindowOpener.swift in Sources */,
 				443539E55EA4D09183F330B8 /* WindowPickerOverlay.swift in Sources */,
@@ -615,10 +627,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = 2E8C8843523E16FAF9C2A0EEFE944335933E5C16;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = DA9KW67BQV;
+				DEVELOPMENT_TEAM = H72HDR4743;
 				ENABLE_HARDENED_RUNTIME = NO;
 				INFOPLIST_FILE = WinterShot/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -699,10 +711,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = 2E8C8843523E16FAF9C2A0EEFE944335933E5C16;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = DA9KW67BQV;
+				DEVELOPMENT_TEAM = H72HDR4743;
 				ENABLE_HARDENED_RUNTIME = NO;
 				INFOPLIST_FILE = WinterShot/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
