@@ -34,7 +34,7 @@ targets:
         # update keeps the permission a user already granted; the certs of the
         # other personal team (3YQ3747D5H) are all revoked.
         CODE_SIGN_IDENTITY: "Apple Development"
-        DEVELOPMENT_TEAM: H72HDR4743
+        DEVELOPMENT_TEAM: 3YQ3747D5H
         CODE_SIGN_STYLE: Manual
         ENABLE_HARDENED_RUNTIME: NO
         COMBINE_HIDPI_IMAGES: YES
