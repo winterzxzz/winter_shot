@@ -121,6 +121,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                accessibilityDescription: "Open Captures Folder")
         menu.addItem(folder)
 
+        let settings = NSMenuItem(title: "Settings…",
+                                  action: #selector(openSettingsFromMenu),
+                                  keyEquivalent: ",")
+        settings.target = self
+        settings.image = NSImage(systemSymbolName: "gearshape",
+                                 accessibilityDescription: "Settings")
+        menu.addItem(settings)
+
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit WinterShot",
                                 action: #selector(NSApplication.terminate(_:)),
@@ -151,6 +159,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func openCapturesFolder() {
         NSWorkspace.shared.open(DIContainer.shared.screenshotRepository.storageDirectory)
+    }
+
+    /// Opens the SwiftUI `Settings` scene. As an agent app (LSUIElement) the
+    /// app must be activated first so the window comes to the front.
+    @objc private func openSettingsFromMenu() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
     }
 
     // MARK: - Capture
