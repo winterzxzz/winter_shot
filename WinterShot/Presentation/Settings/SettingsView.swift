@@ -1,9 +1,19 @@
 import SwiftUI
 
-/// The app's Settings window: appearance, capture preview card options,
-/// storage location, and the global capture hotkey.
+/// The app's Settings window: startup, appearance, capture preview card
+/// options, storage location, and the global capture hotkey.
 struct SettingsView: View {
     @ObservedObject private var preferences = AppPreferences.shared
+    @ObservedObject private var loginItem = LoginItemService.shared
+
+    /// Reads through to `SMAppService` rather than a stored flag, so the
+    /// toggle matches System Settings even when it was changed there.
+    private var launchAtLogin: Binding<Bool> {
+        Binding(
+            get: { loginItem.isEnabled },
+            set: { loginItem.setEnabled($0) }
+        )
+    }
 
     private var capturesFolder: URL {
         DIContainer.shared.screenshotRepository.storageDirectory
@@ -33,6 +43,26 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section("Startup") {
+                Toggle("Open at login", isOn: launchAtLogin)
+                if loginItem.needsApproval {
+                    LabeledContent("") {
+                        Button("Open Login Items…") { loginItem.openSystemSettings() }
+                    }
+                    Text("macOS is holding the registration until you allow WinterShot in System Settings → General → Login Items & Extensions.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                } else if let error = loginItem.errorMessage {
+                    Text(error)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.red)
+                } else {
+                    Text("WinterShot has no Dock icon, so starting at login is what keeps the menu-bar icon — and your capture shortcut — there after a restart.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Section("Appearance") {
                 Picker("Theme", selection: $preferences.theme) {
                     ForEach(AppTheme.allCases) { theme in
@@ -101,5 +131,11 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 420)
         .fixedSize()
+        // The login item can also be switched off in System Settings, so
+        // re-read it whenever this window opens or the app comes forward.
+        .onAppear { loginItem.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            loginItem.refresh()
+        }
     }
 }

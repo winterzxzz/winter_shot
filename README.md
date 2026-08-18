@@ -67,6 +67,7 @@ It's the free, private alternative to paid capture tools: pure SwiftUI, zero thi
 | 📌 **Pin to screen** | Float a capture above every window while you work; drag to move, double-click to dismiss. |
 | 🗂 **Capture history** | Your whole library sits beside the editor in the main window, and a notch panel drops from the top of the screen with the latest captures — reopen, copy, pin or delete from either. |
 | ⌨️ **One global hotkey** | ⌘⇧4 opens the selector system-wide, and it's re-recordable in Settings. Everything else lives in the menu-bar icon. |
+| 🚀 **Starts with your Mac** | Turn on *Open at login* in Settings and the menu-bar icon — and your capture shortcut — are waiting after every restart. |
 | 🔒 **One permission, zero telemetry** | Screen Recording — and that's it. No microphone, no accessibility, no analytics, and no network traffic beyond the update check. |
 
 ## 📸 The capture flow
@@ -178,6 +179,11 @@ Because it isn't the recorded one. WinterShot keeps the real pointer out of the 
 <details>
 <summary><b>Can I change the ⌘⇧4 shortcut?</b></summary>
 Yes — Settings → Global Hotkey, then click the shortcut and record a new one (it must include ⌘, ⌥ or ⌃).
+</details>
+
+<details>
+<summary><b>Does WinterShot start automatically at login?</b></summary>
+Only if you ask it to: Settings → Startup → <b>Open at login</b>. It registers through <code>SMAppService</code>, so the entry shows up in System Settings → General → Login Items & Extensions and can be switched off from either place — the toggle in WinterShot always reflects what the system currently says. Worth turning on, since the app has no Dock icon and the hotkey does nothing until it's running.
 </details>
 
 <details>

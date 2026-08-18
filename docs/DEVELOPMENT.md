@@ -65,6 +65,7 @@ The app is scriptable for testing and for capturing documentation — every flag
 | `--open-recording <path.mp4>` | Opens the studio editor for a recording |
 | `--preview-image <path>` | Shows the post-capture thumbnail card (repeatable — stacks) |
 | `--show-recording-hud` | Shows the recording timer pill without recording |
+| `--login-item <on\|off\|status>` | Flips or reads "Open at login", prints the resulting state, exits |
 | `--ocr <name>.png` | Runs OCR through the app's pipeline, prints the text, exits |
 | `--export-recording <in> <out>` | Headless export; `--export-options <json>` supplies `RecordingExportOptions` |
 

@@ -243,6 +243,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             RecordingHUDController.shared.show()
             RecordingHUDController.shared.beginTimer()
         }
+        if let value = Self.launchValue(after: "--login-item") {
+            // Reads or flips "Open at login" without the Settings window, so
+            // the registration can be scripted and checked (testing).
+            let service = LoginItemService.shared
+            switch value {
+            case "on": service.setEnabled(true)
+            case "off": service.setEnabled(false)
+            case "status": service.refresh()
+            default:
+                NSLog("WinterShot: --login-item expects on, off or status")
+                exit(1)
+            }
+            if let error = service.errorMessage {
+                NSLog("WinterShot: login item failed: %@", error)
+                print("error: \(error)")
+                exit(1)
+            }
+            print(service.isEnabled ? "enabled" : service.needsApproval ? "requiresApproval" : "notRegistered")
+            exit(0)
+        }
         // Shows the post-capture thumbnail card for each image; repeat the
         // flag to exercise the stacked column (testing).
         for path in Self.launchValues(after: "--preview-image") {
