@@ -56,6 +56,12 @@ final class RecordingExporterService: RecordingRenderer {
         guard reader.canAdd(readerOutput) else { throw ExportError.renderFailed("reader setup") }
         reader.add(readerOutput)
 
+        // Bitrate tracks the output resolution — a fixed 12 Mbps starves 4K
+        // (blocky) and wastes bits on 1080p. ~0.10 bits per pixel-second
+        // gives ≈12 Mbps at 1080p60, ≈22 at 1440p60, ≈50 at 4K60.
+        let bitRate = Int(min(60_000_000,
+                              max(6_000_000, outputSize.width * outputSize.height * fps * 0.10)))
+
         try? FileManager.default.removeItem(at: destination)
         let writer = try AVAssetWriter(outputURL: destination, fileType: .mp4)
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
@@ -63,7 +69,7 @@ final class RecordingExporterService: RecordingRenderer {
             AVVideoWidthKey: Int(outputSize.width),
             AVVideoHeightKey: Int(outputSize.height),
             AVVideoCompressionPropertiesKey: [
-                AVVideoAverageBitRateKey: 12_000_000,
+                AVVideoAverageBitRateKey: bitRate,
                 AVVideoExpectedSourceFrameRateKey: Int(fps),
                 AVVideoMaxKeyFrameIntervalKey: Int(fps) * 2,
                 AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,

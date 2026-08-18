@@ -323,6 +323,29 @@ struct RecordingExportView: View {
             .fixedSize()
             .help("Output aspect ratio")
 
+            Menu {
+                ForEach(ExportResolution.allCases) { res in
+                    Button {
+                        options.resolution = res
+                    } label: {
+                        if res == (options.resolution ?? .native) {
+                            Label("\(res.label) — \(res.detail)", systemImage: "checkmark")
+                        } else {
+                            Text("\(res.label) — \(res.detail)")
+                        }
+                    }
+                }
+            } label: {
+                Label((options.resolution ?? .native).label, systemImage: "arrow.up.left.and.arrow.down.right")
+                    .font(Studio.controlCopy)
+                    .foregroundStyle(Studio.text)
+                    .frame(height: 30)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.visible)
+            .fixedSize()
+            .help("Export resolution — higher is sharper but makes a bigger file")
+
             StudioToolButton(title: "Crop", icon: "crop", isActive: false) { enterCropMode() }
                 .help("Crop the recording")
             StudioToolButton(title: "Mask", icon: "rectangle.dashed", isActive: editMode == .mask) {

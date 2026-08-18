@@ -323,6 +323,42 @@ extension RecordingEventLog {
     }
 }
 
+/// Output resolution ceiling. The compositor downscales the shot to fit but
+/// never upscales it past its native pixels, so a Retina recording stays
+/// sharp. `native` is capped at 4K only to keep exports from ballooning on
+/// 5K/6K displays.
+enum ExportResolution: String, Codable, CaseIterable, Identifiable {
+    case native, uhd, qhd, fhd
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .native: return "Native"
+        case .uhd: return "4K"
+        case .qhd: return "1440p"
+        case .fhd: return "1080p"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .native: return "Up to 4K — sharpest"
+        case .uhd: return "3840 px"
+        case .qhd: return "2560 px"
+        case .fhd: return "1920 px"
+        }
+    }
+
+    /// Longest output edge, in pixels.
+    var maxOutputWidth: Double {
+        switch self {
+        case .native, .uhd: return 3840
+        case .qhd: return 2560
+        case .fhd: return 1920
+        }
+    }
+}
+
 /// Options for a Screen Studio-style export render. Defaults mirror Screen
 /// Studio's recovered defaults: 2× zoom, 1.5× cursor, 10% padding.
 struct RecordingExportOptions: Codable, Equatable {
@@ -354,8 +390,13 @@ struct RecordingExportOptions: Codable, Equatable {
     /// Motion blur strength (0 = off, 1 = Screen Studio's default) applied
     /// to camera zooms/pans and cursor movement.
     var motionBlur: Double = 1
-    /// Longest output edge in pixels; source is downscaled to fit.
-    var maxOutputWidth: Double = 1920
+    /// Output resolution ceiling. Optional so exports saved before this
+    /// setting existed still decode; nil resolves to `.native`.
+    var resolution: ExportResolution? = nil
+
+    /// Longest output edge in pixels; the source is downscaled to fit and
+    /// never upscaled past its native size.
+    var maxOutputWidth: Double { (resolution ?? .native).maxOutputWidth }
     /// Absolute path of a music track mixed under the export. It loops when
     /// shorter than the recording and is trimmed to length. Nil = no music.
     var backgroundAudioPath: String? = nil
