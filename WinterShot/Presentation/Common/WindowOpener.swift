@@ -9,6 +9,10 @@ import SwiftUI
 @MainActor
 enum WindowOpener {
     static var openMainWindow: (() -> Void)?
+    /// SwiftUI's `openSettings` action. The AppKit `showSettingsWindow:`
+    /// selector stopped opening the Settings scene reliably on macOS 14, so
+    /// the status-item menu calls this donated action instead.
+    static var openSettings: (() -> Void)?
 
     private static var bridgeWindow: NSWindow?
 
@@ -33,11 +37,13 @@ enum WindowOpener {
 
 private struct BridgeView: View {
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         Color.clear
             .onAppear {
                 WindowOpener.openMainWindow = { openWindow(id: "main") }
+                WindowOpener.openSettings = { openSettings() }
             }
     }
 }

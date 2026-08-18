@@ -162,10 +162,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Opens the SwiftUI `Settings` scene. As an agent app (LSUIElement) the
-    /// app must be activated first so the window comes to the front.
+    /// app must be activated first so the window comes to the front. The
+    /// AppKit `showSettingsWindow:` selector no longer opens the scene
+    /// reliably on macOS 14, so prefer SwiftUI's donated `openSettings`
+    /// action (see WindowOpener), falling back to the selector.
     @objc private func openSettingsFromMenu() {
         NSApp.activate(ignoringOtherApps: true)
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        if let openSettings = WindowOpener.openSettings {
+            openSettings()
+        } else {
+            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        }
     }
 
     // MARK: - Capture
@@ -257,6 +264,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Shows the recording timer widget without capturing (testing).
             RecordingHUDController.shared.show()
             RecordingHUDController.shared.beginTimer()
+        }
+        if CommandLine.arguments.contains("--open-settings") {
+            // Opens the Settings window without going through the status
+            // menu, so the menu action can be exercised headlessly (testing).
+            DispatchQueue.main.async { [weak self] in self?.openSettingsFromMenu() }
         }
         if let value = Self.launchValue(after: "--login-item") {
             // Reads or flips "Open at login" without the Settings window, so
