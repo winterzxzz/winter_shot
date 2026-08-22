@@ -36,6 +36,26 @@ Recordings get the same treatment: WinterShot logs your pointer and clicks *next
 
 It's the free, private alternative to paid capture tools: pure SwiftUI, zero third-party dependencies, no telemetry, no account, and exactly **one** system permission.
 
+## 🆚 How WinterShot compares
+
+|  | **WinterShot** | CleanShot X | Shottr | Screen Studio | macOS ⌘⇧4 |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **Price** | **Free** | $29+ | Freemium | $89+ | Free |
+| **Open source** | ✅ MIT | ❌ | ❌ | ❌ | ❌ |
+| Freeze-frame selector + pixel loupe | ✅ | ✅ | ✅ | — | ❌ |
+| Non-destructive annotations (re-editable) | ✅ | ❌ | ❌ | — | ❌ |
+| Background beautify | ✅ | ✅ | ✅ | ✅ | ❌ |
+| On-device OCR | ✅ | ✅ | ✅ | — | ❌ |
+| Screen recording | ✅ | ✅ | ❌ | ✅ | ✅ |
+| Studio editor — click-to-zoom + synthetic cursor | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Re-export a take with a new look | ✅ | ❌ | ❌ | ✅ | ❌ |
+| 100% on-device, no account | ✅ | ✅ | ✅ | ❌ | ✅ |
+| System permissions required | **1** | several | several | several | 0 |
+
+> WinterShot is the only tool here that is **free, open source, and pairs a non-destructive screenshot editor with a Screen Studio-style recording editor** — with a single screen-recording permission and nothing leaving your Mac.
+
+*Comparison reflects publicly documented features as of 2026; competitors are trademarks of their owners. Corrections welcome via PR.*
+
 ## ⬇️ Download
 
 **[Grab the latest `.dmg` from Releases →](https://github.com/winterzxzz/winter_shot/releases/latest)**
@@ -196,6 +216,12 @@ The published build is Apple Silicon only. Intel users can build from source —
 - Space to toggle window/area mode mid-selection
 - Multi-display fullscreen capture
 - More export presets for the recording editor
+
+## 🎙️ Also from the same maker
+
+**[WinterVoice](https://github.com/winterzxzz/winter_voice)** — free, open-source voice dictation for macOS. Hold a key, speak, and your words land in any app — 100% offline Whisper speech-to-text. Built for vibe coding: dictate prompts straight into Claude Code, Cursor or ChatGPT instead of typing them.
+
+> Same house style, same privacy stance: native SwiftUI, on-device, no account. **Screenshot with WinterShot, dictate with WinterVoice.**
 
 ## 🤝 Contributing
 
