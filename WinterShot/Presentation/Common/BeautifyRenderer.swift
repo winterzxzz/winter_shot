@@ -67,9 +67,9 @@ enum BeautifyRenderer {
         }
 
         context.drawLayer { layer in
-            if style.isEnabled {
-                layer.clip(to: clipPath)
-            }
+            // Always clip: the image is drawn at full size and only translated
+            // into place, so without this the parts outside the crop paint too.
+            layer.clip(to: clipPath)
             layer.translateBy(x: contentRect.origin.x - visible.origin.x,
                               y: contentRect.origin.y - visible.origin.y)
             if let image {

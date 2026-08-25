@@ -249,6 +249,11 @@ final class EditorViewModel: ObservableObject {
         if isCropping {
             cropDragChanged(to: point)
             cropDragStart = nil
+            // A bare click or accidental micro-drag leaves a degenerate rect;
+            // drop it so the Apply button disables instead of silently no-oping.
+            if let draft = cropDraft, draft.width < 20 || draft.height < 20 {
+                cropDraft = nil
+            }
             return
         }
         guard let tool = selectedTool else {
