@@ -20,7 +20,18 @@ fi
 
 echo "==> Building Release"
 xcodegen generate
-xcodebuild -project WinterShot.xcodeproj -scheme WinterShot -configuration Release build | tail -1
+# Optional signing override for machines that lack the pinned team's
+# certificate: set WS_SIGN_TEAM / WS_SIGN_IDENTITY to pass
+# DEVELOPMENT_TEAM / CODE_SIGN_IDENTITY through to xcodebuild.
+SIGNING=()
+if [ -n "${WS_SIGN_TEAM:-}" ]; then
+  SIGNING+=("DEVELOPMENT_TEAM=${WS_SIGN_TEAM}")
+fi
+if [ -n "${WS_SIGN_IDENTITY:-}" ]; then
+  SIGNING+=("CODE_SIGN_IDENTITY=${WS_SIGN_IDENTITY}")
+fi
+xcodebuild -project WinterShot.xcodeproj -scheme WinterShot -configuration Release \
+  ${SIGNING[@]+"${SIGNING[@]}"} build | tail -1
 
 APP=$(ls -d "$HOME/Library/Developer/Xcode/DerivedData"/WinterShot-*/Build/Products/Release/WinterShot.app | head -1)
 echo "==> Packaging $APP"
