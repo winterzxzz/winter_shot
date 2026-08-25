@@ -7,9 +7,10 @@ import UniformTypeIdentifiers
 /// captures don't replace each other: each new card appears at the bottom
 /// and pushes the earlier ones up into a column. Every card carries the same
 /// quick actions as a library card: close, annotate, copy, pin, delete. Cards
-/// can be dragged into other apps, follow the pointer to another display
-/// while showing, and slide away on their own after the delay chosen in
-/// Settings (paused while the pointer is over that card). Card size also
+/// can be dragged into other apps (the card dismisses itself as the drag
+/// leaves — the capture stays in the library), follow the pointer to another
+/// display while showing, and slide away on their own after the delay chosen
+/// in Settings (paused while the pointer is over that card). Card size also
 /// comes from Settings.
 @MainActor
 final class CapturePreviewManager {
@@ -86,6 +87,16 @@ final class CapturePreviewManager {
                     entry.dismissTimer = nil
                 } else {
                     self?.scheduleDismiss(of: entry)
+                }
+            },
+            onDragStarted: { [weak self, weak entry] in
+                guard let entry else { return }
+                entry.dismissTimer?.invalidate()
+                entry.dismissTimer = nil
+                // The delay lets the drag session take ownership of the
+                // preview snapshot before its source window goes away.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    self?.close(entry)
                 }
             }
         )
@@ -212,6 +223,7 @@ private struct CapturePreviewView: View {
     let onDelete: () -> Void
     let onClose: () -> Void
     let onHoverChange: (Bool) -> Void
+    let onDragStarted: () -> Void
 
     @State private var hovering = false
 
@@ -268,7 +280,10 @@ private struct CapturePreviewView: View {
                 onHoverChange(value)
             }
             .onTapGesture(perform: onOpen)
-            .onDrag { NSItemProvider(contentsOf: fileURL) ?? NSItemProvider() }
+            .onDrag {
+                onDragStarted()
+                return NSItemProvider(contentsOf: fileURL) ?? NSItemProvider()
+            }
             .help("Click to annotate, or drag into another app")
     }
 
