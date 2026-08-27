@@ -80,6 +80,10 @@
 
   .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
 
+  /* Parallax depth — JS drives --py; elements with their own transform
+     (e.g. .studio-hud) compose the var into it instead */
+  [data-parallax] { transform: translate3d(0, var(--py, 0px), 0); will-change: transform; }
+
   /* ---------- Nav ---------- */
 
   .nav {
@@ -384,7 +388,7 @@
   .studio-hud {
     position: absolute; top: -26px; right: -14px; width: 168px;
     filter: drop-shadow(0 14px 30px rgba(2, 6, 18, .8));
-    transform: rotate(2.5deg);
+    transform: translate3d(0, var(--py, 0px), 0) rotate(2.5deg);
     z-index: 2;
   }
 
@@ -662,7 +666,7 @@
   </div>
 
   <div class="hero-shot reveal">
-    <img src="assets/editor.png" width="1400" height="918" fetchpriority="high"
+    <img src="assets/editor.png" width="1400" height="918" fetchpriority="high" data-parallax="0.05"
          alt="WinterShot's editor showing a captured dashboard annotated with a red arrow, numbered counters, a yellow highlighter across a table row and black redaction bars over an email column">
   </div>
 
@@ -697,12 +701,12 @@
              even when it's half-covered. Or drag anywhere for an area while the pixel loupe
              magnifies the cursor with live coordinates.</p>
         </div>
-        <img class="shot" src="assets/selector.png" width="1500" height="843" loading="lazy"
+        <img class="shot" src="assets/selector.png" width="1500" height="843" loading="lazy" data-parallax="0.06"
              alt="WinterShot's frozen-screen selector: the desktop is dimmed, the hovered window is lifted out and outlined in green, and a pixel loupe magnifies the cursor position">
       </div>
 
       <div class="flow-step reverse reveal">
-        <img class="shot" src="assets/preview.png" width="780" height="470" loading="lazy"
+        <img class="shot" src="assets/preview.png" width="780" height="470" loading="lazy" data-parallax="0.04"
              alt="Two capture preview cards stacked at the bottom-left of the screen, each with annotate, copy, pin and delete buttons">
         <div class="flow-text">
           <span class="flow-num">02 / triage</span>
@@ -736,13 +740,13 @@
           </div>
         </div>
         <div class="editor-shot reveal">
-          <img class="shot" src="assets/editor.png" width="1400" height="918" loading="lazy"
+          <img class="shot" src="assets/editor.png" width="1400" height="918" loading="lazy" data-parallax="0.05"
                alt="WinterShot's editor with the tool strip, a library sidebar and an annotated capture on the canvas">
         </div>
       </div>
 
       <div class="editor-beautify reveal">
-        <img class="shot" src="assets/beautify.png" width="1400" height="918" loading="lazy"
+        <img class="shot" src="assets/beautify.png" width="1400" height="918" loading="lazy" data-parallax="0.06"
              alt="The same capture with background beautify enabled — sitting on a blue gradient with padding, rounded corners and a drop shadow">
         <p class="shot-caption">Flip on a backdrop and the same capture is post-ready — seven gradient presets, padding, corners, shadow. On-device OCR pulls the text out too.</p>
       </div>
@@ -761,9 +765,9 @@
       </div>
 
       <div class="studio-wrap reveal">
-        <img class="studio-hud" src="assets/hud.png" width="300" height="110" loading="lazy"
+        <img class="studio-hud" src="assets/hud.png" width="300" height="110" loading="lazy" data-parallax="-0.08"
              alt="WinterShot's floating recording pill with a red dot, elapsed timer and stop button">
-        <img class="shot" src="assets/studio.png" width="1400" height="923" loading="lazy"
+        <img class="shot" src="assets/studio.png" width="1400" height="923" loading="lazy" data-parallax="0.04"
              alt="WinterShot's recording editor: the recording sits on a wallpaper backdrop, a synthetic cursor and auto-zoom follow the clicks, and a timeline shows the clip and zoom ranges">
       </div>
 
@@ -802,8 +806,10 @@
   <section class="section-tight" id="library" style="border-top: 1px solid var(--line-soft);">
     <div class="container">
       <div class="library-grid">
-        <img class="shot reveal" src="assets/notch.png" width="940" height="330" loading="lazy"
-             alt="WinterShot's notch history panel dropping from the top of the screen with recent capture thumbnails">
+        <div class="reveal">
+          <img class="shot" src="assets/notch.png" width="940" height="330" loading="lazy" data-parallax="0.05"
+               alt="WinterShot's notch history panel dropping from the top of the screen with recent capture thumbnails">
+        </div>
         <div class="library-text reveal">
           <p class="eyebrow">History</p>
           <h2 style="font-size: clamp(1.5rem, 3vw, 2rem);">Your captures, one click away.</h2>
@@ -820,7 +826,7 @@
     <div class="container">
       <div class="privacy-grid">
         <div class="reveal">
-          <div class="dialog" role="img" aria-label="A macOS permission dialog: WinterShot would like to record this computer's screen — the only permission it ever asks for">
+          <div class="dialog" data-parallax="-0.05" role="img" aria-label="A macOS permission dialog: WinterShot would like to record this computer's screen — the only permission it ever asks for">
             <img src="assets/icon.png" alt="" width="60" height="60">
             <h5>“WinterShot” would like to record this computer's screen.</h5>
             <p>Grant access in System Settings → Privacy &amp; Security → Screen Recording.</p>
@@ -1011,6 +1017,50 @@
     document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
   } else {
     document.querySelectorAll(".reveal").forEach(function (el) { el.classList.add("in"); });
+  }
+
+  // Parallax depth: offset each layer by its distance from the viewport
+  // center, scaled by data-parallax. Desktop only; off under reduced motion.
+  var pEls = [].slice.call(document.querySelectorAll("[data-parallax]"));
+  if (pEls.length && !reduced) {
+    var items = [], enabled = false, ticking = false;
+
+    function measure() {
+      var sy = window.scrollY || window.pageYOffset;
+      items = pEls.map(function (el) {
+        var applied = parseFloat(el.style.getPropertyValue("--py")) || 0;
+        var r = el.getBoundingClientRect();
+        return {
+          el: el,
+          f: parseFloat(el.getAttribute("data-parallax")) || 0,
+          center: r.top + sy - applied + r.height / 2
+        };
+      });
+    }
+
+    function frame() {
+      ticking = false;
+      var mid = (window.scrollY || window.pageYOffset) + window.innerHeight / 2;
+      items.forEach(function (it) {
+        var off = enabled ? (it.center - mid) * it.f : 0;
+        it.el.style.setProperty("--py", off.toFixed(1) + "px");
+      });
+    }
+
+    function onScroll() {
+      if (!ticking) { ticking = true; requestAnimationFrame(frame); }
+    }
+
+    function refresh() {
+      enabled = window.innerWidth >= 900;
+      measure();
+      frame();
+    }
+
+    refresh();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", refresh);
+    window.addEventListener("load", refresh);
   }
 
   // GitHub star count (fails silently offline)
