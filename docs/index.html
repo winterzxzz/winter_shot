@@ -323,6 +323,15 @@
     text-align: center;
   }
 
+  /* ---------- Demo tour ---------- */
+
+  .demo-head { text-align: center; }
+  .demo-wrap { max-width: 880px; margin: 40px auto 0; }
+  .demo-wrap .shot {
+    width: 100%;
+    border: 1px solid var(--line);
+  }
+
   /* ---------- Capture flow ---------- */
 
   .flow-step { display: grid; grid-template-columns: 1fr 1.6fr; gap: 56px; align-items: center; }
@@ -682,6 +691,21 @@
 </header>
 
 <main>
+
+  <!-- Demo tour -->
+  <section class="section-tight" id="demo">
+    <div class="container demo-head">
+      <p class="eyebrow reveal">In action</p>
+      <h2 class="reveal" style="max-width: none;">The whole loop, in one take.</h2>
+    </div>
+    <div class="container demo-wrap reveal">
+      <picture>
+        <source srcset="assets/demo.gif" media="(prefers-reduced-motion: no-preference)">
+        <img class="shot" src="assets/demo-poster.png" width="880" height="550" loading="lazy" data-parallax="0.05"
+             alt="WinterShot demo — freeze the screen and pick a window, annotate the capture with arrows and redaction, edit a screen recording in the studio editor, and reopen everything from the capture history">
+      </picture>
+    </div>
+  </section>
 
   <!-- Capture flow -->
   <section class="section" id="capture">
