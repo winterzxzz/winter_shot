@@ -163,6 +163,10 @@ struct RecordingExportView: View {
             }
         }
         .background(Studio.background)
+        // The title bar is transparent and the top bar is drawn here, so lay
+        // out over the title-bar region rather than below it (the window
+        // controller sizes that region to match the top bar).
+        .ignoresSafeArea(.container, edges: .top)
         .preferredColorScheme(.dark)
         .focusEffectDisabled()
         .onAppear {
@@ -265,9 +269,10 @@ struct RecordingExportView: View {
                 .keyboardShortcut(.defaultAction)
                 .padding(.leading, 6)
             }
-            .padding(.leading, 84) // clear the traffic lights (fullSizeContentView)
+            .padding(.leading, 96) // clear the traffic lights, inline at x 19–79 (unified toolbar)
             .padding(.trailing, 14)
         }
+        .padding(.bottom, 8) // centre the row on the traffic lights (26 pt), not on the 60 pt bar
         .frame(height: 60)
     }
 
