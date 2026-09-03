@@ -962,9 +962,18 @@ struct RecordingExportView: View {
             .disabled(!recordingHasCursorTypes)
             .opacity(recordingHasCursorTypes ? 1 : 0.6)
             StudioField("Pointer", description: options.followRecordedCursor && recordingHasCursorTypes
-                        ? "Used wherever the app's pointer isn't one of the standard ones."
+                        ? "Used wherever the app's pointer isn't one of the standard ones. Pick one to use it everywhere."
                         : nil) {
-                CursorKindGrid(selection: $options.cursorType, tint: options.cursorTint)
+                // Picking a pointer means "use this one", so it also stops
+                // following the app's cursor — otherwise the pick is only a
+                // fallback and looks like it did nothing. One state change,
+                // so undo reverts both together.
+                CursorKindGrid(selection: Binding(get: { options.cursorType },
+                                                  set: { kind in
+                                                      options.cursorType = kind
+                                                      options.followRecordedCursor = false
+                                                  }),
+                               tint: options.cursorTint)
             }
             StudioField("Color") {
                 StudioSegmented(selection: $options.cursorTint,
