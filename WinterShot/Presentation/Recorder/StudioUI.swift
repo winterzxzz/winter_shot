@@ -248,12 +248,16 @@ struct StudioToggle: View {
 
 // MARK: - Segmented picker
 
+/// Segments fill the row and are equal-width whenever the labels allow it;
+/// a label that needs more room keeps its text and the others share what is
+/// left (Screen Studio's picker is plain equal widths, which fits its four
+/// Background kinds but squeezed our fifth, "Wallpaper", to "Wallpa…").
 struct StudioSegmented<T: Hashable>: View {
     @Binding var selection: T
     let options: [(value: T, label: String)]
 
     var body: some View {
-        HStack(spacing: 6) {
+        SegmentedRow(spacing: 6) {
             ForEach(options, id: \.value) { option in
                 let active = option.value == selection
                 Button {
@@ -261,6 +265,7 @@ struct StudioSegmented<T: Hashable>: View {
                 } label: {
                     Text(option.label)
                         .font(Studio.controlCopy)
+                        .lineLimit(1)
                         .foregroundStyle(active ? Studio.text : Studio.textSecondary)
                         .frame(maxWidth: .infinity)
                         .frame(height: 30)
@@ -271,6 +276,69 @@ struct StudioSegmented<T: Hashable>: View {
                 }
                 .buttonStyle(.plain)
             }
+        }
+    }
+}
+
+/// One row of segments. Every segment is offered an equal share of the
+/// width; a segment whose label (plus side padding) is wider than its share
+/// takes what it needs and the rest re-split the remainder, so labels never
+/// truncate while the row still fills its container. The side padding is
+/// 12 pt when there is room and shrinks evenly when there isn't; only if the
+/// bare labels cannot fit at all do all segments shrink in proportion.
+private struct SegmentedRow: Layout {
+    var spacing: CGFloat
+    private let padding: CGFloat = 12
+
+    private func widths(for subviews: Subviews, in available: CGFloat?) -> [CGFloat] {
+        let naturals = subviews.map { $0.sizeThatFits(.unspecified).width }
+        let count = CGFloat(naturals.count)
+        guard count > 0 else { return [] }
+        let gaps = spacing * (count - 1)
+        guard let available, available.isFinite else {
+            return naturals.map { $0 + padding * 2 }
+        }
+        let slack = available - gaps - naturals.reduce(0, +)
+        guard slack >= 0 else {
+            let scale = max(available - gaps, 0) / max(naturals.reduce(0, +), 1)
+            return naturals.map { $0 * scale }
+        }
+        let pad = min(padding, slack / (count * 2))
+        let desired = naturals.map { $0 + pad * 2 }
+        // Water-fill toward equal widths: fix the segments that need more
+        // than an equal share, then re-share the rest.
+        var widths = desired
+        var flexible = Set(desired.indices)
+        var remaining = available - gaps
+        while !flexible.isEmpty {
+            let share = remaining / CGFloat(flexible.count)
+            let over = flexible.filter { desired[$0] > share + 0.01 }
+            if over.isEmpty {
+                for i in flexible { widths[i] = share }
+                break
+            }
+            for i in over {
+                widths[i] = desired[i]
+                remaining -= desired[i]
+                flexible.remove(i)
+            }
+        }
+        return widths
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let widths = widths(for: subviews, in: proposal.width)
+        guard !widths.isEmpty else { return .zero }
+        let height = subviews.map { $0.sizeThatFits(.unspecified).height }.max() ?? 0
+        return CGSize(width: widths.reduce(0, +) + spacing * CGFloat(widths.count - 1), height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX
+        for (subview, width) in zip(subviews, widths(for: subviews, in: bounds.width)) {
+            subview.place(at: CGPoint(x: x, y: bounds.minY),
+                          proposal: ProposedViewSize(width: width, height: bounds.height))
+            x += width + spacing
         }
     }
 }
