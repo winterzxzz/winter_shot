@@ -10,14 +10,17 @@ import Foundation
 
 /// Damped spring (stiffness/damping/mass), integrated with semi-implicit
 /// Euler in 1 ms substeps — the exact integrator Screen Studio uses, with its
-/// recovered constants.
+/// recovered constants (except the screen spring, see below).
 struct MotionSpring {
     let stiffness: Double
     let damping: Double
     let mass: Double
 
-    /// Screen zoom/pan.
-    static let screenMovement = MotionSpring(stiffness: 200, damping: 40, mass: 2.25)
+    /// Screen zoom/pan. Screen Studio's is 200/40/2.25 (ω ≈ 9.4 rad/s); this
+    /// is softened to ω ≈ 7.3 rad/s at the same damping ratio (ζ ≈ 0.94), so
+    /// a glide settles in ~0.6 s instead of ~0.45 s and peaks at about three
+    /// quarters of the speed — calmer pans, still without an overdamped tail.
+    static let screenMovement = MotionSpring(stiffness: 120, damping: 31, mass: 2.25)
     /// Cursor movement (default).
     static let mouseMovement = MotionSpring(stiffness: 470, damping: 70, mass: 3)
     /// Cursor movement right after a click (snappier).
@@ -63,6 +66,16 @@ struct CameraRig {
         var position: CGPoint
 
         static let rest = Pose(scale: 1, position: .zero)
+
+        /// Linear blend from `a` (t = 0) to `b` (t = 1). The ends return the
+        /// inputs untouched, so a blend of exactly 1 is bit-identical to `b`.
+        static func lerp(_ a: Pose, _ b: Pose, _ t: Double) -> Pose {
+            if t >= 1 { return b }
+            if t <= 0 { return a }
+            return Pose(scale: a.scale + (b.scale - a.scale) * t,
+                        position: CGPoint(x: a.position.x + (b.position.x - a.position.x) * t,
+                                          y: a.position.y + (b.position.y - a.position.y) * t))
+        }
     }
 
     private struct ZoomRange {
@@ -249,6 +262,19 @@ struct CursorTrack {
         var tilt: Double
         /// The pointer the app was showing (nil when the log has no types).
         var kind: CursorKind? = nil
+
+        /// Linear blend of position, pulse and tilt from `a` (t = 0) to `b`
+        /// (t = 1); the pointer kind is `b`'s. The ends return the inputs
+        /// untouched.
+        static func lerp(_ a: Pose, _ b: Pose, _ t: Double) -> Pose {
+            if t >= 1 { return b }
+            if t <= 0 { return a }
+            return Pose(position: CGPoint(x: a.position.x + (b.position.x - a.position.x) * t,
+                                          y: a.position.y + (b.position.y - a.position.y) * t),
+                        scale: a.scale + (b.scale - a.scale) * t,
+                        tilt: a.tilt + (b.tilt - a.tilt) * t,
+                        kind: b.kind)
+        }
     }
 
     private let samples: [(t: Double, point: CGPoint, kind: CursorKind?)]

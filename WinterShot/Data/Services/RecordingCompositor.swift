@@ -39,7 +39,14 @@ final class RecordingCompositor {
 
     private var camera: CameraRig
     private var cursor: CursorTrack
-    private var simTime: Double = -1
+    /// The tick the springs sit on (−1 before the first frame). Kept as an
+    /// integer so `simTime` never drifts from the exporter's `n / fps`.
+    private var tickIndex = -1
+    private var simTime: Double { Double(tickIndex) / Self.tickRate }
+    /// Where the last rendered time fell between the previous tick and
+    /// `tickIndex`: exactly 1 on the tick (every export frame), less when a
+    /// preview refresh lands between ticks and the two poses are blended.
+    private var blend: Double = 1
 
     private let backdrop: CIImage
     /// For video backgrounds the backdrop can't be baked: the sampler decodes
@@ -52,6 +59,12 @@ final class RecordingCompositor {
     private let cursorSprites: [CursorKind: CursorSprite]
     private let rippleDisc: CIImage
     private static let rippleDiscSize: CGFloat = 128
+    /// Ceiling on the directional-blur radius (half the streak). Pans peak
+    /// at 50–85 output px per frame on a 1080p recording and more at 4K; an
+    /// earlier 24 px cap cut those streaks short of the travel, which read
+    /// as strobing at the fastest part of every glide. This only guards
+    /// against pathological jumps.
+    private static let maxBlurRadius: Double = 64
 
     /// One Metal-backed context for every compositor; CIContext is
     /// thread-safe and expensive to create.
@@ -163,22 +176,31 @@ final class RecordingCompositor {
 
     // MARK: - Simulation
 
-    /// Steps the camera and cursor up to `t` on the fixed tick. A backward
-    /// jump (scrub) or a jump further ahead than the influence window resets
-    /// the springs at `t − 3.5 s` and re-simulates from there, so the pose at
-    /// any time is deterministic no matter how playback got there.
+    /// Steps the camera and cursor on the fixed tick until they bracket `t`:
+    /// afterwards the springs sit on the first tick at or after `t`, and
+    /// `blend` says how far `t` is past the tick before it, so a preview
+    /// refresh between ticks renders a blend of the two poses instead of
+    /// holding the last tick still (which showed up as the camera freezing
+    /// and double-stepping whenever the refresh phase sat near a tick).
+    /// A backward jump (scrub) past the previous tick, or a jump further
+    /// ahead than the influence window, resets the springs at the tick at
+    /// or before `t − 3.5 s` and re-simulates from there — on the same tick
+    /// grid the exporter walks, so the pose at any time is deterministic no
+    /// matter how playback got there.
     private func advance(to t: Double) {
         let t = max(0, t)
-        if simTime < 0 || t < simTime - 1e-6 || t - simTime > Self.influenceTime + 1 {
-            simTime = max(0, t - Self.influenceTime)
+        if tickIndex < 0 || t < simTime - Self.tick - 1e-6 || t - simTime > Self.influenceTime + 1 {
+            tickIndex = max(0, Int(((t - Self.influenceTime) * Self.tickRate).rounded(.down)))
             camera.snap(to: simTime)
             cursor.snap(to: simTime)
         }
-        while simTime + Self.tick <= t + 1e-9 {
-            simTime += Self.tick
+        while simTime < t - 1e-9 {
+            tickIndex += 1
             camera.step(to: simTime, dt: Self.tick)
             cursor.step(to: simTime, dt: Self.tick)
         }
+        let ahead = simTime - t
+        blend = ahead < 1e-6 ? 1 : 1 - ahead / Self.tick
     }
 
     // MARK: - Rendering
@@ -202,8 +224,17 @@ final class RecordingCompositor {
         let frameW = events.frameWidth
         let frameH = events.frameHeight
         let fit = Double(contentRect.width) / frameW
-        let cam = camera.pose
-        let prev = camera.previousPose
+        // The shown pose: the current tick, or — between ticks in the
+        // preview — a blend with the previous one. Motion blur measures one
+        // tick of travel ending at the shown pose, so blended frames keep
+        // the same streak as tick-aligned ones.
+        let tickPose = camera.pose
+        let tickPrev = camera.previousPose
+        let cam = CameraRig.Pose.lerp(tickPrev, tickPose, blend)
+        let prev = blend >= 1 ? tickPrev : CameraRig.Pose(
+            scale: cam.scale - (tickPose.scale - tickPrev.scale),
+            position: CGPoint(x: cam.position.x - (tickPose.position.x - tickPrev.position.x),
+                              y: cam.position.y - (tickPose.position.y - tickPrev.position.y)))
         // Output px per video px, and video px → output px.
         let k = cam.scale * fit
         func out(_ p: CGPoint, pose: CameraRig.Pose = cam) -> CGPoint {
@@ -259,8 +290,10 @@ final class RecordingCompositor {
             } else if moveLength >= 1 {
                 let v = moveLength * options.motionBlur
                 if v >= 1 {
+                    // Half the per-frame travel, so the streak spans the
+                    // whole move — Screen Studio's rule.
                     zoomer = zoomer.applyingFilter("CIMotionBlur", parameters: [
-                        kCIInputRadiusKey: min(v / 2, 24),
+                        kCIInputRadiusKey: min(v / 2, Self.maxBlurRadius),
                         kCIInputAngleKey: atan2(Double(move.dy), Double(move.dx)),
                     ])
                 }
@@ -301,7 +334,8 @@ final class RecordingCompositor {
         // Cursor: sprite anchored at its hotspot, scaled with the zoom,
         // pulsed and tilted, blurred along its on-screen travel (its own
         // movement plus the camera's).
-        if options.showCursor, let pose = cursor.pose {
+        if options.showCursor, let tickCursor = cursor.pose {
+            let pose = CursorTrack.Pose.lerp(cursor.previousPose ?? tickCursor, tickCursor, blend)
             let c = out(pose.position)
             let kind = (options.followRecordedCursor ? pose.kind : nil) ?? options.cursorType
             let sprite = cursorSprites[kind] ?? cursorSprites[.arrow]!
@@ -312,12 +346,16 @@ final class RecordingCompositor {
                 .concatenating(CGAffineTransform(translationX: c.x, y: c.y))
             var image = sprite.image.transformed(by: transform)
             if options.motionBlur > 0, let previous = cursor.previousPose {
-                let before = out(previous.position, pose: prev)
+                // One tick of cursor travel, ending at the shown position.
+                let previousShown = blend >= 1 ? previous.position
+                    : CGPoint(x: pose.position.x - (tickCursor.position.x - previous.position.x),
+                              y: pose.position.y - (tickCursor.position.y - previous.position.y))
+                let before = out(previousShown, pose: prev)
                 let dx = Double(c.x - before.x), dy = Double(c.y - before.y)
                 let d = (dx * dx + dy * dy).squareRoot() * options.motionBlur
                 if d > 1.5 {
                     image = image.applyingFilter("CIMotionBlur", parameters: [
-                        kCIInputRadiusKey: min(d / 2, 24),
+                        kCIInputRadiusKey: min(d / 2, Self.maxBlurRadius),
                         kCIInputAngleKey: atan2(dy, dx),
                     ])
                 }

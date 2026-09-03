@@ -233,13 +233,16 @@ final class RecordingPreviewNSView: NSView {
         displayLink?.invalidate()
         displayLink = nil
         guard window != nil else { return }
-        let link = displayLink(target: self, selector: #selector(tick))
+        let link = displayLink(target: self, selector: #selector(tick(_:)))
         link.add(to: .main, forMode: .common)
         displayLink = link
     }
 
-    @objc private func tick() {
-        let itemTime = transport.videoOutput.itemTime(forHostTime: CACurrentMediaTime())
+    @objc private func tick(_ link: CADisplayLink) {
+        // Render for the vsync this frame will appear on. The link's target
+        // timestamp is exact; sampling the clock inside the callback adds
+        // dispatch jitter that made the camera freeze and double-step.
+        let itemTime = transport.videoOutput.itemTime(forHostTime: link.targetTimestamp)
         guard itemTime.isValid, itemTime.seconds.isFinite else { return }
         var newFrame = false
         if transport.videoOutput.hasNewPixelBuffer(forItemTime: itemTime),
