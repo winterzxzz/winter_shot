@@ -136,8 +136,22 @@ struct RecordingExportView: View {
     }
 
     var body: some View {
+        // The window controller stretches the title-bar region to cover the
+        // top bar (an empty unified toolbar, 66 pt on macOS 14/15). The bar
+        // must be at least that tall so the content row starts below the
+        // region: a sidebar that reaches into it makes SwiftUI extend its
+        // NSScrollView up under the bar, and that invisible AppKit view then
+        // swallows every click on the Presets menu, the panel toggle and
+        // Export. The reader sits inside the safe area, so its top inset is
+        // exactly the region's height; the stack below ignores it.
+        GeometryReader { geo in
+            content(topBarHeight: max(60, geo.safeAreaInsets.top))
+        }
+    }
+
+    private func content(topBarHeight: CGFloat) -> some View {
         VStack(spacing: 0) {
-            topBar
+            topBar(height: topBarHeight)
             HStack(alignment: .top, spacing: 8) {
                 VStack(spacing: 6) {
                     if editMode == .crop {
@@ -164,8 +178,7 @@ struct RecordingExportView: View {
         }
         .background(Studio.background)
         // The title bar is transparent and the top bar is drawn here, so lay
-        // out over the title-bar region rather than below it (the window
-        // controller sizes that region to match the top bar).
+        // out over the title-bar region rather than below it.
         .ignoresSafeArea(.container, edges: .top)
         .preferredColorScheme(.dark)
         .focusEffectDisabled()
@@ -194,7 +207,7 @@ struct RecordingExportView: View {
 
     // MARK: - Top bar
 
-    private var topBar: some View {
+    private func topBar(height: CGFloat) -> some View {
         ZStack {
             // Centered title, like Screen Studio's project name.
             VStack(spacing: 1) {
@@ -272,8 +285,8 @@ struct RecordingExportView: View {
             .padding(.leading, 96) // clear the traffic lights, inline at x 19–79 (unified toolbar)
             .padding(.trailing, 14)
         }
-        .padding(.bottom, 8) // centre the row on the traffic lights (26 pt), not on the 60 pt bar
-        .frame(height: 60)
+        .padding(.bottom, height - 52) // centre the row on the traffic lights (26 pt), not on the bar
+        .frame(height: height)
     }
 
     private var topBarDivider: some View {
@@ -1159,6 +1172,7 @@ struct RecordingExportView: View {
                     NSWorkspace.shared.activateFileViewerSelecting([destination])
                 }
             } catch {
+                NSLog("WinterShot: export failed: %@", error.localizedDescription)
                 await MainActor.run {
                     isExporting = false
                     exportError = error.localizedDescription
