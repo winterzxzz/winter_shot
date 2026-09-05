@@ -81,11 +81,11 @@ It's the free, private alternative to paid capture tools: pure SwiftUI, zero thi
 | 🧊 **Frozen-screen selector** | The screen freezes the moment you press the hotkey. A pixel loupe with live coordinates follows the cursor, and windows lift out of a dimmed backdrop as you hover — one click captures a window cleanly, even when it's half-covered. |
 | ✏️ **Nine annotation tools** | Arrow, rectangle, ellipse, line, freehand, text, numbered counters, highlighter and redaction — with a color row, adjustable stroke, undo/redo and drag-to-move. |
 | ♻️ **Non-destructive by design** | Annotations, crop and backdrop live in a `.wshot.json` sidecar next to the PNG. Reopen a capture later and every arrow is still editable, every crop reversible. Pixels are flattened only on export. |
-| 🎬 **Screen recording + studio editor** | Record a display, a window or an area. The raw video stays untouched while zoom, cursor, backdrop and masks are applied at export — re-export the same take with a different look anytime. |
+| 🎬 **Screen recording + studio editor** | Record a display, a window or an area. The raw video stays untouched while zoom, cursor, backdrop and masks are applied at export — re-export the same take with a different look anytime. Close the editor whenever you like: the edit is saved next to the take and comes back when you reopen it from the library. |
 | 🎨 **Background beautify** | Drop a shot onto a gradient with padding, rounded corners and a soft shadow — seven presets, live in the editor, ready for posts and docs. |
 | 🔍 **On-device OCR** | Pull the text out of any capture with Apple Vision and copy it. Nothing is uploaded. |
 | 📌 **Pin to screen** | Float a capture above every window while you work; drag to move, double-click to dismiss. |
-| 🗂 **Capture history** | Your whole library sits beside the editor in the main window, and a notch panel drops from the top of the screen with the latest captures — reopen, copy, pin or delete from either. |
+| 🗂 **Capture history** | Screenshots and recordings sit side by side in the main window's library, and a notch panel drops from the top of the screen with the latest captures — reopen, copy, pin or delete from either. |
 | ⌨️ **One global hotkey** | ⌘⇧4 opens the selector system-wide, and it's re-recordable in Settings. Everything else lives in the menu-bar icon. |
 | 🚀 **Starts with your Mac** | Turn on *Open at login* in Settings and the menu-bar icon — and your capture shortcut — are waiting after every restart. |
 | 🔒 **One permission, zero telemetry** | Screen Recording — and that's it. No microphone, no accessibility, no analytics, and no network traffic beyond the update check. |
@@ -127,11 +127,11 @@ Stop, and the studio editor opens:
 - **Output shapes** — 16:9 for YouTube, 9:16 for Reels and TikTok, 1:1, 4:5 and more.
 - **Finishing touches** — cinematic motion blur, background music with volume control, presets, undo/redo and a scrubable timeline.
 
-Everything composites on the GPU, so the live preview *is* the 60 fps MP4 you export. The raw recording is never modified.
+Everything composites on the GPU, so the live preview *is* the 60 fps MP4 you export. The raw recording is never modified — and neither is your edit lost: every change is saved next to the take in a `.wsedit.json` sidecar, so you can close the window and pick the recording up later from the library exactly where you left it.
 
 ## 🗂 Your captures, one click away
 
-The menu-bar icon drops a notch panel with your latest captures; the main window keeps the full library beside the editor.
+The menu-bar icon drops a notch panel with your latest captures — screenshots and recordings alike; the main window keeps the full library beside the editor. A screenshot opens in the annotation editor, a recording in the studio editor with its saved edit.
 
 <p align="center"><img src="docs/assets/notch.png" width="820" alt="WinterShot's notch history panel dropping from the top of the screen with recent capture thumbnails and buttons for the captures folder, refresh and quit" /></p>
 

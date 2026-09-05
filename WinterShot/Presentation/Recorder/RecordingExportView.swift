@@ -9,9 +9,12 @@ import UniformTypeIdentifiers
 /// Screen, Cursor, Animations), and a timeline underneath with the clip and
 /// the zoom ranges the auto-zoom camera will follow. The preview runs through
 /// the same RecordingCompositor as the exporter — what you see is what ships.
+/// Every change is saved next to the recording as it happens (see
+/// RecordingEditAutosave), so the take reopens from the library as it was left.
 struct RecordingExportView: View {
     let recording: Recording
     let events: RecordingEventLog
+    @ObservedObject var autosave: RecordingEditAutosave
 
     enum Panel: String, CaseIterable, Identifiable {
         case background, cursor, animations
@@ -115,23 +118,29 @@ struct RecordingExportView: View {
 
     private static let defaults = RecordingExportOptions()
 
-    init(recording: Recording, events: RecordingEventLog) {
+    /// `edit` is the saved edit to pick up where the user left off; nil
+    /// starts a fresh take from Screen Studio's defaults.
+    init(recording: Recording, events: RecordingEventLog,
+         edit: RecordingExportOptions?, autosave: RecordingEditAutosave) {
         self.recording = recording
         self.events = events
+        self.autosave = autosave
         _transport = StateObject(wrappedValue: PreviewTransport(recording: recording))
+        var initial = edit ?? RecordingExportOptions()
         // Test hooks: open on a panel / with options from JSON (used for screenshots).
         let env = ProcessInfo.processInfo.environment
-        if let raw = env["WS_EDITOR_PANEL"], let initial = Panel(rawValue: raw) {
-            _panel = State(initialValue: initial)
+        if let raw = env["WS_EDITOR_PANEL"], let panel = Panel(rawValue: raw) {
+            _panel = State(initialValue: panel)
         }
         if let path = env["WS_EDITOR_OPTIONS"],
            let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
            let decoded = try? JSONDecoder().decode(RecordingExportOptions.self, from: data) {
-            _options = State(initialValue: decoded)
-            _history = State(initialValue: [decoded])
-            if let w = WallpaperLibrary.shared.wallpaper(id: decoded.background.wallpaperID) {
-                _wallpaperCategory = State(initialValue: w.category)
-            }
+            initial = decoded
+        }
+        _options = State(initialValue: initial)
+        _history = State(initialValue: [initial])
+        if let w = WallpaperLibrary.shared.wallpaper(id: initial.background.wallpaperID) {
+            _wallpaperCategory = State(initialValue: w.category)
         }
     }
 
@@ -184,6 +193,10 @@ struct RecordingExportView: View {
         .focusEffectDisabled()
         .onAppear {
             transport.play()
+            // What the editor shows is what is saved — options that arrived
+            // through the test hook are persisted like any other edit; a
+            // reopened take that matches its saved edit writes nothing.
+            autosave.schedule(options)
             // Test hook: open straight into crop / mask mode (screenshots).
             switch ProcessInfo.processInfo.environment["WS_EDITOR_MODE"] {
             case "crop": DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { enterCropMode() }
@@ -196,12 +209,15 @@ struct RecordingExportView: View {
             }
         }
         .onDisappear { transport.player.pause() }
-        .onChange(of: options) { _, new in recordHistory(new) }
+        .onChange(of: options) { _, new in
+            recordHistory(new)
+            autosave.schedule(new)
+        }
         .alert("Move this recording to the Trash?", isPresented: $confirmDelete) {
             Button("Move to Trash", role: .destructive) { deleteRecording() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("The raw recording and its event log will be moved to the Trash.")
+            Text("The raw recording, its event log and its saved edit will be moved to the Trash.")
         }
     }
 
@@ -248,8 +264,8 @@ struct RecordingExportView: View {
                     }
                     .padding(.trailing, 6)
                 }
-                if let exportError {
-                    Text(exportError)
+                if let message = exportError ?? autosave.lastError {
+                    Text(message)
                         .font(Studio.label)
                         .foregroundStyle(Color(red: 1, green: 0.27, blue: 0.23))
                         .lineLimit(1)
@@ -1135,11 +1151,14 @@ struct RecordingExportView: View {
 
     private func deleteRecording() {
         transport.player.pause()
-        let sidecar = ScreenRecordingService.sidecarURL(for: recording.videoURL)
-        for url in [recording.videoURL, sidecar] where FileManager.default.fileExists(atPath: url.path) {
-            try? FileManager.default.trashItem(at: url, resultingItemURL: nil)
+        // Nothing pending may be written back after the files are gone.
+        autosave.cancel()
+        do {
+            try DIContainer.shared.deleteRecordingUseCase.execute(recording)
+            NSApp.keyWindow?.close()
+        } catch {
+            exportError = error.localizedDescription
         }
-        NSApp.keyWindow?.close()
     }
 
     private func export() {

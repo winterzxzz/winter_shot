@@ -69,9 +69,9 @@ final class NotchPanelManager {
         let view = NotchHistoryView(
             state: state,
             viewModel: NotchHistoryViewModel(container: .shared),
-            onOpen: { [weak self] screenshot in
+            onOpen: { [weak self] item in
                 self?.hide()
-                (NSApp.delegate as? AppDelegate)?.openMain(with: screenshot)
+                (NSApp.delegate as? AppDelegate)?.open(item)
             },
             onOpenLibrary: { [weak self] in
                 self?.hide()

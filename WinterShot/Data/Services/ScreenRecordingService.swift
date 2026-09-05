@@ -117,7 +117,7 @@ final class ScreenRecordingService: ScreenRecorder {
         configuration.pixelFormat = kCVPixelFormatType_32BGRA
         configuration.showsCursor = false
 
-        let videoURL = store.newImageURL().deletingPathExtension().appendingPathExtension("mp4")
+        let videoURL = store.newVideoURL()
         let writer = try AVAssetWriter(outputURL: videoURL, fileType: .mp4)
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
             AVVideoCodecKey: AVVideoCodecType.h264,
@@ -183,20 +183,23 @@ final class ScreenRecordingService: ScreenRecorder {
             throw RecordingError.writerFailed("no frames were captured")
         }
 
-        let log = session.makeEventLog(firstFrameTime: firstFrameTime)
+        let duration = max(0, lastFrameTime - firstFrameTime)
+        let log = session.makeEventLog(firstFrameTime: firstFrameTime, duration: duration)
         let recording = Recording(id: session.id,
                                   videoURL: session.videoURL,
                                   createdAt: session.createdAt,
-                                  duration: max(0, lastFrameTime - firstFrameTime),
+                                  duration: duration,
                                   frameSize: session.pixelSize)
         try session.writeSidecar(log, to: Self.sidecarURL(for: session.videoURL))
         NSLog("WinterShot: recording stopped (%.1fs, %d cursor samples, %d clicks)",
               recording.duration, log.cursorSamples.count, log.clicks.count)
+        // The take is now part of the library.
+        NotificationCenter.default.post(name: .winterShotLibraryChanged, object: nil)
         return (recording, log)
     }
 
     nonisolated static func sidecarURL(for videoURL: URL) -> URL {
-        videoURL.deletingPathExtension().appendingPathExtension("wsrec.json")
+        FileScreenshotStore.recordingSidecarURL(for: videoURL)
     }
 
     private static func displayID(of screen: NSScreen) -> CGDirectDisplayID? {
@@ -347,13 +350,14 @@ private final class RecordingSession {
         return (Double(localX), Double(localY))
     }
 
-    func makeEventLog(firstFrameTime: Double) -> RecordingEventLog {
+    func makeEventLog(firstFrameTime: Double, duration: Double) -> RecordingEventLog {
         RecordingEventLog(recordingID: id,
                           createdAt: createdAt,
                           firstFrameTime: firstFrameTime,
                           frameWidth: pixelSize.width,
                           frameHeight: pixelSize.height,
                           pixelScale: pixelScale,
+                          duration: duration,
                           cursorSamples: cursorSamples,
                           clicks: clicks)
     }

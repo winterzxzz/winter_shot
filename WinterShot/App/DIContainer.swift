@@ -16,6 +16,7 @@ final class DIContainer {
     // Domain protocols (exposed as abstractions, not implementations)
     let screenshotRepository: ScreenshotRepository
     let annotationRepository: AnnotationRepository
+    let recordingRepository: RecordingRepository
     let ocrService: OCRService
     let screenRecorder: ScreenRecorder
     let recordingRenderer: RecordingRenderer
@@ -66,6 +67,7 @@ final class DIContainer {
                                                         areaCaptureService: areaCaptureService,
                                                         store: store)
         annotationRepository = AnnotationRepositoryImpl(store: store)
+        recordingRepository = RecordingRepositoryImpl(store: store)
         ocrService = VisionOCRService()
         screenRecorder = ScreenRecordingService(store: store)
         recordingRenderer = RecordingExporterService()
@@ -78,8 +80,20 @@ final class DIContainer {
     var fetchHistoryUseCase: FetchHistoryUseCase {
         FetchHistoryUseCase(repository: screenshotRepository)
     }
+    var fetchLibraryUseCase: FetchLibraryUseCase {
+        FetchLibraryUseCase(screenshots: screenshotRepository, recordings: recordingRepository)
+    }
     var deleteScreenshotUseCase: DeleteScreenshotUseCase {
         DeleteScreenshotUseCase(repository: screenshotRepository)
+    }
+    var deleteRecordingUseCase: DeleteRecordingUseCase {
+        DeleteRecordingUseCase(repository: recordingRepository)
+    }
+    var loadRecordingEditUseCase: LoadRecordingEditUseCase {
+        LoadRecordingEditUseCase(repository: recordingRepository)
+    }
+    var saveRecordingEditUseCase: SaveRecordingEditUseCase {
+        SaveRecordingEditUseCase(repository: recordingRepository)
     }
     var loadAnnotationsUseCase: LoadAnnotationsUseCase {
         LoadAnnotationsUseCase(repository: annotationRepository)

@@ -113,6 +113,10 @@ struct RecordingEventLog: Codable {
     var frameHeight: Double
     /// Display backing scale at record time (points → pixels).
     var pixelScale: Double
+    /// Length of the video in seconds, so the library can list the take
+    /// without opening the file. Written since recordings joined the
+    /// history; nil in older logs (the poster loader then reads the asset).
+    var duration: Double? = nil
     var cursorSamples: [CursorSample]
     var clicks: [ClickEvent]
 }

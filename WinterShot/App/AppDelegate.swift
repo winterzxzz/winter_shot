@@ -193,7 +193,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 NSLog("WinterShot: captured %@", screenshot.imageURL.path)
                 CapturePreviewManager.shared.show(screenshot: screenshot) { [weak self] shot in
-                    self?.openMain(with: shot)
+                    self?.openMain(with: .screenshot(shot))
                 }
             } catch {
                 NSLog("WinterShot: capture failed: %@", error.localizedDescription)
@@ -203,12 +203,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Main window
 
-    /// Opens (or focuses) the main window from AppKit. When the SwiftUI
-    /// window doesn't exist yet, the donated openWindow action (see
-    /// WindowOpener) creates it.
-    func openMain(with screenshot: Screenshot? = nil) {
-        if let screenshot {
-            DIContainer.shared.selectionBus.pending = screenshot
+    /// Opens a library item where it is edited: a screenshot in the main
+    /// window's editor, a recording in the studio editor window.
+    func open(_ item: CaptureItem) {
+        switch item {
+        case .screenshot:
+            openMain(with: item)
+        case .recording(let recording):
+            RecordingController.shared.open(videoURL: recording.videoURL)
+        }
+    }
+
+    /// Opens (or focuses) the main window from AppKit, optionally selecting a
+    /// library item. When the SwiftUI window doesn't exist yet, the donated
+    /// openWindow action (see WindowOpener) creates it.
+    func openMain(with item: CaptureItem? = nil) {
+        if let item {
+            DIContainer.shared.selectionBus.pending = item
         }
         NSApp.activate(ignoringOtherApps: true)
         if let window = NSApp.windows.first(where: { $0.identifier?.rawValue.hasPrefix("main") == true }) {
@@ -235,6 +246,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let filename = Self.launchEditFilename() {
             openEditor(filename: filename)
         }
+        if let filename = Self.launchValue(after: "--show") {
+            // Opens the main window with that capture selected — a recording
+            // shows its detail pane rather than the studio editor (testing).
+            if let item = try? DIContainer.shared.fetchLibraryUseCase.execute()
+                .first(where: { $0.filename == filename }) {
+                openMain(with: item)
+            } else {
+                NSLog("WinterShot: --show found no capture named %@", filename)
+            }
+        }
         if CommandLine.arguments.contains("--history") {
             NotchPanelManager.shared.show(on: NSScreen.main)
         }
@@ -258,6 +279,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     NSLog("WinterShot: OCR failed: %@", error.localizedDescription)
                     exit(1)
                 }
+            }
+        }
+        if let directory = Self.launchValue(after: "--snapshot-windows") {
+            // Writes a PNG of every open window once the UI has settled, then
+            // quits (testing) — see WindowSnapshotter.
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
+                await WindowSnapshotter.writeAll(to: URL(fileURLWithPath: directory))
+                exit(0)
             }
         }
         if CommandLine.arguments.contains("--show-recording-hud") {
@@ -294,15 +324,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // flag to exercise the stacked column (testing).
         for path in Self.launchValues(after: "--preview-image") {
             let shot = Screenshot(id: UUID(), imageURL: URL(fileURLWithPath: path), createdAt: Date(), mode: .area)
-            CapturePreviewManager.shared.show(screenshot: shot) { [weak self] s in self?.openMain(with: s) }
+            CapturePreviewManager.shared.show(screenshot: shot) { [weak self] s in self?.openMain(with: .screenshot(s)) }
         }
         if let input = Self.launchValue(after: "--export-recording"),
            let output = Self.launchValue(after: "--export-recording", offset: 2) {
-            // Headless render for scripted testing: export (with defaults, or
-            // the RecordingExportOptions JSON given by --export-options), then quit.
+            // Headless render for scripted testing: export with the
+            // RecordingExportOptions JSON given by --export-options, else the
+            // recording's saved edit, else the defaults — then quit.
             Task { @MainActor in
                 do {
-                    var options = RecordingExportOptions()
+                    var options: RecordingExportOptions?
                     if let path = Self.launchValue(after: "--export-options") {
                         options = try JSONDecoder().decode(RecordingExportOptions.self,
                                                            from: Data(contentsOf: URL(fileURLWithPath: path)))
@@ -347,14 +378,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return CommandLine.arguments[index + 1]
     }
 
-    /// Opens the editor for an existing capture by filename (`--edit <name>.png`).
+    /// Opens the editor for an existing capture by filename — the main
+    /// window for `--edit <name>.png`, the studio editor for `--edit <name>.mp4`.
     private func openEditor(filename: String) {
-        guard let screenshot = try? DIContainer.shared.fetchHistoryUseCase.execute()
+        guard let item = try? DIContainer.shared.fetchLibraryUseCase.execute()
             .first(where: { $0.filename == filename }) else {
             NSLog("WinterShot: --edit found no capture named %@", filename)
             return
         }
         NSLog("WinterShot: opening editor for %@", filename)
-        openMain(with: screenshot)
+        open(item)
     }
 }

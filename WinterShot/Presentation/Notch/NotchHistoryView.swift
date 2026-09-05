@@ -1,22 +1,28 @@
 import SwiftUI
 import AppKit
+import Combine
 
 // MARK: - View model
 
-/// State for the notch history panel: the capture library plus the same
-/// quick actions a library card offers.
+/// State for the notch history panel: the capture library — screenshots and
+/// recordings — plus the same quick actions a library card offers.
 @MainActor
 final class NotchHistoryViewModel: ObservableObject {
-    @Published var screenshots: [Screenshot] = []
+    @Published var items: [CaptureItem] = []
 
     private let container: DIContainer
+    private var cancellables = Set<AnyCancellable>()
 
     init(container: DIContainer) {
         self.container = container
+        NotificationCenter.default.publisher(for: .winterShotLibraryChanged)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.reload() }
+            .store(in: &cancellables)
     }
 
     func reload() {
-        screenshots = (try? container.fetchHistoryUseCase.execute()) ?? []
+        items = (try? container.fetchLibraryUseCase.execute()) ?? []
     }
 
     func copy(_ screenshot: Screenshot) {
@@ -30,9 +36,18 @@ final class NotchHistoryViewModel: ObservableObject {
         PinWindowManager.shared.pin(image: image)
     }
 
-    func delete(_ screenshot: Screenshot) {
-        try? container.deleteScreenshotUseCase.execute(screenshot)
-        screenshots.removeAll { $0.id == screenshot.id }
+    func revealInFinder(_ item: CaptureItem) {
+        NSWorkspace.shared.activateFileViewerSelecting([item.fileURL])
+    }
+
+    func delete(_ item: CaptureItem) {
+        switch item {
+        case .screenshot(let screenshot):
+            try? container.deleteScreenshotUseCase.execute(screenshot)
+        case .recording(let recording):
+            try? container.deleteRecordingUseCase.execute(recording)
+        }
+        items.removeAll { $0.id == item.id }
     }
 
     func openCapturesFolder() {
@@ -94,7 +109,7 @@ struct NotchShape: InsettableShape {
 struct NotchHistoryView: View {
     @ObservedObject var state: NotchPanelState
     @ObservedObject var viewModel: NotchHistoryViewModel
-    let onOpen: (Screenshot) -> Void
+    let onOpen: (CaptureItem) -> Void
     let onOpenLibrary: () -> Void
     let onCapture: (CaptureMode) -> Void
     let onClose: () -> Void
@@ -144,7 +159,7 @@ struct NotchHistoryView: View {
                 .frame(height: headerHeight)
             Group {
                 divider
-                if viewModel.screenshots.isEmpty {
+                if viewModel.items.isEmpty {
                     emptyState
                 } else {
                     historyStrip
@@ -180,7 +195,7 @@ struct NotchHistoryView: View {
                 Text("WinterShot")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.white)
-                Text("\(viewModel.screenshots.count)")
+                Text("\(viewModel.items.count)")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.white.opacity(0.45))
             }
@@ -216,13 +231,14 @@ struct NotchHistoryView: View {
     private var historyStrip: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack(alignment: .center, spacing: 12) {
-                ForEach(viewModel.screenshots.prefix(30)) { screenshot in
+                ForEach(viewModel.items.prefix(30)) { item in
                     NotchCaptureCard(
-                        screenshot: screenshot,
-                        onOpen: { onOpen(screenshot) },
-                        onCopy: { viewModel.copy(screenshot) },
-                        onPin: { viewModel.pin(screenshot) },
-                        onDelete: { viewModel.delete(screenshot) }
+                        item: item,
+                        onOpen: { onOpen(item) },
+                        onCopy: { if case .screenshot(let shot) = item { viewModel.copy(shot) } },
+                        onPin: { if case .screenshot(let shot) = item { viewModel.pin(shot) } },
+                        onReveal: { viewModel.revealInFinder(item) },
+                        onDelete: { viewModel.delete(item) }
                     )
                 }
             }
@@ -320,17 +336,20 @@ private struct GhostButton: View {
     }
 }
 
-/// One capture in the strip: borderless thumbnail with the capture's age on
-/// a bottom scrim, quick actions on hover. Draggable into other apps.
+/// One capture in the strip: borderless thumbnail (a poster frame for a
+/// recording) with the capture's age on a bottom scrim, quick actions on
+/// hover. Draggable into other apps.
 private struct NotchCaptureCard: View {
-    let screenshot: Screenshot
+    let item: CaptureItem
     let onOpen: () -> Void
     let onCopy: () -> Void
     let onPin: () -> Void
+    let onReveal: () -> Void
     let onDelete: () -> Void
 
     @State private var hovering = false
     @State private var thumbnail: NSImage?
+    @State private var duration: Double = 0
 
     private static let thumbSize = CGSize(width: 236, height: 156)
 
@@ -344,18 +363,18 @@ private struct NotchCaptureCard: View {
                             .resizable()
                             .scaledToFill()
                     } else {
-                        Image(systemName: "photo")
+                        Image(systemName: item.isRecording ? "film" : "photo")
                             .font(.system(size: 20))
                             .foregroundStyle(.white.opacity(0.2))
                     }
                 }
                 .overlay(alignment: .bottom) {
-                    // Caption scrim: capture age over a soft fade.
+                    // Caption scrim: capture age (and length) over a soft fade.
                     HStack(spacing: 5) {
-                        Image(systemName: screenshot.mode.systemImage)
+                        Image(systemName: captionIcon)
                             .font(.system(size: 9, weight: .semibold))
-                        Text(age)
-                            .font(.system(size: 10.5, weight: .medium))
+                        Text(caption)
+                            .font(.system(size: 10.5, weight: .medium).monospacedDigit())
                         Spacer()
                     }
                     .foregroundStyle(.white.opacity(0.85))
@@ -373,11 +392,18 @@ private struct NotchCaptureCard: View {
                         ZStack {
                             Color.black.opacity(0.45)
                             HStack(spacing: 14) {
-                                quickAction(icon: "rectangle.and.pencil.and.ellipsis",
-                                            help: "Annotate", action: onOpen)
-                                quickAction(icon: "doc.on.doc", help: "Copy", action: onCopy)
-                                quickAction(icon: "pin", help: "Pin to screen", action: onPin)
-                                quickAction(icon: "trash", help: "Delete", action: onDelete)
+                                switch item {
+                                case .screenshot:
+                                    quickAction(icon: "rectangle.and.pencil.and.ellipsis",
+                                                help: "Annotate", action: onOpen)
+                                    quickAction(icon: "doc.on.doc", help: "Copy", action: onCopy)
+                                    quickAction(icon: "pin", help: "Pin to screen", action: onPin)
+                                    quickAction(icon: "trash", help: "Delete", action: onDelete)
+                                case .recording:
+                                    quickAction(icon: "movieclapper", help: "Open in Studio Editor", action: onOpen)
+                                    quickAction(icon: "folder", help: "Reveal in Finder", action: onReveal)
+                                    quickAction(icon: "trash", help: "Move to Trash", action: onDelete)
+                                }
                             }
                         }
                         .transition(.opacity)
@@ -392,9 +418,11 @@ private struct NotchCaptureCard: View {
         .animation(.spring(response: 0.28, dampingFraction: 0.85), value: hovering)
         .onHover { hovering = $0 }
         .onTapGesture(perform: onOpen)
-        .onDrag { NSItemProvider(contentsOf: screenshot.imageURL) ?? NSItemProvider() }
-        .help("Click to annotate, or drag into another app")
-        .task(id: screenshot.id) { loadThumbnail() }
+        .onDrag { NSItemProvider(contentsOf: item.fileURL) ?? NSItemProvider() }
+        .help(item.isRecording
+              ? "Click to open in the studio editor, or drag into another app"
+              : "Click to annotate, or drag into another app")
+        .task(id: item.id) { await loadThumbnail() }
     }
 
     private func quickAction(icon: String, help: String, action: @escaping () -> Void) -> some View {
@@ -409,14 +437,35 @@ private struct NotchCaptureCard: View {
         .help(help)
     }
 
-    private var age: String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: screenshot.createdAt, relativeTo: Date())
+    private var captionIcon: String {
+        switch item {
+        case .screenshot(let screenshot): return screenshot.mode.systemImage
+        case .recording: return "video.fill"
+        }
     }
 
-    private func loadThumbnail() {
+    private var caption: String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        let age = formatter.localizedString(for: item.createdAt, relativeTo: Date())
+        if case .recording(let recording) = item {
+            let length = recording.duration > 0 ? recording.duration : duration
+            if length > 0 { return "\(age) · \(RecordingPoster.label(seconds: length))" }
+        }
+        return age
+    }
+
+    private func loadThumbnail() async {
         guard thumbnail == nil else { return }
-        thumbnail = NSImage(contentsOf: screenshot.imageURL)
+        switch item {
+        case .screenshot(let screenshot):
+            thumbnail = NSImage(contentsOf: screenshot.imageURL)
+        case .recording(let recording):
+            let poster = await RecordingPoster.load(for: recording.videoURL)
+            duration = poster.duration
+            if let image = poster.image {
+                thumbnail = NSImage(cgImage: image, size: .zero)
+            }
+        }
     }
 }

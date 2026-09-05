@@ -7,10 +7,18 @@ import SwiftUI
 final class RecordingExportWindowController: NSObject, NSWindowDelegate {
     var onClose: ((RecordingExportWindowController) -> Void)?
 
-    private let window: NSWindow
+    /// The raw recording this window edits, so a second open focuses it.
+    let videoURL: URL
 
-    init(recording: Recording, events: RecordingEventLog) {
-        let view = RecordingExportView(recording: recording, events: events)
+    private let window: NSWindow
+    private let autosave: RecordingEditAutosave
+
+    init(recording: Recording, events: RecordingEventLog, edit: RecordingExportOptions?) {
+        videoURL = recording.videoURL
+        autosave = RecordingEditAutosave(recording: recording,
+                                         saved: edit,
+                                         useCase: DIContainer.shared.saveRecordingEditUseCase)
+        let view = RecordingExportView(recording: recording, events: events, edit: edit, autosave: autosave)
         let hosting = NSHostingController(rootView: view)
         window = NSWindow(contentViewController: hosting)
         window.title = "Recording — \(recording.filename)"
@@ -48,6 +56,8 @@ final class RecordingExportWindowController: NSObject, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
+        // The last edits may still be waiting out the autosave delay.
+        autosave.flush()
         onClose?(self)
     }
 }

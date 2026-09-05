@@ -1,7 +1,9 @@
 import SwiftUI
 
-/// The app's main window, BridgeShot-style: captures library on the left,
-/// editor canvas on the right with capture buttons in the header.
+/// The app's main window, BridgeShot-style: capture library on the left,
+/// the selected item on the right — the annotation editor for a screenshot,
+/// a preview that opens the studio editor for a recording — with capture
+/// buttons in the header.
 struct MainWindowView: View {
     @StateObject private var viewModel: MainViewModel
     @StateObject private var updateChecker: UpdateChecker
@@ -109,12 +111,18 @@ struct MainWindowView: View {
 
     @ViewBuilder
     private var detail: some View {
-        if let selected = viewModel.selected {
-            EditorView(screenshot: selected, container: container) {
+        switch viewModel.selected {
+        case .screenshot(let screenshot):
+            EditorView(screenshot: screenshot, container: container) {
                 viewModel.deselect()
             }
-            .id(selected.id)
-        } else {
+            .id(screenshot.id)
+        case .recording(let recording):
+            RecordingDetailView(recording: recording,
+                                onOpen: { viewModel.openInStudio(recording) },
+                                onReveal: { viewModel.revealInFinder(.recording(recording)) })
+                .id(recording.id)
+        case nil:
             placeholder
         }
     }

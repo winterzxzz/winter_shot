@@ -59,19 +59,31 @@ The app is scriptable for testing and for capturing documentation — every flag
 | Flag | What it does |
 |---|---|
 | `--open-main` | Opens the main window (library + editor) |
-| `--edit <name>.png` | Opens the editor on a capture in the library |
+| `--edit <name>.png\|.mp4` | Opens the editor on a capture in the library — the studio editor for a recording |
+| `--show <name>` | Opens the main window with that capture selected (a recording shows its detail pane, not the studio editor) |
 | `--capture <area\|window\|fullscreen>` | Runs a capture immediately |
 | `--history` | Drops the notch history panel |
 | `--open-recording <path.mp4>` | Opens the studio editor for a recording |
 | `--preview-image <path>` | Shows the post-capture thumbnail card (repeatable — stacks) |
 | `--show-recording-hud` | Shows the recording timer pill without recording |
+| `--snapshot-windows <dir>` | Writes a PNG of every open window 5 s after launch, then quits |
 | `--login-item <on\|off\|status>` | Flips or reads "Open at login", prints the resulting state, exits |
 | `--ocr <name>.png` | Runs OCR through the app's pipeline, prints the text, exits |
-| `--export-recording <in> <out>` | Headless export; `--export-options <json>` supplies `RecordingExportOptions` |
+| `--export-recording <in> <out>` | Headless export with the recording's saved edit (or the defaults); `--export-options <json>` supplies `RecordingExportOptions` instead |
 
 ```sh
 open -a WinterShot --args --edit WinterShot-20260818-101204.png
 ```
+
+A few environment variables complete the picture for scripted runs and documentation shoots:
+
+| Variable | What it does |
+|---|---|
+| `WS_CAPTURES_DIR=<dir>` | Uses that folder as the library instead of `~/Library/Application Support/WinterShot/Captures` — stage a demo library without touching your own |
+| `WS_EDITOR_PANEL=background\|cursor\|animations` | Opens the studio editor on that panel |
+| `WS_EDITOR_OPTIONS=<json>` | Opens the studio editor with those `RecordingExportOptions` (they are saved as the recording's edit, like any change) |
+| `WS_EDITOR_MODE=crop\|mask` | Opens the studio editor straight into crop or mask mode |
+| `WS_EDITOR_OCR=1` | Runs OCR as soon as the screenshot editor opens |
 
 ## Architecture
 
@@ -84,13 +96,13 @@ WinterShot/
 │   ├── AppDelegate.swift      Status item, hotkeys, launch arguments, window opening
 │   └── DIContainer.swift      Wires Data impls to Domain protocols
 ├── Domain/                  Pure business logic — no SwiftUI, no AppKit
-│   ├── Entities/              Screenshot, Annotation, Recording, BackdropStyle, CaptureMode
-│   ├── Repositories/          Protocols (ScreenshotRepository, AnnotationRepository, OCRService)
+│   ├── Entities/              Screenshot, Recording, CaptureItem, Annotation, BackdropStyle, CaptureMode
+│   ├── Repositories/          Protocols (ScreenshotRepository, RecordingRepository, AnnotationRepository, OCRService)
 │   └── UseCases/              One intent per type (CaptureScreenshot, SaveAnnotations, RecognizeText, …)
 ├── Data/                    Implementations of Domain protocols
 │   ├── Services/              ScreenCaptureKit capture, screen recording, compositor/exporter, Vision OCR
 │   ├── Storage/               FileScreenshotStore (library layout + sidecars)
-│   └── Repositories/          ScreenshotRepositoryImpl, AnnotationRepositoryImpl
+│   └── Repositories/          ScreenshotRepositoryImpl, RecordingRepositoryImpl, AnnotationRepositoryImpl
 └── Presentation/            MVVM — each screen is View + ViewModel
     ├── Main/                  Main window: captures sidebar + detail
     ├── Editor/                Canvas, toolbar, inspector
@@ -116,9 +128,10 @@ WinterShot/
   WinterShot-20260818-101204.png         immutable capture
   WinterShot-20260818-101204.wshot.json  sidecar: metadata, annotations, crop, backdrop
   WinterShot-20260818-100815.mp4         immutable recording
-  WinterShot-20260818-100815.wsrec.json  sidecar: cursor samples, clicks, frame timing
+  WinterShot-20260818-100815.wsrec.json  sidecar: cursor samples, clicks, frame timing, duration
+  WinterShot-20260818-100815.wsedit.json sidecar: the studio editor's options, written once the take is edited
 ```
 
-Sidecars sit next to their file so the pair can't drift apart, and are flagged hidden so Finder shows only pictures and movies — press ⌘⇧. in Finder to reveal them.
+Sidecars sit next to their file so the set can't drift apart, and are flagged hidden so Finder shows only pictures and movies — press ⌘⇧. in Finder to reveal them. The library lists both kinds of file; a PNG or MP4 dropped into the folder by hand shows up too, without a sidecar.
 
-Both sidecars are plain `Codable` JSON (`ScreenshotSidecar`, `RecordingEventLog`), which makes them easy to author or inspect by hand when you are testing the editors.
+All sidecars are plain `Codable` JSON (`ScreenshotSidecar`, `RecordingEventLog`, `RecordingEditSidecar`), which makes them easy to author or inspect by hand when you are testing the editors. The studio editor autosaves its options into the `.wsedit.json` half a second after each change and when its window closes; `--export-recording` without `--export-options` renders exactly that edit.

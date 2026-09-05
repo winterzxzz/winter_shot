@@ -1,32 +1,40 @@
 import AppKit
+import Combine
 import SwiftUI
 
-/// Cross-scene channel: capture flows hand a screenshot to the main window
+/// Cross-scene channel: capture flows hand a library item to the main window
 /// (menu-bar capture, preview thumbnail click, --edit launch argument).
 @MainActor
 final class SelectionBus: ObservableObject {
-    @Published var pending: Screenshot?
+    @Published var pending: CaptureItem?
 }
 
-/// Drives the main window: the captures library in the sidebar and which
-/// screenshot the editor is showing.
+/// Drives the main window: the capture library in the sidebar — screenshots
+/// and recordings — and which item the detail pane is showing.
 @MainActor
 final class MainViewModel: ObservableObject {
-    @Published var screenshots: [Screenshot] = []
-    @Published var selected: Screenshot?
+    @Published var items: [CaptureItem] = []
+    @Published var selected: CaptureItem?
     @Published var errorMessage: String?
 
     private let container: DIContainer
+    private var cancellables = Set<AnyCancellable>()
 
     init(container: DIContainer) {
         self.container = container
+        // A capture from the menu bar, a finished recording or a delete in
+        // the notch panel lands here without a manual refresh.
+        NotificationCenter.default.publisher(for: .winterShotLibraryChanged)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.reload() }
+            .store(in: &cancellables)
     }
 
     func reload() {
         do {
-            screenshots = try container.fetchHistoryUseCase.execute()
+            items = try container.fetchLibraryUseCase.execute()
             errorMessage = nil
-            if let selected, !screenshots.contains(where: { $0.id == selected.id }) {
+            if let selected, !items.contains(where: { $0.id == selected.id }) {
                 self.selected = nil
             }
         } catch {
@@ -34,22 +42,27 @@ final class MainViewModel: ObservableObject {
         }
     }
 
-    func select(_ screenshot: Screenshot) {
-        if !screenshots.contains(where: { $0.id == screenshot.id }) {
+    func select(_ item: CaptureItem) {
+        if !items.contains(where: { $0.id == item.id }) {
             reload()
         }
-        selected = screenshot
+        selected = item
     }
 
     func deselect() {
         selected = nil
     }
 
-    func delete(_ screenshot: Screenshot) {
+    func delete(_ item: CaptureItem) {
         do {
-            try container.deleteScreenshotUseCase.execute(screenshot)
-            screenshots.removeAll { $0.id == screenshot.id }
-            if selected?.id == screenshot.id { selected = nil }
+            switch item {
+            case .screenshot(let screenshot):
+                try container.deleteScreenshotUseCase.execute(screenshot)
+            case .recording(let recording):
+                try container.deleteRecordingUseCase.execute(recording)
+            }
+            items.removeAll { $0.id == item.id }
+            if selected?.id == item.id { selected = nil }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -62,7 +75,7 @@ final class MainViewModel: ObservableObject {
                     return
                 }
                 reload()
-                select(screenshot)
+                select(.screenshot(screenshot))
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -70,6 +83,11 @@ final class MainViewModel: ObservableObject {
     }
 
     // MARK: - Sidebar quick actions
+
+    /// Opens a recording in the studio editor window, with its saved edit.
+    func openInStudio(_ recording: Recording) {
+        RecordingController.shared.open(videoURL: recording.videoURL)
+    }
 
     /// Flattens a capture with its annotations and puts it on the pasteboard.
     func copyFlattened(_ screenshot: Screenshot) {
@@ -83,8 +101,8 @@ final class MainViewModel: ObservableObject {
         PinWindowManager.shared.pin(image: image)
     }
 
-    func revealInFinder(_ screenshot: Screenshot) {
-        NSWorkspace.shared.activateFileViewerSelecting([screenshot.imageURL])
+    func revealInFinder(_ item: CaptureItem) {
+        NSWorkspace.shared.activateFileViewerSelecting([item.fileURL])
     }
 
     func openCapturesFolder() {

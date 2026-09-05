@@ -49,6 +49,7 @@ final class ScreenshotRepositoryImpl: ScreenshotRepository {
             background: nil
         )
         try store.writeSidecar(sidecar, for: imageURL)
+        NotificationCenter.default.post(name: .winterShotLibraryChanged, object: nil)
         return screenshot
     }
 
@@ -97,7 +98,7 @@ final class ScreenshotRepositoryImpl: ScreenshotRepository {
                                   mode: sidecar.mode)
             }
             // Image dropped into the folder without a sidecar — still usable.
-            return Screenshot(id: UUID(),
+            return Screenshot(id: FileScreenshotStore.stableID(for: url),
                               imageURL: url,
                               createdAt: store.creationDate(of: url),
                               mode: .area)
@@ -107,5 +108,6 @@ final class ScreenshotRepositoryImpl: ScreenshotRepository {
 
     func delete(_ screenshot: Screenshot) throws {
         try store.delete(imageURL: screenshot.imageURL)
+        NotificationCenter.default.post(name: .winterShotLibraryChanged, object: nil)
     }
 }
