@@ -42,7 +42,7 @@ It's the free, private alternative to paid capture tools: pure SwiftUI, zero thi
 |---|:---:|:---:|:---:|:---:|:---:|
 | **Price** | **Free** | $29+ | Freemium | $89+ | Free |
 | **Open source** | ✅ MIT | ❌ | ❌ | ❌ | ❌ |
-| Freeze-frame selector + pixel loupe | ✅ | ✅ | ✅ | — | ❌ |
+| Freeze-frame selector | ✅ | ✅ | ✅ | — | ❌ |
 | Non-destructive annotations (re-editable) | ✅ | ❌ | ❌ | — | ❌ |
 | Background beautify | ✅ | ✅ | ✅ | ✅ | ❌ |
 | On-device OCR | ✅ | ✅ | ✅ | — | ❌ |
@@ -78,7 +78,7 @@ It's the free, private alternative to paid capture tools: pure SwiftUI, zero thi
 
 | | |
 |---|---|
-| 🧊 **Frozen-screen selector** | The screen freezes the moment you press the hotkey. A pixel loupe with live coordinates follows the cursor, and windows lift out of a dimmed backdrop as you hover — one click captures a window cleanly, even when it's half-covered. |
+| 🧊 **Frozen-screen selector** | The screen freezes the moment you press the hotkey. Crosshair guides follow the cursor, and windows lift out of a dimmed backdrop as you hover — one click captures a window cleanly, even when it's half-covered. |
 | ✏️ **Nine annotation tools** | Arrow, rectangle, ellipse, line, freehand, text, numbered counters, highlighter and redaction — with a color row, adjustable stroke, undo/redo and drag-to-move. |
 | ♻️ **Non-destructive by design** | Annotations, crop and backdrop live in a `.wshot.json` sidecar next to the PNG. Reopen a capture later and every arrow is still editable, every crop reversible. Pixels are flattened only on export. |
 | 🎬 **Screen recording + studio editor** | Record a display, a window or an area. The raw video stays untouched while zoom, cursor, backdrop and masks are applied at export — re-export the same take with a different look anytime. Close the editor whenever you like: the edit is saved next to the take and comes back when you reopen it from the library. |
@@ -92,7 +92,7 @@ It's the free, private alternative to paid capture tools: pure SwiftUI, zero thi
 
 ## 📸 The capture flow
 
-Press the hotkey and the screen freezes. Hover a window to lift it out of the dimmed backdrop and click to capture it whole, or drag anywhere to take an area — the loupe magnifies pixel-by-pixel with a live coordinate readout while you aim.
+Press the hotkey and the screen freezes. Hover a window to lift it out of the dimmed backdrop and click to capture it whole, or drag anywhere to take an area — a live size readout tracks the selection while you drag.
 
 <p align="center"><img src="docs/assets/selector.png" width="820" alt="WinterShot's frozen-screen selector: the desktop is dimmed, the hovered window is lifted out and outlined in green with an app label, and a pixel loupe magnifies the cursor position with live coordinates" /></p>
 
@@ -168,7 +168,7 @@ Yes — free and open source under MIT. No subscription, no account, no trial li
 
 <details>
 <summary><b>How is this different from macOS's built-in ⌘⇧4?</b></summary>
-The system tool takes the picture and stops there. WinterShot adds a frozen-screen selector with a pixel loupe and window lifting, a real annotation editor whose edits stay editable forever, background beautify, OCR, pinning, a searchable history — and screen recording with a full post-production editor.
+The system tool takes the picture and stops there. WinterShot adds a frozen-screen selector with window lifting, a real annotation editor whose edits stay editable forever, background beautify, OCR, pinning, a searchable history — and screen recording with a full post-production editor.
 </details>
 
 <details>

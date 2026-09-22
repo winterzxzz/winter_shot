@@ -16,10 +16,10 @@ protocol AreaPickerUI {
 }
 
 /// BridgeShot-style area capture: freeze every display, let the user drag a
-/// rect on the frozen frame (with loupe and live coordinates), then crop the
-/// selection out of the frozen image — pixel-perfect and immune to the screen
-/// changing mid-selection. Hovering a window highlights it; a click captures
-/// that window's rect without dragging.
+/// rect on the frozen frame, then crop the selection out of the frozen image
+/// — pixel-perfect and immune to the screen changing mid-selection. Hovering
+/// a window highlights it; a click captures that window's rect without
+/// dragging.
 @MainActor
 final class AreaCaptureService {
     enum AreaCaptureError: Error {

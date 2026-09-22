@@ -2,10 +2,10 @@ import AppKit
 import SwiftUI
 
 /// Frozen-screen area selector, BridgeShot-style: every display is covered by
-/// its frozen snapshot; a pixel loupe with live coordinates follows the
-/// cursor; dragging marks the selection with a size readout. Release captures,
-/// Esc cancels. Hovering over a window highlights it and a plain click
-/// captures that window's rect — no dragging needed.
+/// its frozen snapshot; crosshair guides follow the cursor; dragging marks the
+/// selection with a size readout. Release captures, Esc cancels. Hovering over
+/// a window highlights it and a plain click captures that window's rect — no
+/// dragging needed.
 ///
 /// Set WINTERSHOT_AUTOAREA="x,y,w,h" (global points, CG coords, optionally
 /// WINTERSHOT_AUTOPICK_DELAY=<seconds>) to auto-select — used by smoke tests.
@@ -245,43 +245,6 @@ private struct AreaPickerScreenView: View {
             guides.addLine(to: CGPoint(x: cursor.x, y: size.height))
             context.stroke(guides, with: .color(.white.opacity(0.35)), lineWidth: 1)
         }
-
-        if let cursor {
-            drawLoupe(at: cursor, in: &context, size: size)
-        }
-    }
-
-    /// Magnified view of the frozen pixels under the cursor + live coordinates.
-    private func drawLoupe(at point: CGPoint, in context: inout GraphicsContext, size: CGSize) {
-        let magnification: CGFloat = 6
-        let radius: CGFloat = 60
-        let offset: CGFloat = 85
-
-        var center = CGPoint(x: point.x + offset, y: point.y - offset)
-        if center.x + radius > size.width { center.x = point.x - offset }
-        if center.y - radius < 0 { center.y = point.y + offset }
-        let circle = CGRect(x: center.x - radius, y: center.y - radius,
-                            width: radius * 2, height: radius * 2)
-
-        context.drawLayer { layer in
-            layer.clip(to: Path(ellipseIn: circle))
-            layer.translateBy(x: center.x - point.x * magnification,
-                              y: center.y - point.y * magnification)
-            layer.scaleBy(x: magnification, y: magnification)
-            layer.draw(Image(decorative: backdrop.image, scale: pixelScale),
-                       in: CGRect(origin: .zero, size: backdrop.frame.size))
-        }
-        context.stroke(Path(ellipseIn: circle), with: .color(.white.opacity(0.9)), lineWidth: 2)
-
-        // Center tick marking the exact pixel.
-        let tick = CGRect(x: center.x - magnification / 2, y: center.y - magnification / 2,
-                          width: magnification, height: magnification)
-        context.stroke(Path(tick), with: .color(.red), lineWidth: 1)
-
-        let coords = Text("\(Int(point.x * pixelScale)), \(Int(point.y * pixelScale))")
-            .font(.system(size: 11, weight: .medium, design: .monospaced))
-            .foregroundColor(.white)
-        drawChip(coords, at: CGPoint(x: center.x, y: center.y + radius + 14), in: &context)
     }
 
     private func drawChip(_ text: Text, at point: CGPoint, in context: inout GraphicsContext) {
