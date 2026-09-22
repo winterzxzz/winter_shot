@@ -39,6 +39,16 @@ final class AnnotationRepositoryImpl: AnnotationRepository {
         try store.writeSidecar(sidecar, for: screenshot.imageURL)
     }
 
+    func loadRotation(for screenshot: Screenshot) throws -> ImageRotation? {
+        store.readSidecar(for: screenshot.imageURL)?.rotation
+    }
+
+    func saveRotation(_ rotation: ImageRotation?, for screenshot: Screenshot) throws {
+        var sidecar = sidecar(for: screenshot)
+        sidecar.rotation = rotation
+        try store.writeSidecar(sidecar, for: screenshot.imageURL)
+    }
+
     private func sidecar(for screenshot: Screenshot) -> ScreenshotSidecar {
         store.readSidecar(for: screenshot.imageURL) ?? ScreenshotSidecar(
             screenshotID: screenshot.id,
@@ -46,7 +56,8 @@ final class AnnotationRepositoryImpl: AnnotationRepository {
             createdAt: screenshot.createdAt,
             annotations: [],
             crop: nil,
-            background: nil
+            background: nil,
+            rotation: nil
         )
     }
 }

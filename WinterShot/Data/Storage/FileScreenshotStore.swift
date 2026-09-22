@@ -12,6 +12,9 @@ struct ScreenshotSidecar: Codable {
     var crop: CGRect?
     /// Non-destructive background beautify; nil renders the bare capture.
     var background: BackdropStyle?
+    /// Non-destructive rotation in quarter turns; nil is upright. Absent
+    /// from sidecars written before rotation existed, hence optional.
+    var rotation: ImageRotation?
 }
 
 /// Sidecar document written next to a recording once the studio editor has

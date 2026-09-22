@@ -116,6 +116,12 @@ final class DIContainer {
     var loadBackgroundUseCase: LoadBackgroundUseCase {
         LoadBackgroundUseCase(repository: annotationRepository)
     }
+    var setRotationUseCase: SetRotationUseCase {
+        SetRotationUseCase(repository: annotationRepository)
+    }
+    var loadRotationUseCase: LoadRotationUseCase {
+        LoadRotationUseCase(repository: annotationRepository)
+    }
     var startRecordingUseCase: StartRecordingUseCase {
         StartRecordingUseCase(recorder: screenRecorder)
     }

@@ -120,9 +120,10 @@ final class MainViewModel: ObservableObject {
         let annotations = (try? container.loadAnnotationsUseCase.execute(for: screenshot)) ?? []
         let crop = (try? container.loadCropUseCase.execute(for: screenshot)) ?? nil
         let backdrop = (try? container.loadBackgroundUseCase.execute(for: screenshot)) ?? nil
+        let rotation = (try? container.loadRotationUseCase.execute(for: screenshot)) ?? nil
         let content = FlattenedImageView(
             image: image, imageSize: pixelSize, annotations: annotations,
-            crop: crop, background: backdrop ?? .none
+            crop: crop, background: backdrop ?? .none, rotation: rotation ?? .none
         )
         let renderer = ImageRenderer(content: content)
         renderer.scale = 1

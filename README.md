@@ -30,7 +30,7 @@ Press ⌘⇧4. Click a window or drag an area. Annotate it, drop it on a gradien
 
 ## What is WinterShot?
 
-WinterShot is a **native macOS menu-bar app for screenshots and screen recordings**. It captures with ScreenCaptureKit, hands you a real editor — nine annotation tools, crop, background beautify, on-device OCR — and keeps every edit in a sidecar file so you can reopen a shot months later and still move that arrow.
+WinterShot is a **native macOS menu-bar app for screenshots and screen recordings**. It captures with ScreenCaptureKit, hands you a real editor — nine annotation tools, crop, rotate, background beautify, on-device OCR — and keeps every edit in a sidecar file so you can reopen a shot months later and still move that arrow.
 
 Recordings get the same treatment: WinterShot logs your pointer and clicks *next to* the video instead of burning them in, then a Screen Studio-style editor turns the raw capture into a polished clip — zoom that follows your clicks, a synthetic cursor, backdrops, motion blur — and re-exports it any way you like, as many times as you like.
 
@@ -80,7 +80,7 @@ It's the free, private alternative to paid capture tools: pure SwiftUI, zero thi
 |---|---|
 | 🧊 **Frozen-screen selector** | The screen freezes the moment you press the hotkey. Crosshair guides follow the cursor, and windows lift out of a dimmed backdrop as you hover — one click captures a window cleanly, even when it's half-covered. |
 | ✏️ **Nine annotation tools** | Arrow, rectangle, ellipse, line, freehand, text, numbered counters, highlighter and redaction — with a color row, adjustable stroke, undo/redo and drag-to-move. |
-| ♻️ **Non-destructive by design** | Annotations, crop and backdrop live in a `.wshot.json` sidecar next to the PNG. Reopen a capture later and every arrow is still editable, every crop reversible. Pixels are flattened only on export. |
+| ♻️ **Non-destructive by design** | Annotations, crop, rotation and backdrop live in a `.wshot.json` sidecar next to the PNG. Reopen a capture later and every arrow is still editable, every crop and every quarter turn reversible. Pixels are flattened only on export. |
 | 🎬 **Screen recording + studio editor** | Record a display, a window or an area. The raw video stays untouched while zoom, cursor, backdrop and masks are applied at export — re-export the same take with a different look anytime. Close the editor whenever you like: the edit is saved next to the take and comes back when you reopen it from the library. |
 | 🎨 **Background beautify** | Drop a shot onto a gradient with padding, rounded corners and a soft shadow — seven presets, live in the editor, ready for posts and docs. |
 | 🔍 **On-device OCR** | Pull the text out of any capture with Apple Vision and copy it. Nothing is uploaded. |
@@ -102,7 +102,7 @@ Every capture slides in as a thumbnail card at the edge of the screen — annota
 
 ## 🎨 The editor
 
-Nine tools, a live canvas, and a library sidebar. Nothing is baked into the image — the arrows, the counters, the crop and the backdrop are all still yours the next time you open the file.
+Nine tools, a live canvas, and a library sidebar. Nothing is baked into the image — the arrows, the counters, the crop, the rotation and the backdrop are all still yours the next time you open the file.
 
 <p align="center"><img src="docs/assets/editor.png" width="860" alt="WinterShot's editor showing a captured dashboard annotated with a red arrow, numbered counters, a yellow highlighter across a table row and black redaction bars over an email column" /></p>
 
@@ -183,7 +183,7 @@ The build isn't notarized yet. Right-click the app → <b>Open</b> → <b>Open</
 
 <details>
 <summary><b>Can I edit a capture again later?</b></summary>
-Yes — that's the point of the sidecars. Reopen any capture from the history and every annotation is still selectable, the crop is still reversible, and the backdrop is still adjustable. Exports flatten a copy, never the original.
+Yes — that's the point of the sidecars. Reopen any capture from the history and every annotation is still selectable, the crop and the rotation are still reversible, and the backdrop is still adjustable. Exports flatten a copy, never the original.
 </details>
 
 <details>

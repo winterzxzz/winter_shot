@@ -27,10 +27,34 @@ enum BeautifyRenderer {
         return style.padding * min(content.width, content.height)
     }
 
-    /// Total output size: content plus backdrop padding.
-    static func outputSize(visible: CGRect, style: BackdropStyle) -> CGSize {
-        let pad = padding(for: style, content: visible.size)
-        return CGSize(width: visible.width + pad * 2, height: visible.height + pad * 2)
+    /// The visible capture as it is drawn: the crop, turned by `rotation`.
+    static func contentSize(visible: CGRect, rotation: ImageRotation) -> CGSize {
+        rotation.apply(to: visible.size)
+    }
+
+    /// Total output size: turned content plus backdrop padding.
+    static func outputSize(visible: CGRect, style: BackdropStyle,
+                           rotation: ImageRotation = .none) -> CGSize {
+        let content = contentSize(visible: visible, rotation: rotation)
+        let pad = padding(for: style, content: content)
+        return CGSize(width: content.width + pad * 2, height: content.height + pad * 2)
+    }
+
+    /// Moves a context from output space into image pixel space: the visible
+    /// rect lands centred inside the padded content box, turned by `rotation`.
+    /// Drawing afterwards happens in the capture's own coordinates, so
+    /// annotations and crop rects never have to be rewritten when it turns.
+    static func applyContentTransform(_ context: inout GraphicsContext,
+                                      visible: CGRect,
+                                      style: BackdropStyle,
+                                      rotation: ImageRotation) {
+        let content = contentSize(visible: visible, rotation: rotation)
+        let pad = padding(for: style, content: content)
+        context.translateBy(x: pad + content.width / 2, y: pad + content.height / 2)
+        if !rotation.isIdentity {
+            context.rotate(by: .degrees(rotation.degrees))
+        }
+        context.translateBy(x: -visible.midX, y: -visible.midY)
     }
 
     /// Draws backdrop + clipped content (image and annotations) into a context
@@ -40,11 +64,13 @@ enum BeautifyRenderer {
                             imageSize: CGSize,
                             annotations: [Annotation],
                             visible: CGRect,
-                            style: BackdropStyle) {
-        let pad = padding(for: style, content: visible.size)
-        let output = outputSize(visible: visible, style: style)
-        let contentRect = CGRect(x: pad, y: pad, width: visible.width, height: visible.height)
-        let radius = style.isEnabled ? min(style.cornerRadius, min(visible.width, visible.height) / 2) : 0
+                            style: BackdropStyle,
+                            rotation: ImageRotation = .none) {
+        let content = contentSize(visible: visible, rotation: rotation)
+        let pad = padding(for: style, content: content)
+        let output = outputSize(visible: visible, style: style, rotation: rotation)
+        let contentRect = CGRect(x: pad, y: pad, width: content.width, height: content.height)
+        let radius = style.isEnabled ? min(style.cornerRadius, min(content.width, content.height) / 2) : 0
         let clipPath = Path(roundedRect: contentRect, cornerRadius: radius)
 
         if style.isEnabled {
@@ -67,11 +93,10 @@ enum BeautifyRenderer {
         }
 
         context.drawLayer { layer in
-            // Always clip: the image is drawn at full size and only translated
+            // Always clip: the image is drawn at full size and only moved
             // into place, so without this the parts outside the crop paint too.
             layer.clip(to: clipPath)
-            layer.translateBy(x: contentRect.origin.x - visible.origin.x,
-                              y: contentRect.origin.y - visible.origin.y)
+            applyContentTransform(&layer, visible: visible, style: style, rotation: rotation)
             if let image {
                 layer.draw(Image(nsImage: image),
                            in: CGRect(origin: .zero, size: imageSize))

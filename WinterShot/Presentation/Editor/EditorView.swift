@@ -160,9 +160,12 @@ struct EditorView: View {
     }
 
     private var sizeLabel: String {
-        let visible = viewModel.crop ?? CGRect(origin: .zero, size: viewModel.imagePixelSize)
-        var label = "\(Int(visible.width)) × \(Int(visible.height)) px"
-        if viewModel.crop != nil { label += " (cropped)" }
+        let size = viewModel.displaySize
+        var label = "\(Int(size.width)) × \(Int(size.height)) px"
+        var notes: [String] = []
+        if viewModel.crop != nil { notes.append("cropped") }
+        if !viewModel.rotation.isIdentity { notes.append(viewModel.rotation.label) }
+        if !notes.isEmpty { label += " (\(notes.joined(separator: ", ")))" }
         return label
     }
 }

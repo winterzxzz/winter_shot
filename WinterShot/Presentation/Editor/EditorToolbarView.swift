@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The floating tool pill: select cursor, the nine annotation tools, color
-/// and width, undo/redo, extras menu, Copy, and Done.
+/// and width, crop, rotate, background beautify, undo/redo, extras menu,
+/// Copy, and Done.
 struct EditorToolbarView: View {
     @ObservedObject var viewModel: EditorViewModel
     let onDone: () -> Void
@@ -48,6 +49,16 @@ struct EditorToolbarView: View {
                 }
             }
 
+            iconButton(icon: "rotate.left", label: "Rotate Left (⌘[)") {
+                viewModel.rotateLeft()
+            }
+            .keyboardShortcut("[", modifiers: .command)
+
+            iconButton(icon: "rotate.right", label: "Rotate Right (⌘])") {
+                viewModel.rotateRight()
+            }
+            .keyboardShortcut("]", modifiers: .command)
+
             toolButton(icon: "wand.and.stars", label: "Background Beautify",
                        isActive: viewModel.backdrop.isEnabled) {
                 showBeautifyPopover.toggle()
@@ -86,6 +97,8 @@ struct EditorToolbarView: View {
                     .keyboardShortcut("e", modifiers: .command)
                 Button("Reset Crop") { viewModel.resetCrop() }
                     .disabled(viewModel.crop == nil)
+                Button("Reset Rotation") { viewModel.resetRotation() }
+                    .disabled(viewModel.rotation.isIdentity)
                 Button("Delete Selected Annotation") { viewModel.deleteSelected() }
                     .disabled(viewModel.selectedAnnotationID == nil)
                 Button("Clear All Annotations", role: .destructive) { viewModel.clearAll() }

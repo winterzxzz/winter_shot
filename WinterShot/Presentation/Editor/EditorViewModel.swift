@@ -45,6 +45,10 @@ final class EditorViewModel: ObservableObject {
     /// Non-destructive background beautify (backdrop, padding, corners, shadow).
     @Published var backdrop: BackdropStyle = .none
 
+    /// Non-destructive rotation in quarter turns; applied when drawing, so
+    /// annotations and the crop keep their original image coordinates.
+    @Published var rotation: ImageRotation = .none
+
     let image: NSImage?
     let imagePixelSize: CGSize
 
@@ -59,6 +63,8 @@ final class EditorViewModel: ObservableObject {
     private let loadCropUseCase: LoadCropUseCase
     private let setBackgroundUseCase: SetBackgroundUseCase
     private let loadBackgroundUseCase: LoadBackgroundUseCase
+    private let setRotationUseCase: SetRotationUseCase
+    private let loadRotationUseCase: LoadRotationUseCase
 
     private static let zoomSteps: [CGFloat] = [0.1, 0.25, 0.33, 0.5, 0.67, 0.75, 0.9, 1, 1.25, 1.5, 2, 3, 4]
 
@@ -82,6 +88,8 @@ final class EditorViewModel: ObservableObject {
         self.loadCropUseCase = container.loadCropUseCase
         self.setBackgroundUseCase = container.setBackgroundUseCase
         self.loadBackgroundUseCase = container.loadBackgroundUseCase
+        self.setRotationUseCase = container.setRotationUseCase
+        self.loadRotationUseCase = container.loadRotationUseCase
 
         let nsImage = NSImage(contentsOf: screenshot.imageURL)
         self.image = nsImage
@@ -95,6 +103,39 @@ final class EditorViewModel: ObservableObject {
         self.annotations = (try? loadAnnotationsUseCase.execute(for: screenshot)) ?? []
         self.crop = (try? loadCropUseCase.execute(for: screenshot)) ?? nil
         self.backdrop = (try? loadBackgroundUseCase.execute(for: screenshot)) ?? .none
+        self.rotation = (try? loadRotationUseCase.execute(for: screenshot)) ?? .none
+    }
+
+    // MARK: - Rotate
+
+    /// The visible capture's size as it is drawn — a quarter turn swaps it.
+    var displaySize: CGSize {
+        rotation.apply(to: visibleRect.size)
+    }
+
+    func rotateLeft() { setRotation(rotation.turnedLeft()) }
+
+    func rotateRight() { setRotation(rotation.turnedRight()) }
+
+    func resetRotation() {
+        guard !rotation.isIdentity else { return }
+        setRotation(.none)
+    }
+
+    private func setRotation(_ next: ImageRotation) {
+        rotation = next
+        // The output box just changed shape; refit rather than leave the
+        // capture half off-screen at the old zoom.
+        zoomMode = .fit
+        do {
+            try setRotationUseCase.execute(next.isIdentity ? nil : next, for: screenshot)
+        } catch {
+            statusMessage = "Could not save rotation: \(error.localizedDescription)"
+            return
+        }
+        statusMessage = next.isIdentity
+            ? "Rotation reset."
+            : "Rotated to \(next.label) (non-destructive)."
     }
 
     // MARK: - Background beautify
@@ -179,7 +220,8 @@ final class EditorViewModel: ObservableObject {
     // MARK: - Zoom
 
     func effectiveScale(fitting available: CGSize) -> CGFloat {
-        let content = BeautifyRenderer.outputSize(visible: visibleRect, style: displayBackdrop)
+        let content = BeautifyRenderer.outputSize(visible: visibleRect, style: displayBackdrop,
+                                                  rotation: rotation)
         switch zoomMode {
         case .percent(let value):
             return value
@@ -450,7 +492,8 @@ final class EditorViewModel: ObservableObject {
             imageSize: imagePixelSize,
             annotations: annotations,
             crop: crop,
-            background: backdrop
+            background: backdrop,
+            rotation: rotation
         )
         let renderer = ImageRenderer(content: content)
         renderer.scale = 1
