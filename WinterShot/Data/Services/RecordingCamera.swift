@@ -110,14 +110,17 @@ struct CameraRig {
         self.frame = frame
         let zoom = options.autoZoom ? max(1, options.zoomLevel) : 1
         self.zoomLevel = zoom
-        self.ranges = Self.buildRanges(frame: frame, events: events, duration: duration, zoom: zoom)
+        self.ranges = Self.buildRanges(frame: frame, events: events, duration: duration, zoom: zoom,
+                                       removed: options.removedZooms ?? [])
     }
 
     // MARK: Ranges
 
     /// Auto-zoom windows as (start, end) in seconds from the first frame —
-    /// shared with the timeline UI, which draws them as segments.
-    static func zoomWindows(events: RecordingEventLog, duration: Double) -> [(start: Double, end: Double)] {
+    /// shared with the timeline UI, which draws them as segments. Windows
+    /// whose start is in `removed` (ones the user deleted) are left out.
+    static func zoomWindows(events: RecordingEventLog, duration: Double,
+                            removed: [Double] = []) -> [(start: Double, end: Double)] {
         let times = events.clicks
             .map { $0.t - events.firstFrameTime }
             .filter { $0 < duration - ignoreClicksInLast }
@@ -134,13 +137,22 @@ struct CameraRig {
                 merged.append((start, end))
             }
         }
-        return merged.map { (start: $0.0, end: $0.1) }
+        return merged
+            .filter { window in !removed.contains { isSameZoom($0, window.0) } }
+            .map { (start: $0.0, end: $0.1) }
+    }
+
+    /// Windows are rebuilt from the click log on every pass, so a removed
+    /// one is matched by its start time with a little float slack.
+    static func isSameZoom(_ a: Double, _ b: Double) -> Bool {
+        abs(a - b) < 0.01
     }
 
     private static func buildRanges(frame: CGSize,
                                     events: RecordingEventLog,
                                     duration: Double,
-                                    zoom: Double) -> [ZoomRange] {
+                                    zoom: Double,
+                                    removed: [Double]) -> [ZoomRange] {
         guard zoom > 1 else { return [] }
         let t0 = events.firstFrameTime
         // All mouse events (moves and clicks) in time order.
@@ -150,7 +162,7 @@ struct CameraRig {
         let area = CGSize(width: frame.width / zoom * clusterFraction.width,
                           height: frame.height / zoom * clusterFraction.height)
 
-        return zoomWindows(events: events, duration: duration).map { window in
+        return zoomWindows(events: events, duration: duration, removed: removed).map { window in
             let inRange = all.filter { $0.t >= window.start && $0.t <= window.end }
             return ZoomRange(start: window.start, end: window.end,
                              clusters: cluster(inRange, area: area))

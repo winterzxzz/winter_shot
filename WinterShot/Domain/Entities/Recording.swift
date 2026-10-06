@@ -378,6 +378,9 @@ struct RecordingExportOptions: Codable, Equatable {
     var autoZoom: Bool = true
     /// Zoom magnification when zoomed in.
     var zoomLevel: Double = 2.0
+    /// Start times (seconds) of auto-zoom windows the user removed from the
+    /// timeline. Optional so edits saved before this existed still decode.
+    var removedZooms: [Double]? = nil
     /// Draw the synthetic smoothed cursor.
     var showCursor: Bool = true
     /// Cursor size multiplier (1 = natural).

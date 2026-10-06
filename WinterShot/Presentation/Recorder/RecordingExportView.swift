@@ -1031,6 +1031,14 @@ struct RecordingExportView: View {
             }
             .disabled(!options.autoZoom)
             .opacity(options.autoZoom ? 1 : 0.4)
+            if let removed = options.removedZooms, !removed.isEmpty {
+                StudioButton(removed.count == 1 ? "Restore removed zoom" : "Restore \(removed.count) removed zooms",
+                             icon: "arrow.uturn.backward", kind: .secondary) {
+                    options.removedZooms = nil
+                }
+                .disabled(!options.autoZoom)
+                .opacity(options.autoZoom ? 1 : 0.4)
+            }
         }
         StudioSection {
             StudioField("Motion blur", description: "Cinematic blur while the screen zooms or pans and the cursor moves.") {
@@ -1085,9 +1093,11 @@ struct RecordingExportView: View {
     private var timeline: some View {
         StudioTimeline(duration: max(transport.duration, 0.1),
                        time: transport.time,
-                       zoomWindows: CameraRig.zoomWindows(events: events, duration: transport.duration),
+                       zoomWindows: CameraRig.zoomWindows(events: events, duration: transport.duration,
+                                                          removed: options.removedZooms ?? []),
                        zoomLevel: options.zoomLevel,
                        zoomEnabled: options.autoZoom,
+                       hasRemovedZooms: !(options.removedZooms ?? []).isEmpty,
                        masks: options.masks,
                        showMasks: !options.masks.isEmpty || editMode == .mask,
                        selectedMaskID: selectedMaskID,
@@ -1097,7 +1107,17 @@ struct RecordingExportView: View {
                        onSelectMask: { selectMask($0) },
                        onMoveMask: { id, start, end in
                            updateMask(id) { $0.start = start; $0.end = end }
-                       })
+                       },
+                       onRemoveZoom: { removeZoom(startingAt: $0) })
+    }
+
+    /// Drops one auto-zoom window from the edit; undo or "Restore removed
+    /// zooms" brings it back.
+    private func removeZoom(startingAt start: Double) {
+        var removed = options.removedZooms ?? []
+        guard !removed.contains(where: { CameraRig.isSameZoom($0, start) }) else { return }
+        removed.append(start)
+        options.removedZooms = removed
     }
 
     // MARK: - History & presets
@@ -1313,6 +1333,7 @@ private struct StudioTimeline: View {
     let zoomWindows: [(start: Double, end: Double)]
     let zoomLevel: Double
     let zoomEnabled: Bool
+    let hasRemovedZooms: Bool
     let masks: [RecordingMask]
     let showMasks: Bool
     let selectedMaskID: UUID?
@@ -1321,6 +1342,7 @@ private struct StudioTimeline: View {
     let onPreviewEnd: () -> Void
     let onSelectMask: (UUID?) -> Void
     let onMoveMask: (UUID, Double, Double) -> Void
+    let onRemoveZoom: (Double) -> Void
 
     private let rulerHeight: CGFloat = 22
     private let trackHeight: CGFloat = 46
@@ -1436,19 +1458,23 @@ private struct StudioTimeline: View {
             RoundedRectangle(cornerRadius: itemRadius)
                 .fill(Studio.lighter)
             if zoomEnabled, !zoomWindows.isEmpty {
-                ForEach(Array(zoomWindows.enumerated()), id: \.offset) { _, window in
+                ForEach(zoomWindows, id: \.start) { window in
                     let x0 = x(for: window.start, width: width)
                     let x1 = x(for: min(window.end, duration), width: width)
-                    trackItem(color: Studio.primary, width: max(x1 - x0, 24), head: "Zoom") {
-                        HStack(spacing: 10) {
-                            Label(String(format: "%.1f×", zoomLevel), systemImage: "magnifyingglass")
-                            Label("Auto", systemImage: "computermouse.fill")
+                    ZoomTrackItem(onRemove: { onRemoveZoom(window.start) }) {
+                        trackItem(color: Studio.primary, width: max(x1 - x0, 24), head: "Zoom") {
+                            HStack(spacing: 10) {
+                                Label(String(format: "%.1f×", zoomLevel), systemImage: "magnifyingglass")
+                                Label("Auto", systemImage: "computermouse.fill")
+                            }
                         }
                     }
                     .offset(x: x0)
                 }
             } else {
-                Text(zoomEnabled ? "No clicks recorded — nothing to zoom into" : "Auto zoom is off")
+                Text(!zoomEnabled ? "Auto zoom is off"
+                     : hasRemovedZooms ? "All zooms removed"
+                     : "No clicks recorded — nothing to zoom into")
                     .font(Studio.label)
                     .foregroundStyle(Studio.textTertiary)
                     .frame(maxWidth: .infinity)
@@ -1521,6 +1547,37 @@ private struct StudioTimeline: View {
         .shadow(color: .black.opacity(0.5), radius: 2)
         .offset(x: px - 5)
         .allowsHitTesting(false)
+    }
+}
+
+/// An auto-zoom segment on the timeline. Hovering shows a remove button in
+/// its corner; right-click offers the same.
+private struct ZoomTrackItem<Content: View>: View {
+    let onRemove: () -> Void
+    @ViewBuilder let content: () -> Content
+
+    @State private var hovering = false
+
+    var body: some View {
+        content()
+            .overlay(alignment: .topTrailing) {
+                if hovering {
+                    Button(action: onRemove) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 16, height: 16)
+                            .background(.black.opacity(0.6), in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Remove this zoom")
+                    .padding(5)
+                }
+            }
+            .onHover { hovering = $0 }
+            .contextMenu {
+                Button("Remove Zoom", systemImage: "trash", action: onRemove)
+            }
     }
 }
 
