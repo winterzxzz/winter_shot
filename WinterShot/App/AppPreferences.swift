@@ -61,8 +61,8 @@ enum CapturePreviewSize: String, CaseIterable, Identifiable {
 }
 
 /// UserDefaults-backed user preferences: theme, capture hotkey, capture
-/// preview card size and auto-hide delay, and the first-launch onboarding
-/// flag. Observable so Settings and onboarding UI update live.
+/// preview card size and auto-hide delay, auto-copy after capture, and the
+/// first-launch onboarding flag. Observable so Settings and onboarding UI update live.
 @MainActor
 final class AppPreferences: ObservableObject {
     static let shared = AppPreferences()
@@ -74,6 +74,7 @@ final class AppPreferences: ObservableObject {
         static let onboardingDone = "hasCompletedOnboarding"
         static let previewSize = "capturePreviewSize"
         static let previewAutoHide = "capturePreviewAutoHideSeconds"
+        static let copyAfterCapture = "copyToClipboardAfterCapture"
     }
 
     private let defaults = UserDefaults.standard
@@ -106,6 +107,12 @@ final class AppPreferences: ObservableObject {
         didSet { defaults.set(previewAutoHideSeconds, forKey: Keys.previewAutoHide) }
     }
 
+    /// Puts every new screenshot on the clipboard as soon as it is taken,
+    /// so it can be pasted straight away without pressing Copy.
+    @Published var copyToClipboardAfterCapture: Bool {
+        didSet { defaults.set(copyToClipboardAfterCapture, forKey: Keys.copyAfterCapture) }
+    }
+
     private init() {
         theme = AppTheme(rawValue: defaults.string(forKey: Keys.theme) ?? "") ?? .system
         if defaults.object(forKey: Keys.hotkeyKeyCode) != nil {
@@ -120,6 +127,7 @@ final class AppPreferences: ObservableObject {
         // value and the actual delay agree out of the box.
         let storedAutoHide = defaults.double(forKey: Keys.previewAutoHide)
         previewAutoHideSeconds = storedAutoHide > 0 ? storedAutoHide : 5
+        copyToClipboardAfterCapture = defaults.bool(forKey: Keys.copyAfterCapture)
     }
 
     /// Pushes the chosen theme onto every window; call once at launch and on

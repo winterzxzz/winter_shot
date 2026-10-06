@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The app's Settings window: startup, appearance, capture preview card
-/// options, storage location, and the global capture hotkey.
+/// The app's Settings window: startup, appearance, auto-copy after capture,
+/// capture preview card options, storage location, and the global capture hotkey.
 struct SettingsView: View {
     @ObservedObject private var preferences = AppPreferences.shared
     @ObservedObject private var loginItem = LoginItemService.shared
@@ -70,6 +70,13 @@ struct SettingsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+            }
+
+            Section("After Capture") {
+                Toggle("Copy to clipboard automatically", isOn: $preferences.copyToClipboardAfterCapture)
+                Text("Each new screenshot goes straight to the clipboard, ready to paste with ⌘V.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
             }
 
             Section("Capture Preview") {

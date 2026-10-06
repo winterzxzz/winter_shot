@@ -192,6 +192,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     return
                 }
                 NSLog("WinterShot: captured %@", screenshot.imageURL.path)
+                if AppPreferences.shared.copyToClipboardAfterCapture,
+                   let image = NSImage(contentsOf: screenshot.imageURL) {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.writeObjects([image])
+                }
                 CapturePreviewManager.shared.show(screenshot: screenshot) { [weak self] shot in
                     self?.openMain(with: .screenshot(shot))
                 }
