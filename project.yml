@@ -15,8 +15,8 @@ targets:
       path: MacScreenShot/Info.plist
       properties:
         CFBundleDisplayName: MacScreenShot
-        CFBundleShortVersionString: "0.11.0"
-        CFBundleVersion: "13"
+        CFBundleShortVersionString: "0.12.0"
+        CFBundleVersion: "14"
         LSUIElement: true
         LSMinimumSystemVersion: "14.0"
         NSHumanReadableCopyright: "MIT License"
