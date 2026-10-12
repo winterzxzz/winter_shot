@@ -4,9 +4,10 @@ import AppKit
 /// Left sidebar: the capture library — screenshots and recordings together,
 /// newest first. Cards show a thumbnail with hover quick actions, name, age
 /// and pixel size (a recording adds its length). Footer: folder, refresh,
-/// settings.
+/// delete all, settings.
 struct CapturesSidebarView: View {
     @ObservedObject var viewModel: MainViewModel
+    @State private var confirmingDeleteAll = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -115,6 +116,13 @@ struct CapturesSidebarView: View {
             }
             .help("Refresh")
 
+            Button { confirmingDeleteAll = true } label: {
+                Image(systemName: "trash")
+            }
+            .help("Delete all captures")
+            .disabled(viewModel.items.isEmpty)
+            .opacity(viewModel.items.isEmpty ? 0.4 : 1)
+
             Spacer()
 
             SettingsLink {
@@ -127,6 +135,17 @@ struct CapturesSidebarView: View {
         .foregroundStyle(.secondary)
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+        .confirmationDialog(deleteAllTitle, isPresented: $confirmingDeleteAll, titleVisibility: .visible) {
+            Button("Delete All", role: .destructive) { viewModel.deleteAll() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Every screenshot is deleted for good, along with its annotations. Recordings are moved to the Trash.")
+        }
+    }
+
+    private var deleteAllTitle: String {
+        let count = viewModel.items.count
+        return count == 1 ? "Delete the capture in your library?" : "Delete all \(count) captures in your library?"
     }
 }
 

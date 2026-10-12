@@ -25,6 +25,7 @@ final class DIContainer {
     let selectionBus = SelectionBus()
 
     private let hotkeyService = GlobalHotkeyService()
+    private let libraryWatcher: LibraryFolderWatcher
     let updateService = GitHubUpdateService()
 
     /// Registers the user's capture hotkey (default ⌘⇧4) and keeps the
@@ -71,6 +72,8 @@ final class DIContainer {
         ocrService = VisionOCRService()
         screenRecorder = ScreenRecordingService(store: store)
         recordingRenderer = RecordingExporterService()
+        libraryWatcher = LibraryFolderWatcher(directory: store.directory)
+        libraryWatcher.start()
     }
 
     // Use cases

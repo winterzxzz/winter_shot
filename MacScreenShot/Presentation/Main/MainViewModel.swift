@@ -68,6 +68,14 @@ final class MainViewModel: ObservableObject {
         }
     }
 
+    /// Empties the library: every screenshot and recording listed, each
+    /// removed the same way its own delete button would.
+    func deleteAll() {
+        for item in items {
+            delete(item)
+        }
+    }
+
     func capture(mode: CaptureMode) {
         Task {
             do {
