@@ -135,7 +135,7 @@ func drawCentered(_ text: NSAttributedString, centerX: CGFloat, topY: CGFloat) {
 // Brand header: viewfinder-snowflake mark beside the wordmark, tagline
 // underneath. The mark echoes the app icon — capture brackets around a
 // six-spoke snowflake.
-let wordmark = attributedText("WinterShot", size: 24, weight: .bold, alpha: 0.95, kern: 0.3)
+let wordmark = attributedText("MacScreenShot", size: 24, weight: .bold, alpha: 0.95, kern: 0.3)
 let markSize: CGFloat = 28
 let headerGap: CGFloat = 12
 let headerWidth = markSize + headerGap + wordmark.size().width
@@ -304,7 +304,7 @@ head.stroke()
 
 // Bottom brand strip: letterspaced name over a gradient hairline.
 drawCentered(
-    attributedText("WINTERSHOT", size: 9, weight: .semibold, alpha: 0.35, kern: 4),
+    attributedText("MACSCREENSHOT", size: 9, weight: .semibold, alpha: 0.35, kern: 4),
     centerX: 330, topY: 348
 )
 let hairline = NSBezierPath(

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://winterzxzz.github.io/winter_shot/sitemap.xml

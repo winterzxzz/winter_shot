@@ -1,4 +1,4 @@
-name: WinterShot
+name: MacScreenShot
 options:
   bundleIdPrefix: com.winterzxzz
   deploymentTarget:
@@ -6,15 +6,15 @@ options:
   createIntermediateGroups: true
 
 targets:
-  WinterShot:
+  MacScreenShot:
     type: application
     platform: macOS
     sources:
-      - WinterShot
+      - MacScreenShot
     info:
-      path: WinterShot/Info.plist
+      path: MacScreenShot/Info.plist
       properties:
-        CFBundleDisplayName: WinterShot
+        CFBundleDisplayName: MacScreenShot
         CFBundleShortVersionString: "0.11.0"
         CFBundleVersion: "13"
         LSUIElement: true
@@ -22,6 +22,9 @@ targets:
         NSHumanReadableCopyright: "MIT License"
     settings:
       base:
+        # The identifier keeps the app's original name on purpose: macOS keys
+        # the Screen Recording grant, the preferences and the login item to
+        # it, so renaming it would reset all three for everyone who updates.
         PRODUCT_BUNDLE_IDENTIFIER: com.winterzxzz.WinterShot
         SWIFT_VERSION: "5.0"
         MACOSX_DEPLOYMENT_TARGET: "14.0"

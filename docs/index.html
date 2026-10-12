@@ -3,31 +3,185 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WinterShot — Free, open-source screenshots &amp; screen recording for macOS</title>
-<meta name="description" content="WinterShot is a free, open-source macOS screenshot and screen-recording app. Freeze-frame capture, re-editable annotations, background beautify, on-device OCR, and a Screen Studio-style recording editor — 100% on-device, one permission, zero telemetry.">
+<title>MacScreenShot — Free Mac Screenshot App &amp; Screen Recorder (Open Source)</title>
+<meta name="description" content="MacScreenShot is a free, open-source screenshot app and screen recorder for Mac. Capture a window or area, annotate, blur and redact, beautify with a background, copy text with OCR, and edit recordings with auto-zoom — 100% on-device, no account.">
+<meta name="keywords" content="mac screenshot app, screenshot tool for mac, free screen recorder mac, annotate screenshots mac, CleanShot X alternative, Screen Studio alternative, Shottr alternative, open source screenshot macOS, screen recording with zoom, OCR screenshot mac, blur screenshot mac">
+<meta name="author" content="winterzxzz">
+<meta name="robots" content="index, follow, max-image-preview:large, max-video-preview:-1">
+<meta name="theme-color" content="#060B19">
+<link rel="canonical" href="https://winterzxzz.github.io/winter_shot/">
 <link rel="icon" type="image/png" href="assets/icon.png">
 <link rel="apple-touch-icon" href="assets/icon.png">
 <meta property="og:type" content="website">
-<meta property="og:title" content="WinterShot — Free, open-source screenshots &amp; screen recording for macOS">
+<meta property="og:site_name" content="MacScreenShot">
+<meta property="og:title" content="MacScreenShot — Free Mac Screenshot App &amp; Screen Recorder (Open Source)">
 <meta property="og:description" content="Press ⌘⇧4. The screen freezes. Capture, annotate, beautify, record — with a Screen Studio-style editor. Free, MIT, 100% on-device.">
 <meta property="og:url" content="https://winterzxzz.github.io/winter_shot/">
-<meta property="og:image" content="https://winterzxzz.github.io/winter_shot/assets/beautify.png">
+<meta property="og:image" content="https://winterzxzz.github.io/winter_shot/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="MacScreenShot — free screenshot and screen recorder app for Mac, showing the annotation editor">
+<meta property="og:video" content="https://winterzxzz.github.io/winter_shot/assets/demo.mp4">
+<meta property="og:video:type" content="video/mp4">
+<meta property="og:video:width" content="1760">
+<meta property="og:video:height" content="1100">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MacScreenShot — Free Mac Screenshot App &amp; Screen Recorder (Open Source)">
+<meta name="twitter:description" content="Free, open-source screenshot app and screen recorder for Mac: annotate, redact, beautify, OCR, and a studio editor with auto-zoom. 100% on-device.">
+<meta name="twitter:image" content="https://winterzxzz.github.io/winter_shot/assets/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "WinterShot",
-  "operatingSystem": "macOS 14+",
-  "applicationCategory": "UtilitiesApplication",
-  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "downloadUrl": "https://github.com/winterzxzz/winter_shot/releases/latest",
-  "license": "https://opensource.org/licenses/MIT",
-  "description": "Free, open-source screenshots and screen recording for macOS — capture, annotate, beautify, ship. 100% on-device."
-}
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "MacScreenShot",
+    "alternateName": "WinterShot",
+    "url": "https://winterzxzz.github.io/winter_shot/",
+    "image": "https://winterzxzz.github.io/winter_shot/assets/og.png",
+    "screenshot": [
+      "https://winterzxzz.github.io/winter_shot/assets/editor.png",
+      "https://winterzxzz.github.io/winter_shot/assets/beautify.png",
+      "https://winterzxzz.github.io/winter_shot/assets/studio.png"
+    ],
+    "operatingSystem": "macOS 14+",
+    "applicationCategory": "UtilitiesApplication",
+    "applicationSubCategory": "Screenshot and screen recording",
+    "softwareVersion": "0.11.0",
+    "isAccessibleForFree": true,
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "downloadUrl": "https://github.com/winterzxzz/winter_shot/releases/latest",
+    "codeRepository": "https://github.com/winterzxzz/winter_shot",
+    "license": "https://opensource.org/licenses/MIT",
+    "author": {
+      "@type": "Person",
+      "name": "winterzxzz",
+      "url": "https://github.com/winterzxzz"
+    },
+    "featureList": [
+      "Freeze-frame window and area screenshots",
+      "Nine annotation tools with re-editable edits",
+      "Redaction and highlighter",
+      "Background beautify with gradients",
+      "On-device OCR",
+      "Pin a capture to the screen",
+      "Screen recording of a display, window or area",
+      "Studio editor with auto-zoom, smooth cursor and backdrops",
+      "60 fps MP4 export in 16:9, 9:16, 1:1 and 4:5"
+    ],
+    "description": "Free, open-source screenshot app and screen recorder for Mac — capture, annotate, beautify, record. 100% on-device."
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    "name": "MacScreenShot demo — screenshot, annotate and record on Mac",
+    "description": "A 24-second tour of MacScreenShot: freeze-frame capture, annotation, background beautify, screen recording with auto-zoom, the studio editor and the notch history.",
+    "thumbnailUrl": "https://winterzxzz.github.io/winter_shot/assets/demo-poster.png",
+    "contentUrl": "https://winterzxzz.github.io/winter_shot/assets/demo.mp4",
+    "uploadDate": "2026-10-12",
+    "duration": "PT24S"
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is MacScreenShot really free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes — free and open source under the MIT license. No subscription, no account, no trial limits, no \"pro\" tier."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How is this different from macOS's built-in ⌘⇧4?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The system tool takes the picture and stops there. MacScreenShot adds a frozen-screen selector with window lifting, an annotation editor whose edits stay editable forever, background beautify, OCR, pinning, a capture history — and screen recording with a full post-production editor."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "macOS says the app \"cannot be opened\". What do I do?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The build isn't notarized yet. Right-click the app → Open → Open, or run xattr -cr /Applications/MacScreenShot.app once."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I edit a capture again later?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes — that's the point of the sidecar files. Reopen any capture from the history and every annotation is still selectable, the crop and the rotation are still reversible, and the backdrop is still adjustable. Exports flatten a copy, never the original."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does the recording editor change my original video?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Never. Zoom, cursor, backdrop, crop, masks and music are applied only when you export. Re-export the same take as many times as you want, in as many shapes as you want."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Where do my captures live?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "In ~/Library/Application Support/MacScreenShot/Captures/ — an immutable PNG or MP4 plus a JSON sidecar holding your edits. (A library created while the app was still called WinterShot stays in its WinterShot/Captures folder.) Delete the app and they're still ordinary files."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is MacScreenShot a free alternative to CleanShot X, Shottr or Screen Studio?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "For most everyday work, yes. It covers the screenshot side — freeze-frame capture, annotation, redaction, background beautify, OCR, pinning — and the recording side, with a studio editor that adds auto-zoom, a smooth cursor and backdrops. It is free and open source; see the comparison table above for the details."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I take a screenshot on a Mac with MacScreenShot?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Press ⌘⇧4. The screen freezes — click a window to capture it whole, or drag to capture an area. The capture appears as a card you can annotate, copy, pin or open in the editor. The shortcut can be changed in Settings."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can it record my Mac screen?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Choose Record Screen from the menu-bar icon and pick a display, a window or an area. When you stop, the studio editor opens so you can add zoom, a backdrop and masks, then export a 60 fps MP4 in 16:9, 9:16, 1:1 and more."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Was MacScreenShot called WinterShot before?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes — MacScreenShot is the new name of WinterShot. It is the same app from the same repository; updating keeps your captures, your settings and the Screen Recording permission you already granted."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does it work on Intel Macs?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The published build is Apple Silicon only (M1 and later, macOS 14+). Intel users can build from source — see the development guide on GitHub."
+        }
+      }
+    ]
+  }
+]
 </script>
 <style>
   :root {
@@ -328,7 +482,7 @@
   .demo-head { text-align: center; }
   .demo-wrap { max-width: 880px; margin: 40px auto 0; }
   .demo-wrap .shot {
-    width: 100%;
+    width: 100%; height: auto; display: block;
     border: 1px solid var(--line);
   }
 
@@ -617,9 +771,9 @@
 
 <nav class="nav" aria-label="Main">
   <div class="container nav-inner">
-    <a href="#" class="nav-brand" aria-label="WinterShot home">
+    <a href="#" class="nav-brand" aria-label="MacScreenShot home">
       <img src="assets/icon.png" alt="" width="28" height="28">
-      WinterShot
+      MacScreenShot
     </a>
     <div class="nav-links">
       <a href="#capture">Capture</a>
@@ -659,7 +813,7 @@
     </div>
 
     <p class="hero-sub">
-      WinterShot is a <strong>free, open-source screenshot and screen-recording app for macOS</strong>.
+      MacScreenShot is a <strong>free, open-source screenshot and screen-recording app for macOS</strong>.
       Capture a window mid-chaos, annotate it without ever flattening a pixel, and turn a raw
       recording into a Screen Studio-style clip — all on your Mac, with one permission and zero telemetry.
     </p>
@@ -675,8 +829,8 @@
   </div>
 
   <div class="hero-shot reveal">
-    <img src="assets/editor.png" width="1400" height="918" fetchpriority="high" data-parallax="0.05"
-         alt="WinterShot's editor showing a captured dashboard annotated with a red arrow, numbered counters, a yellow highlighter across a table row and black redaction bars over an email column">
+    <img src="assets/editor.png" width="2000" height="1356" fetchpriority="high" data-parallax="0.05"
+         alt="MacScreenShot's editor showing a captured dashboard annotated with a red arrow, numbered counters, a yellow highlighter across a table row and black redaction bars over an email column">
   </div>
 
   <div class="stats">
@@ -696,14 +850,15 @@
   <section class="section-tight" id="demo">
     <div class="container demo-head">
       <p class="eyebrow reveal">In action</p>
-      <h2 class="reveal" style="max-width: none;">The whole loop, in one take.</h2>
+      <h2 class="reveal" style="max-width: none;">Screenshot, annotate, record — in one take.</h2>
     </div>
     <div class="container demo-wrap reveal">
-      <picture>
-        <source srcset="assets/demo.gif" media="(prefers-reduced-motion: no-preference)">
-        <img class="shot" src="assets/demo-poster.png" width="880" height="550" loading="lazy" data-parallax="0.05"
-             alt="WinterShot demo — freeze the screen and pick a window, annotate the capture with arrows and redaction, edit a screen recording in the studio editor, and reopen everything from the capture history">
-      </picture>
+      <video class="shot" id="demo-video" width="1760" height="1100" muted loop playsinline controls preload="metadata"
+             poster="assets/demo-poster.png"
+             aria-label="MacScreenShot demo video — freeze the screen and pick a window, annotate the capture with arrows and redaction, put it on a backdrop, record the screen with auto-zoom, edit in the studio editor, and reopen everything from the notch history">
+        <source src="assets/demo.mp4" type="video/mp4">
+        <img src="assets/demo-poster.png" width="1760" height="1100" alt="MacScreenShot demo — annotating a captured dashboard in the editor">
+      </video>
     </div>
   </section>
 
@@ -714,7 +869,7 @@
         <p class="eyebrow">The capture flow</p>
         <h2>Press the hotkey. The screen freezes.</h2>
         <p>No countdowns, no moving targets. The moment you press <span class="flow-kbd">⌘⇧4</span>,
-           WinterShot freezes the whole screen so you can aim in peace.</p>
+           MacScreenShot freezes the whole screen so you can aim in peace.</p>
       </div>
 
       <div class="flow-step reveal">
@@ -726,12 +881,12 @@
              tracks the selection as you drag.</p>
         </div>
         <img class="shot" src="assets/selector.png" width="1500" height="843" loading="lazy" data-parallax="0.06"
-             alt="WinterShot's frozen-screen selector: the desktop is dimmed, the hovered window is lifted out and outlined in green, and a pixel loupe magnifies the cursor position">
+             alt="MacScreenShot's frozen-screen selector: the desktop is dimmed, the hovered window is lifted out and outlined in green, and a pixel loupe magnifies the cursor position">
       </div>
 
       <div class="flow-step reverse reveal">
-        <img class="shot" src="assets/preview.png" width="780" height="470" loading="lazy" data-parallax="0.04"
-             alt="Two capture preview cards stacked at the bottom-left of the screen, each with annotate, copy, pin and delete buttons">
+        <img class="shot" src="assets/preview.png" width="900" height="970" loading="lazy" data-parallax="0.04"
+             alt="Two MacScreenShot capture preview cards stacked at the bottom-left of the screen, each with annotate, copy, pin and delete buttons">
         <div class="flow-text">
           <span class="flow-num">02 / triage</span>
           <h3>Every capture slides in as a card.</h3>
@@ -764,13 +919,13 @@
           </div>
         </div>
         <div class="editor-shot reveal">
-          <img class="shot" src="assets/editor.png" width="1400" height="918" loading="lazy" data-parallax="0.05"
-               alt="WinterShot's editor with the tool strip, a library sidebar and an annotated capture on the canvas">
+          <img class="shot" src="assets/editor.png" width="2000" height="1356" loading="lazy" data-parallax="0.05"
+               alt="MacScreenShot's editor with the tool strip, a library sidebar and an annotated capture on the canvas">
         </div>
       </div>
 
       <div class="editor-beautify reveal">
-        <img class="shot" src="assets/beautify.png" width="1400" height="918" loading="lazy" data-parallax="0.06"
+        <img class="shot" src="assets/beautify.png" width="2000" height="1356" loading="lazy" data-parallax="0.06"
              alt="The same capture with background beautify enabled — sitting on a blue gradient with padding, rounded corners and a drop shadow">
         <p class="shot-caption">Flip on a backdrop and the same capture is post-ready — seven gradient presets, padding, corners, shadow. On-device OCR pulls the text out too.</p>
       </div>
@@ -783,16 +938,16 @@
       <div class="section-head centered reveal">
         <p class="eyebrow">Screen recording</p>
         <h2>Record once. Re-export forever.</h2>
-        <p>WinterShot keeps the real pointer <em>out</em> of the pixels and logs every click beside the
+        <p>MacScreenShot keeps the real pointer <em>out</em> of the pixels and logs every click beside the
            video. Stop recording, and a Screen Studio-style editor opens — zoom, cursor, backdrop and
            masks are applied at export, so the raw take is never touched.</p>
       </div>
 
       <div class="studio-wrap reveal">
-        <img class="studio-hud" src="assets/hud.png" width="300" height="110" loading="lazy" data-parallax="-0.08"
-             alt="WinterShot's floating recording pill with a red dot, elapsed timer and stop button">
-        <img class="shot" src="assets/studio.png" width="1400" height="923" loading="lazy" data-parallax="0.04"
-             alt="WinterShot's recording editor: the recording sits on a wallpaper backdrop, a synthetic cursor and auto-zoom follow the clicks, and a timeline shows the clip and zoom ranges">
+        <img class="studio-hud" src="assets/hud.png" width="221" height="72" loading="lazy" data-parallax="-0.08"
+             alt="MacScreenShot's floating recording pill with a red dot, elapsed timer and stop button">
+        <img class="shot" src="assets/studio.png" width="2000" height="1258" loading="lazy" data-parallax="0.04"
+             alt="MacScreenShot's recording editor: the recording sits on a wallpaper backdrop, a synthetic cursor and auto-zoom follow the clicks, and a timeline shows the clip and zoom ranges">
       </div>
 
       <div class="studio-features">
@@ -831,8 +986,8 @@
     <div class="container">
       <div class="library-grid">
         <div class="reveal">
-          <img class="shot" src="assets/notch.png" width="940" height="330" loading="lazy" data-parallax="0.05"
-               alt="WinterShot's notch history panel dropping from the top of the screen with recent capture thumbnails">
+          <img class="shot" src="assets/notch.png" width="1880" height="720" loading="lazy" data-parallax="0.05"
+               alt="MacScreenShot's notch history panel dropping from the top of the screen with recent capture thumbnails">
         </div>
         <div class="library-text reveal">
           <p class="eyebrow">History</p>
@@ -850,9 +1005,9 @@
     <div class="container">
       <div class="privacy-grid">
         <div class="reveal">
-          <div class="dialog" data-parallax="-0.05" role="img" aria-label="A macOS permission dialog: WinterShot would like to record this computer's screen — the only permission it ever asks for">
+          <div class="dialog" data-parallax="-0.05" role="img" aria-label="A macOS permission dialog: MacScreenShot would like to record this computer's screen — the only permission it ever asks for">
             <img src="assets/icon.png" alt="" width="60" height="60">
-            <h5>“WinterShot” would like to record this computer's screen.</h5>
+            <h5>“MacScreenShot” would like to record this computer's screen.</h5>
             <p>Grant access in System Settings → Privacy &amp; Security → Screen Recording.</p>
             <div class="dialog-btns" aria-hidden="true">
               <span>Deny</span>
@@ -898,7 +1053,7 @@
           <thead>
             <tr>
               <th scope="col"></th>
-              <th scope="col" class="ws">WinterShot</th>
+              <th scope="col" class="ws">MacScreenShot</th>
               <th scope="col">CleanShot X</th>
               <th scope="col">Shottr</th>
               <th scope="col">Screen Studio</th>
@@ -933,16 +1088,16 @@
       </div>
       <div class="faq reveal">
         <details>
-          <summary>Is WinterShot really free?</summary>
+          <summary>Is MacScreenShot really free?</summary>
           <p>Yes — free and open source under the MIT license. No subscription, no account, no trial limits, no "pro" tier.</p>
         </details>
         <details>
           <summary>How is this different from macOS's built-in ⌘⇧4?</summary>
-          <p>The system tool takes the picture and stops there. WinterShot adds a frozen-screen selector with window lifting, an annotation editor whose edits stay editable forever, background beautify, OCR, pinning, a capture history — and screen recording with a full post-production editor.</p>
+          <p>The system tool takes the picture and stops there. MacScreenShot adds a frozen-screen selector with window lifting, an annotation editor whose edits stay editable forever, background beautify, OCR, pinning, a capture history — and screen recording with a full post-production editor.</p>
         </details>
         <details>
           <summary>macOS says the app "cannot be opened". What do I do?</summary>
-          <p>The build isn't notarized yet. Right-click the app → <b>Open</b> → <b>Open</b>, or run <code>xattr -cr /Applications/WinterShot.app</code> once.</p>
+          <p>The build isn't notarized yet. Right-click the app → <b>Open</b> → <b>Open</b>, or run <code>xattr -cr /Applications/MacScreenShot.app</code> once.</p>
         </details>
         <details>
           <summary>Can I edit a capture again later?</summary>
@@ -954,7 +1109,23 @@
         </details>
         <details>
           <summary>Where do my captures live?</summary>
-          <p>In <code>~/Library/Application Support/WinterShot/Captures/</code> — an immutable PNG or MP4 plus a JSON sidecar holding your edits. Delete the app and they're still ordinary files.</p>
+          <p>In <code>~/Library/Application Support/MacScreenShot/Captures/</code> — an immutable PNG or MP4 plus a JSON sidecar holding your edits. (A library created while the app was still called WinterShot stays in its <code>WinterShot/Captures</code> folder.) Delete the app and they're still ordinary files.</p>
+        </details>
+        <details>
+          <summary>Is MacScreenShot a free alternative to CleanShot X, Shottr or Screen Studio?</summary>
+          <p>For most everyday work, yes. It covers the screenshot side — freeze-frame capture, annotation, redaction, background beautify, OCR, pinning — and the recording side, with a studio editor that adds auto-zoom, a smooth cursor and backdrops. It is free and open source; see the comparison table above for the details.</p>
+        </details>
+        <details>
+          <summary>How do I take a screenshot on a Mac with MacScreenShot?</summary>
+          <p>Press <b>⌘⇧4</b>. The screen freezes — click a window to capture it whole, or drag to capture an area. The capture appears as a card you can annotate, copy, pin or open in the editor. The shortcut can be changed in Settings.</p>
+        </details>
+        <details>
+          <summary>Can it record my Mac screen?</summary>
+          <p>Yes. Choose <b>Record Screen</b> from the menu-bar icon and pick a display, a window or an area. When you stop, the studio editor opens so you can add zoom, a backdrop and masks, then export a 60 fps MP4 in 16:9, 9:16, 1:1 and more.</p>
+        </details>
+        <details>
+          <summary>Was MacScreenShot called WinterShot before?</summary>
+          <p>Yes — MacScreenShot is the new name of WinterShot. It is the same app from the same repository; updating keeps your captures, your settings and the Screen Recording permission you already granted.</p>
         </details>
         <details>
           <summary>Does it work on Intel Macs?</summary>
@@ -978,7 +1149,7 @@
         <h2>Take your shot.</h2>
       </div>
       <p class="final-sub reveal">Free, MIT-licensed, and living quietly in your menu bar.
-         If WinterShot saves you a round-trip, star it on GitHub so more people find it.</p>
+         If MacScreenShot saves you a round-trip, star it on GitHub so more people find it.</p>
       <div class="hero-ctas reveal">
         <a class="btn btn-primary" href="https://github.com/winterzxzz/winter_shot/releases/latest">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5"/><path d="M4 19h16"/></svg>
@@ -996,7 +1167,7 @@
   <div class="container footer-inner">
     <div class="footer-brand">
       <img src="assets/icon.png" alt="" width="24" height="24">
-      WinterShot
+      MacScreenShot
     </div>
     <div class="footer-links">
       <a href="https://github.com/winterzxzz/winter_shot" target="_blank" rel="noopener">GitHub</a>
@@ -1005,7 +1176,7 @@
       <a href="https://github.com/winterzxzz/winter_voice" target="_blank" rel="noopener">WinterVoice ↗</a>
     </div>
     <p class="footer-tag">
-      Screenshot with WinterShot, dictate with <a href="https://github.com/winterzxzz/winter_voice" target="_blank" rel="noopener">WinterVoice</a> —
+      Screenshot with MacScreenShot, dictate with <a href="https://github.com/winterzxzz/winter_voice" target="_blank" rel="noopener">WinterVoice</a> —
       same house style, same privacy stance. 100% on your Mac.
     </p>
   </div>
@@ -1030,6 +1201,10 @@
     rw.textContent = "0"; rh.textContent = "0";
     requestAnimationFrame(tick);
   }
+
+  // Demo video plays on its own unless the visitor asked for less motion
+  var demo = document.getElementById("demo-video");
+  if (demo && !reduced) { demo.autoplay = true; var pl = demo.play(); if (pl && pl.catch) pl.catch(function () {}); }
 
   // Reveal on scroll
   if ("IntersectionObserver" in window && !reduced) {

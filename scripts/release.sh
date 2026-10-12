@@ -1,5 +1,5 @@
 #!/bin/bash
-# Cut a WinterShot release: build, package as .dmg + .zip, publish on GitHub.
+# Cut a MacScreenShot release: build, package as .dmg + .zip, publish on GitHub.
 #
 # Usage: scripts/release.sh 0.2.0
 # Prereqs: xcodegen, xcodebuild, gh (authenticated). Run from the repo root.
@@ -30,19 +30,19 @@ fi
 if [ -n "${WS_SIGN_IDENTITY:-}" ]; then
   SIGNING+=("CODE_SIGN_IDENTITY=${WS_SIGN_IDENTITY}")
 fi
-xcodebuild -project WinterShot.xcodeproj -scheme WinterShot -configuration Release \
+xcodebuild -project MacScreenShot.xcodeproj -scheme MacScreenShot -configuration Release \
   ${SIGNING[@]+"${SIGNING[@]}"} build | tail -1
 
-APP=$(ls -d "$HOME/Library/Developer/Xcode/DerivedData"/WinterShot-*/Build/Products/Release/WinterShot.app | head -1)
+APP=$(ls -d "$HOME/Library/Developer/Xcode/DerivedData"/MacScreenShot-*/Build/Products/Release/MacScreenShot.app | head -1)
 echo "==> Packaging $APP"
 
 # Styled .dmg with an Applications shortcut: rendered background, volume
 # icon, and a Finder icon layout written into the volume's .DS_Store. The
 # osascript step prompts once per machine for Automation permission over
 # Finder.
-VOLUME_NAME="WinterShot"
-DMG_PATH="$STAGE/WinterShot-${TAG}.dmg"
-RW_DMG="$STAGE/WinterShot-rw.dmg"
+VOLUME_NAME="MacScreenShot"
+DMG_PATH="$STAGE/MacScreenShot-${TAG}.dmg"
+RW_DMG="$STAGE/MacScreenShot-rw.dmg"
 
 mkdir "$STAGE/dmg"
 cp -R "$APP" "$STAGE/dmg/"
@@ -59,7 +59,7 @@ touch "$STAGE/dmg/.fseventsd/no_log"
 hdiutil create -volname "$VOLUME_NAME" -srcfolder "$STAGE/dmg" -ov -format UDRW \
   "$RW_DMG"
 
-# A stale mounted volume makes the fresh image mount as "WinterShot 1" and
+# A stale mounted volume makes the fresh image mount as "MacScreenShot 1" and
 # the Finder styling hits the wrong disk — eject leftovers first, then take
 # the mount point hdiutil actually reports.
 MOUNT_POINT="/Volumes/$VOLUME_NAME"
@@ -89,7 +89,7 @@ tell application "Finder"
     set icon size of viewOptions to 100
     set text size of viewOptions to 12
     set background picture of viewOptions to file ".background:background.png"
-    set position of item "WinterShot.app" of container window to {165, 192}
+    set position of item "MacScreenShot.app" of container window to {165, 192}
     set position of item "Applications" of container window to {495, 192}
     -- Park the helper entries far below the window so they stay out of
     -- sight even when the user browses with hidden files visible. Finder
@@ -127,13 +127,13 @@ hdiutil convert "$RW_DMG" -format UDZO -o "$DMG_PATH" >/dev/null
 rm -f "$RW_DMG"
 
 # .zip fallback
-ditto -c -k --keepParent "$APP" "$STAGE/WinterShot-${TAG}.zip"
+ditto -c -k --keepParent "$APP" "$STAGE/MacScreenShot-${TAG}.zip"
 
 echo "==> Publishing $TAG"
 gh release create "$TAG" \
-  "$STAGE/WinterShot-${TAG}.dmg" \
-  "$STAGE/WinterShot-${TAG}.zip" \
-  --title "WinterShot ${TAG}" \
+  "$STAGE/MacScreenShot-${TAG}.dmg" \
+  "$STAGE/MacScreenShot-${TAG}.zip" \
+  --title "MacScreenShot ${TAG}" \
   --generate-notes
 
 echo "==> Done: $(gh release view "$TAG" --json url -q .url)"

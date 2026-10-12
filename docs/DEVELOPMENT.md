@@ -1,6 +1,6 @@
 # Development
 
-Everything you need to build WinterShot from source, plus the shape of the codebase.
+Everything you need to build MacScreenShot from source, plus the shape of the codebase.
 
 ## Requirements
 
@@ -14,16 +14,16 @@ The project has **zero third-party runtime dependencies**; the Xcode project its
 
 ```sh
 xcodegen generate
-open WinterShot.xcodeproj
+open MacScreenShot.xcodeproj
 ```
 
 Or straight from the command line:
 
 ```sh
-xcodebuild -project WinterShot.xcodeproj -scheme WinterShot -configuration Release build
+xcodebuild -project MacScreenShot.xcodeproj -scheme MacScreenShot -configuration Release build
 ```
 
-The built app lands in `~/Library/Developer/Xcode/DerivedData/WinterShot-*/Build/Products/Release/WinterShot.app`.
+The built app lands in `~/Library/Developer/Xcode/DerivedData/MacScreenShot-*/Build/Products/Release/MacScreenShot.app`.
 
 ### Signing
 
@@ -32,16 +32,16 @@ The built app lands in `~/Library/Developer/Xcode/DerivedData/WinterShot-*/Build
 If the pinned team isn't in your keychain, override it on the command line rather than editing the file:
 
 ```sh
-xcodebuild -project WinterShot.xcodeproj -scheme WinterShot -configuration Release \
+xcodebuild -project MacScreenShot.xcodeproj -scheme MacScreenShot -configuration Release \
   DEVELOPMENT_TEAM=YOURTEAMID CODE_SIGN_IDENTITY="Apple Development: you@example.com (XXXXXXXXXX)" build
 ```
 
-Check what a build will ask TCC for with `codesign -d -r- /Applications/WinterShot.app`.
+Check what a build will ask TCC for with `codesign -d -r- /Applications/MacScreenShot.app`.
 
 Install it where the permission grants live:
 
 ```sh
-ditto ~/Library/Developer/Xcode/DerivedData/WinterShot-*/Build/Products/Release/WinterShot.app /Applications/WinterShot.app
+ditto ~/Library/Developer/Xcode/DerivedData/MacScreenShot-*/Build/Products/Release/MacScreenShot.app /Applications/MacScreenShot.app
 ```
 
 ### Releasing
@@ -72,14 +72,15 @@ The app is scriptable for testing and for capturing documentation — every flag
 | `--export-recording <in> <out>` | Headless export with the recording's saved edit (or the defaults); `--export-options <json>` supplies `RecordingExportOptions` instead |
 
 ```sh
-open -a WinterShot --args --edit WinterShot-20260818-101204.png
+open -a MacScreenShot --args --edit MacScreenShot-20260818-101204.png
 ```
 
 A few environment variables complete the picture for scripted runs and documentation shoots:
 
 | Variable | What it does |
 |---|---|
-| `WS_CAPTURES_DIR=<dir>` | Uses that folder as the library instead of `~/Library/Application Support/WinterShot/Captures` — stage a demo library without touching your own |
+| `WS_CAPTURES_DIR=<dir>` | Uses that folder as the library instead of `~/Library/Application Support/MacScreenShot/Captures` — stage a demo library without touching your own |
+| `WS_SNAPSHOT_SCREEN=<index>` | With `--snapshot-windows`: moves the windows onto that screen first, so the PNGs come out at 2x from a Retina display even when another screen is the main one |
 | `WS_EDITOR_PANEL=background\|cursor\|animations` | Opens the studio editor on that panel |
 | `WS_EDITOR_OPTIONS=<json>` | Opens the studio editor with those `RecordingExportOptions` (they are saved as the recording's edit, like any change) |
 | `WS_EDITOR_MODE=crop\|mask` | Opens the studio editor straight into crop or mask mode |
@@ -90,9 +91,9 @@ A few environment variables complete the picture for scripted runs and documenta
 Clean Architecture with MVVM in the presentation layer. Dependencies point inward — the Domain layer imports nothing but Foundation/CoreGraphics.
 
 ```
-WinterShot/
+MacScreenShot/
 ├── App/                     Composition root
-│   ├── WinterShotApp.swift    SwiftUI scenes (MenuBarExtra, main Window, Settings)
+│   ├── MacScreenShotApp.swift    SwiftUI scenes (MenuBarExtra, main Window, Settings)
 │   ├── AppDelegate.swift      Status item, hotkeys, launch arguments, window opening
 │   └── DIContainer.swift      Wires Data impls to Domain protocols
 ├── Domain/                  Pure business logic — no SwiftUI, no AppKit
@@ -124,13 +125,15 @@ WinterShot/
 ## Storage layout
 
 ```
-~/Library/Application Support/WinterShot/Captures/
-  WinterShot-20260818-101204.png         immutable capture
-  WinterShot-20260818-101204.wshot.json  sidecar: metadata, annotations, crop, backdrop
-  WinterShot-20260818-100815.mp4         immutable recording
-  WinterShot-20260818-100815.wsrec.json  sidecar: cursor samples, clicks, frame timing, duration
-  WinterShot-20260818-100815.wsedit.json sidecar: the studio editor's options, written once the take is edited
+~/Library/Application Support/MacScreenShot/Captures/
+  MacScreenShot-20260818-101204.png         immutable capture
+  MacScreenShot-20260818-101204.wshot.json  sidecar: metadata, annotations, crop, backdrop
+  MacScreenShot-20260818-100815.mp4         immutable recording
+  MacScreenShot-20260818-100815.wsrec.json  sidecar: cursor samples, clicks, frame timing, duration
+  MacScreenShot-20260818-100815.wsedit.json sidecar: the studio editor's options, written once the take is edited
 ```
+
+A library that already exists under the app's former name, `~/Library/Application Support/WinterShot/Captures/`, keeps being used as-is — the folder is only created under the new name on a fresh install. For the same reason the bundle identifier is still `com.winterzxzz.WinterShot`: the Screen Recording grant, the preferences and the login item are keyed to it.
 
 Sidecars sit next to their file so the set can't drift apart, and are flagged hidden so Finder shows only pictures and movies — press ⌘⇧. in Finder to reveal them. The library lists both kinds of file; a PNG or MP4 dropped into the folder by hand shows up too, without a sidecar.
 

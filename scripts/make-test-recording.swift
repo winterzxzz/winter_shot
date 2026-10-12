@@ -1,13 +1,13 @@
-// Generates a synthetic WinterShot recording for exercising the export
+// Generates a synthetic MacScreenShot recording for exercising the export
 // pipeline without Screen Recording permission: a variable-frame-rate H.264
 // "desktop" (frames only when something changes, exactly like a
 // ScreenCaptureKit capture — 53 frames over 14 s) plus a .wsrec.json sidecar
 // with a smooth cursor path and clicks near edges and in clusters.
 //
 //   swift scripts/make-test-recording.swift /tmp/testrec
-//   WinterShot.app/Contents/MacOS/WinterShot --export-recording /tmp/testrec/test.mp4 /tmp/testrec/out.mp4 \
+//   MacScreenShot.app/Contents/MacOS/MacScreenShot --export-recording /tmp/testrec/test.mp4 /tmp/testrec/out.mp4 \
 //       [--export-options options.json]      # RecordingExportOptions as JSON
-//   WinterShot.app/Contents/MacOS/WinterShot --open-recording /tmp/testrec/test.mp4
+//   MacScreenShot.app/Contents/MacOS/MacScreenShot --open-recording /tmp/testrec/test.mp4
 //   (WS_EDITOR_PANEL=cursor|animations|background and WS_EDITOR_OPTIONS=options.json
 //    open the editor on a panel / with given options — handy for screenshots)
 //
