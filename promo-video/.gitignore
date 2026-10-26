@@ -1,0 +1,22 @@
+/target
+out.mp4
+*.mp4
+!media/*.mp4
+frames/
+strip.png
+onion.png
+*.wav
+!media/*.wav
+test_render/
+_frame_snapshots/*.actual.png
+_frame_snapshots/*.diff.png
+
+# Local-only: TTS weights, Python env, caches, scratch work and review evidence
+/models/*.onnx
+/models/*.bin
+/.venv/
+/.cache/
+/scratch/
+/audio/
+/evidence/
+!/final/MacScreenShot-promo.mp4
