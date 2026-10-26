@@ -1,16 +1,16 @@
 <div align="center">
 
-<img src="MacScreenShot/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png" width="140" alt="MacScreenShot app icon — free open-source Mac screenshot app and screen recorder with annotation and a Screen Studio-style editor" />
+<img src="MacScreenShot/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png" width="128" alt="MacScreenShot app icon — free open-source Mac screenshot app and screen recorder with annotation and a Screen Studio-style editor" />
 
 # MacScreenShot
 
-**The free, open-source screenshot app and screen recorder for Mac — capture, annotate, beautify, record. 100% on-device.**
+### Capture, annotate, beautify and record your Mac screen — free, open source, 100% on-device.
 
-Press ⌘⇧4. Click a window or drag an area. Annotate it, drop it on a gradient, paste it anywhere — no account, no subscription, nothing ever leaves your Mac.
+Press <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>4</kbd>, click a window or drag an area, mark it up, drop it on a gradient and paste it anywhere.<br/>
+Record a take and a Screen Studio-style editor turns it into a polished 60 fps MP4. No account, no subscription, nothing leaves your Mac.
 
-🎬 **Records your screen too** — and opens it in a Screen Studio-style editor: a camera that zooms wherever you click, a smooth synthetic cursor, wallpaper backdrops, and a 60 fps MP4 out the other end. [See it →](#-screen-recording--the-studio-editor)
-
-[**⬇️ Download for Mac (.dmg)**](https://github.com/winterzxzz/winter_shot/releases/latest)
+<a href="https://github.com/winterzxzz/winter_shot/releases/latest"><img src="https://img.shields.io/badge/Download_for_macOS-.dmg-0A84FF?style=for-the-badge&logo=apple&logoColor=white" alt="Download MacScreenShot for macOS" /></a>
+<a href="https://winterzxzz.github.io/winter_shot/"><img src="https://img.shields.io/badge/Website-winterzxzz.github.io-555555?style=for-the-badge" alt="MacScreenShot website" /></a>
 
 [![Latest release](https://img.shields.io/github/v/release/winterzxzz/winter_shot?label=Download&color=blue)](https://github.com/winterzxzz/winter_shot/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/winterzxzz/winter_shot/total?color=brightgreen)](https://github.com/winterzxzz/winter_shot/releases)
@@ -22,23 +22,169 @@ Press ⌘⇧4. Click a window or drag an area. Annotate it, drop it on a gradien
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/winterzxzz/winter_shot?style=social)](https://github.com/winterzxzz/winter_shot/stargazers)
 
+<br/>
+
 <img src="docs/assets/demo.gif" width="860" alt="MacScreenShot demo — freeze the screen and pick a window, annotate the capture with arrows and redaction, put it on a backdrop, record the screen with auto-zoom, edit it in the studio editor, and reopen everything from the notch history" />
 
-<sub>▶︎ <a href="https://winterzxzz.github.io/winter_shot/#demo">Watch the demo in full quality</a> · <a href="https://winterzxzz.github.io/winter_shot/">Website</a></sub>
+<sub>▶︎ <a href="https://winterzxzz.github.io/winter_shot/#demo">Watch the demo in full quality</a></sub>
+
+<br/>
+
+**[Features](#-features)** · **[Capture](#-the-capture-flow)** · **[Editor](#-the-editor)** · **[Recording](#-screen-recording--the-studio-editor)** · **[Compare](#-how-macscreenshot-compares)** · **[Download](#-download)** · **[FAQ](#-faq)**
 
 </div>
 
 ---
 
-## What is MacScreenShot?
+## 👋 What is MacScreenShot?
 
-MacScreenShot is a **native macOS menu-bar app for screenshots and screen recordings**. It captures with ScreenCaptureKit, hands you a real editor — nine annotation tools, crop, rotate, background beautify, on-device OCR — and keeps every edit in a sidecar file so you can reopen a shot months later and still move that arrow.
+MacScreenShot is a **native macOS menu-bar app for screenshots and screen recordings**. It captures with ScreenCaptureKit and hands you a real editor — nine annotation tools, crop, rotate, background beautify, on-device OCR — while every edit lives in a sidecar file, so you can reopen a shot months later and still move that arrow.
 
-Recordings get the same treatment: MacScreenShot logs your pointer and clicks *next to* the video instead of burning them in, then a Screen Studio-style editor turns the raw capture into a polished clip — zoom that follows your clicks, a synthetic cursor, backdrops, motion blur — and re-exports it any way you like, as many times as you like.
-
-> **MacScreenShot was previously called WinterShot.** Same app, same repository — updating keeps your captures, your settings and the Screen Recording permission.
+Recordings get the same treatment. MacScreenShot logs your pointer and clicks *next to* the video instead of burning them in, and a Screen Studio-style editor turns the raw take into a polished clip — a camera that zooms where you click, a smooth synthetic cursor, backdrops, motion blur — that you can re-export any way you like, as often as you like.
 
 It's the free, private alternative to paid capture tools like CleanShot X, Shottr and Screen Studio: pure SwiftUI, zero third-party dependencies, no telemetry, no account, and exactly **one** system permission.
+
+> [!NOTE]
+> **MacScreenShot was previously called WinterShot.** Same app, same repository — updating keeps your captures, your settings and the Screen Recording permission.
+
+## ✨ Features
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+#### 🧊 Frozen-screen selector
+The screen freezes the moment you press the hotkey. Crosshair guides follow the cursor and windows lift out of a dimmed backdrop — one click captures a window cleanly, even half-covered.
+
+</td>
+<td width="33%" valign="top">
+
+#### ✏️ Nine annotation tools
+Arrow, rectangle, ellipse, line, freehand, text, numbered counters, highlighter and redaction — with colors, adjustable stroke, undo/redo and drag-to-move.
+
+</td>
+<td width="33%" valign="top">
+
+#### ♻️ Non-destructive by design
+Annotations, crop, rotation and backdrop live in a `.wshot.json` sidecar next to the PNG. Every arrow stays editable, every crop and quarter turn reversible. Pixels are flattened only on export.
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+#### 🎬 Recording + studio editor
+Record a display, a window or an area. Zoom, cursor, backdrop and masks are applied at export, so the raw take is never touched — and your edit is saved next to it.
+
+</td>
+<td valign="top">
+
+#### 🎨 Background beautify
+Put a shot on a gradient with padding, rounded corners and a soft shadow — seven presets, live in the editor, ready for posts and docs.
+
+</td>
+<td valign="top">
+
+#### 🔍 On-device OCR
+Pull the text out of any capture with Apple Vision and copy it. Nothing is uploaded.
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+#### 📌 Pin & copy
+Float a capture above every window while you work. Or turn on *Copy to clipboard automatically* and every new shot is ready to paste the moment you take it.
+
+</td>
+<td valign="top">
+
+#### 🗂 A live library
+Screenshots and recordings sit side by side in the main window and the notch panel. The library follows its folder — files added or removed in Finder show up on their own — and *Delete All* in the sidebar clears it in one go, after a confirmation.
+
+</td>
+<td valign="top">
+
+#### 🔒 One permission, zero telemetry
+Screen Recording — and that's it. No microphone, no accessibility, no analytics. One global hotkey, re-recordable, and optional *Open at login*.
+
+</td>
+</tr>
+</table>
+
+## 📸 The capture flow
+
+Press the hotkey and the screen freezes. Hover a window to lift it out of the dimmed backdrop and click to capture it whole, or drag anywhere to take an area — a live size readout tracks the selection while you drag.
+
+<p align="center"><img src="docs/assets/selector.png" width="860" alt="MacScreenShot's frozen-screen selector: the desktop is dimmed, the hovered Northstar invoices window is lifted out and outlined with an app label, crosshair guides follow the cursor, and a hint reads Click to capture window · Drag to select an area" /></p>
+
+<table>
+<tr>
+<td width="44%" align="center"><img src="docs/assets/preview.png" width="340" alt="Two capture preview cards stacked at the bottom-left of the screen, each with annotate, copy, pin and delete buttons" /></td>
+<td valign="middle">
+
+### Every shot lands as a card
+
+Each capture slides in as a thumbnail card at the edge of the screen. New captures stack upward.
+
+- ✏️ **Annotate** — or just click the card to open the editor
+- 📋 **Copy** — paste straight into Slack, an issue or a doc
+- 📌 **Pin** — float it above every window
+- 🗑 **Delete** — gone, sidecar and all
+
+Card size and how long it stays on screen are yours to set in **Settings → Capture Preview**.
+
+</td>
+</tr>
+</table>
+
+## 🎨 The editor
+
+Nine tools, a live canvas and a library sidebar. Nothing is baked into the image — the arrows, the counters, the crop, the rotation and the backdrop are all still yours the next time you open the file.
+
+<p align="center"><img src="docs/assets/editor.png" width="860" alt="MacScreenShot's editor showing a captured invoices dashboard annotated with a red rectangle and arrow, a text note, numbered counters, a yellow highlighter across a table row and a black redaction bar over the email column" /></p>
+
+<table>
+<tr>
+<td width="56%" align="center"><img src="docs/assets/beautify.png" width="460" alt="The same editor with background beautify enabled — the capture sits on a blue gradient with padding, rounded corners and a drop shadow" /></td>
+<td valign="middle">
+
+### Post-ready in one click
+
+Flip on a backdrop and the same capture sits on a gradient with padding, rounded corners and a soft shadow.
+
+- **Crop & rotate** — non-destructive, quarter turns with <kbd>⌘</kbd> <kbd>[</kbd> / <kbd>⌘</kbd> <kbd>]</kbd>
+- **Recognize text** — OCR the shot and copy what it says
+- **Copy, pin or export** — a flattened copy; the original never changes
+
+</td>
+</tr>
+</table>
+
+## 🎬 Screen recording — the studio editor
+
+Pick **Start Recording…** from the menu bar, choose a display, a window or an area, and a floating timer pill <img src="docs/assets/hud.png" height="22" alt="MacScreenShot's recording HUD: a small floating pill with a red dot, an elapsed timer and a stop button" align="center" /> tracks the take. MacScreenShot keeps the real pointer *out* of the pixels and logs its motion, its clicks and even which pointer macOS was showing into a `.wsrec.json` sidecar.
+
+Stop, and the studio editor opens:
+
+<p align="center"><img src="docs/assets/studio.png" width="860" alt="MacScreenShot's Screen Studio-style recording editor: the recording sits on a blue wallpaper backdrop with padding and rounded corners, the camera is zoomed in on a New invoice dialog with a synthetic text cursor, the Background panel is open on the right, and the timeline shows the clip and an auto-zoom range" /></p>
+
+| | |
+|---|---|
+| 🖼 **Backdrops** | Wallpaper, gradient, solid color, your own image or a looping video — with blur, padding, corner radius and shadow. |
+| 🔎 **Auto-zoom camera** | Glides to wherever you clicked, holds while you work there, then eases back out. Adjustable depth — and any single zoom can be removed from the timeline and restored later. |
+| 🖱 **Synthetic cursor** | Smoothed and resizable, with click ripples, mirroring the pointer the app was actually showing (text cursor, hand, resize arrows…) in macOS, light or dark coloring. |
+| ✂️ **Crop & masks** | A non-destructive crop with aspect lock, plus timed regions that blur sensitive data or spotlight one area of the frame. |
+| 📐 **Output shapes** | 16:9 for YouTube, 9:16 for Reels and TikTok, 1:1, 4:3, 3:4 and 4:5 — at native resolution up to 4K, or 1440p / 1080p. |
+| 🎞 **Finishing touches** | Cinematic motion blur, background music with volume control, presets, undo/redo and a scrubbable timeline. |
+
+Everything composites on the GPU, so the live preview *is* the 60 fps MP4 you export. The raw recording is never modified — and neither is your edit lost: every change is saved next to the take in a `.wsedit.json` sidecar, so you can close the window and pick the recording up later from the library exactly where you left it.
+
+## 🗂 Your captures, one click away
+
+**Show History** in the menu-bar menu drops a notch panel with your latest captures — screenshots and recordings alike — plus one-click buttons to capture an area, a window or the full screen. The main window keeps the full library beside the editor. A screenshot opens in the annotation editor, a recording in the studio editor with its saved edit.
+
+<p align="center"><img src="docs/assets/notch.png" width="860" alt="MacScreenShot's notch history panel dropping from the top of the screen with recent screenshot and recording thumbnails, capture-mode buttons, Open Library, and Captures Folder, Refresh and Quit buttons" /></p>
 
 ## 🆚 How MacScreenShot compares
 
@@ -56,11 +202,12 @@ It's the free, private alternative to paid capture tools like CleanShot X, Shott
 | 100% on-device, no account | ✅ | ✅ | ✅ | ❌ | ✅ |
 | System permissions required | **1** | several | several | several | 0 |
 
+> [!TIP]
 > MacScreenShot is the only tool here that is **free, open source, and pairs a non-destructive screenshot editor with a Screen Studio-style recording editor** — with a single screen-recording permission and nothing leaving your Mac.
 
-*Comparison reflects publicly documented features as of 2026; competitors are trademarks of their owners. Corrections welcome via PR.*
+<sub>Comparison reflects publicly documented features as of 2026; competitors are trademarks of their owners. Corrections welcome via PR.</sub>
 
-## ⬇️ Download
+## 📥 Download
 
 **[Grab the latest `.dmg` from Releases →](https://github.com/winterzxzz/winter_shot/releases/latest)**
 
@@ -72,72 +219,12 @@ It's the free, private alternative to paid capture tools like CleanShot X, Shott
    ```
 
 3. Follow the two-step onboarding: pick your capture shortcut and grant **Screen Recording** (System Settings → Privacy & Security → Screen Recording). macOS may ask you to quit and reopen the app once.
-4. MacScreenShot lives in the menu bar — no Dock icon. Press ⌘⇧4 and start capturing.
+4. MacScreenShot lives in the menu bar — no Dock icon. Press <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>4</kbd> and start capturing.
 
+> [!IMPORTANT]
 > If macOS's own ⌘⇧4 is still enabled, both will fire. Turn the system one off in System Settings → Keyboard → Keyboard Shortcuts → Screenshots, or record a different shortcut in MacScreenShot's Settings.
 
-> Building from source instead? See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
-
-## ✨ Features
-
-| | |
-|---|---|
-| 🧊 **Frozen-screen selector** | The screen freezes the moment you press the hotkey. Crosshair guides follow the cursor, and windows lift out of a dimmed backdrop as you hover — one click captures a window cleanly, even when it's half-covered. |
-| ✏️ **Nine annotation tools** | Arrow, rectangle, ellipse, line, freehand, text, numbered counters, highlighter and redaction — with a color row, adjustable stroke, undo/redo and drag-to-move. |
-| ♻️ **Non-destructive by design** | Annotations, crop, rotation and backdrop live in a `.wshot.json` sidecar next to the PNG. Reopen a capture later and every arrow is still editable, every crop and every quarter turn reversible. Pixels are flattened only on export. |
-| 🎬 **Screen recording + studio editor** | Record a display, a window or an area. The raw video stays untouched while zoom, cursor, backdrop and masks are applied at export — re-export the same take with a different look anytime. Close the editor whenever you like: the edit is saved next to the take and comes back when you reopen it from the library. |
-| 🎨 **Background beautify** | Drop a shot onto a gradient with padding, rounded corners and a soft shadow — seven presets, live in the editor, ready for posts and docs. |
-| 🔍 **On-device OCR** | Pull the text out of any capture with Apple Vision and copy it. Nothing is uploaded. |
-| 📌 **Pin to screen** | Float a capture above every window while you work; drag to move, double-click to dismiss. |
-| 🗂 **Capture history** | Screenshots and recordings sit side by side in the main window's library, and a notch panel drops from the top of the screen with the latest captures — reopen, copy, pin or delete from either. |
-| ⌨️ **One global hotkey** | ⌘⇧4 opens the selector system-wide, and it's re-recordable in Settings. Everything else lives in the menu-bar icon. |
-| 🚀 **Starts with your Mac** | Turn on *Open at login* in Settings and the menu-bar icon — and your capture shortcut — are waiting after every restart. |
-| 🔒 **One permission, zero telemetry** | Screen Recording — and that's it. No microphone, no accessibility, no analytics, and no network traffic beyond the update check. |
-
-## 📸 The capture flow
-
-Press the hotkey and the screen freezes. Hover a window to lift it out of the dimmed backdrop and click to capture it whole, or drag anywhere to take an area — a live size readout tracks the selection while you drag.
-
-<p align="center"><img src="docs/assets/selector.png" width="820" alt="MacScreenShot's frozen-screen selector: the desktop is dimmed, the hovered window is lifted out and outlined in green with an app label, and a pixel loupe magnifies the cursor position with live coordinates" /></p>
-
-Every capture slides in as a thumbnail card at the edge of the screen — annotate, copy, pin or delete it right there, or click it to open the editor. New captures stack upward.
-
-<p align="center"><img src="docs/assets/preview.png" width="560" alt="Two capture preview cards stacked at the bottom-left of the screen, each with annotate, copy, pin and delete buttons" /></p>
-
-## 🎨 The editor
-
-Nine tools, a live canvas, and a library sidebar. Nothing is baked into the image — the arrows, the counters, the crop, the rotation and the backdrop are all still yours the next time you open the file.
-
-<p align="center"><img src="docs/assets/editor.png" width="860" alt="MacScreenShot's editor showing a captured dashboard annotated with a red arrow, numbered counters, a yellow highlighter across a table row and black redaction bars over an email column" /></p>
-
-Flip on a backdrop and the same capture is post-ready: gradient, padding, rounded corners, soft shadow.
-
-<p align="center"><img src="docs/assets/beautify.png" width="860" alt="The same editor with background beautify enabled — the capture sits on a blue gradient with padding, rounded corners and a drop shadow" /></p>
-
-## 🎬 Screen recording — the studio editor
-
-Pick **Record Screen** from the menu bar, choose a display, a window or an area, and a floating timer pill tracks the take with a stop button. MacScreenShot keeps the real pointer *out* of the pixels and logs its motion, its clicks and even which pointer macOS was showing into a `.wsrec.json` sidecar.
-
-<p align="center"><img src="docs/assets/hud.png" width="220" alt="MacScreenShot's recording HUD: a small floating pill with a red dot, an elapsed timer and a stop button" /></p>
-
-Stop, and the studio editor opens:
-
-<p align="center"><img src="docs/assets/studio.png" width="860" alt="MacScreenShot's Screen Studio-style recording editor: the recording sits on a wallpaper backdrop with padding and rounded corners, a synthetic cursor and auto-zoom follow the clicks, and a timeline shows the clip and zoom ranges" /></p>
-
-- **Backdrops** — wallpaper, gradient, solid color, your own image, or a looping video, with blur, padding, corner radius and shadow.
-- **Auto-zoom camera** — glides to wherever you clicked, holds while you work there, then eases back out. Adjustable depth.
-- **Synthetic cursor** — smoothed, resizable, with click ripples, mirroring the pointer the app was actually showing (text cursor, hand, resize arrows…) in macOS, light or dark coloring.
-- **Crop and masks** — a non-destructive crop with aspect lock, plus timed regions that blur sensitive data or spotlight one area of the frame.
-- **Output shapes** — 16:9 for YouTube, 9:16 for Reels and TikTok, 1:1, 4:5 and more.
-- **Finishing touches** — cinematic motion blur, background music with volume control, presets, undo/redo and a scrubable timeline.
-
-Everything composites on the GPU, so the live preview *is* the 60 fps MP4 you export. The raw recording is never modified — and neither is your edit lost: every change is saved next to the take in a `.wsedit.json` sidecar, so you can close the window and pick the recording up later from the library exactly where you left it.
-
-## 🗂 Your captures, one click away
-
-The menu-bar icon drops a notch panel with your latest captures — screenshots and recordings alike; the main window keeps the full library beside the editor. A screenshot opens in the annotation editor, a recording in the studio editor with its saved edit.
-
-<p align="center"><img src="docs/assets/notch.png" width="820" alt="MacScreenShot's notch history panel dropping from the top of the screen with recent capture thumbnails and buttons for the captures folder, refresh and quit" /></p>
+Building from source instead? See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## 🐛 Made for bug reports, feedback and demos
 
@@ -148,7 +235,7 @@ Screenshots are how software teams talk to each other. MacScreenShot is built fo
 - **Write the docs** — beautified shots with consistent padding and corners, exported at the same size every time.
 - **Ship the demo** — record the feature, let the camera zoom where you click, export 16:9 for the changelog and 9:16 for social from the same take.
 
-Because the edits live in sidecars, you can reopen last month's screenshot, move one arrow, and re-export — instead of redoing the capture.
+Because the edits live in sidecars, you can reopen last month's screenshot, move one arrow and re-export — instead of redoing the capture.
 
 ## 🔒 Privacy, by design
 
@@ -167,70 +254,95 @@ Because the edits live in sidecars, you can reopen last month's screenshot, move
 
 <details>
 <summary><b>Is MacScreenShot free?</b></summary>
+<br/>
 Yes — free and open source under MIT. No subscription, no account, no trial limits.
 </details>
 
 <details>
 <summary><b>Is it a free alternative to CleanShot X, Shottr or Screen Studio?</b></summary>
+<br/>
 For most everyday work, yes: freeze-frame capture, annotation, redaction, background beautify, OCR and pinning on the screenshot side, and a studio editor with auto-zoom, a smooth cursor and backdrops on the recording side. See the <a href="#-how-macscreenshot-compares">comparison table</a>.
 </details>
 
 <details>
 <summary><b>How is this different from macOS's built-in ⌘⇧4?</b></summary>
+<br/>
 The system tool takes the picture and stops there. MacScreenShot adds a frozen-screen selector with window lifting, a real annotation editor whose edits stay editable forever, background beautify, OCR, pinning, a capture history — and screen recording with a full post-production editor.
 </details>
 
 <details>
 <summary><b>macOS says the app "cannot be opened". What do I do?</b></summary>
+<br/>
 The build isn't notarized yet. Right-click the app → <b>Open</b> → <b>Open</b>, or run <code>xattr -cr /Applications/MacScreenShot.app</code> once.
 </details>
 
 <details>
 <summary><b>Where do my captures live?</b></summary>
-<code>~/Library/Application Support/MacScreenShot/Captures/</code> — an immutable PNG or MP4 plus a JSON sidecar holding the metadata and your edits. A library created while the app was still called WinterShot stays in <code>WinterShot/Captures</code>. Sidecars are flagged hidden so Finder shows only pictures and movies; press ⌘⇧. to reveal them.
+<br/>
+<code>~/Library/Application Support/MacScreenShot/Captures/</code> — an immutable PNG or MP4 plus a JSON sidecar holding the metadata and your edits. A library created while the app was still called WinterShot stays in <code>WinterShot/Captures</code>. Sidecars are flagged hidden so Finder shows only pictures and movies; press ⌘⇧. to reveal them. The library watches this folder, so a picture or movie you add or delete in Finder shows up in the app without a refresh.
 </details>
 
 <details>
 <summary><b>Can I edit a capture again later?</b></summary>
+<br/>
 Yes — that's the point of the sidecars. Reopen any capture from the history and every annotation is still selectable, the crop and the rotation are still reversible, and the backdrop is still adjustable. Exports flatten a copy, never the original.
 </details>
 
 <details>
+<summary><b>Can every capture go to the clipboard automatically?</b></summary>
+<br/>
+Yes — Settings → After Capture → <b>Copy to clipboard automatically</b>. It's off by default; turn it on and each new screenshot is ready to paste as soon as it's taken.
+</details>
+
+<details>
 <summary><b>Does the recording editor change my original video?</b></summary>
+<br/>
 Never. Zoom, cursor, backdrop, crop, masks and music are applied only when you export. Re-export the same take as many times as you want, in as many shapes as you want.
 </details>
 
 <details>
 <summary><b>Why does the cursor look different in the exported video?</b></summary>
+<br/>
 Because it isn't the recorded one. MacScreenShot keeps the real pointer out of the captured pixels and re-draws a smoothed synthetic cursor at export time — that's what lets it glide between positions, scale up, show click ripples and stay sharp at any zoom level.
 </details>
 
 <details>
 <summary><b>Can I change the ⌘⇧4 shortcut?</b></summary>
+<br/>
 Yes — Settings → Global Hotkey, then click the shortcut and record a new one (it must include ⌘, ⌥ or ⌃).
 </details>
 
 <details>
 <summary><b>Does MacScreenShot start automatically at login?</b></summary>
+<br/>
 Only if you ask it to: Settings → Startup → <b>Open at login</b>. It registers through <code>SMAppService</code>, so the entry shows up in System Settings → General → Login Items & Extensions and can be switched off from either place — the toggle in MacScreenShot always reflects what the system currently says. Worth turning on, since the app has no Dock icon and the hotkey does nothing until it's running.
 </details>
 
 <details>
 <summary><b>Does it work on Intel Macs?</b></summary>
+<br/>
 The published build is Apple Silicon only. Intel users can build from source — see <a href="docs/DEVELOPMENT.md">docs/DEVELOPMENT.md</a>.
 </details>
 
 ## 🗺 Roadmap
 
-- Space to toggle window/area mode mid-selection
-- Multi-display fullscreen capture
-- More export presets for the recording editor
+- [ ] Space to toggle window/area mode mid-selection
+- [ ] Multi-display fullscreen capture
+- [ ] More export presets for the recording editor
 
 ## 🎙️ Also from the same maker
 
+<table>
+<tr>
+<td>
+
 **[WinterVoice](https://github.com/winterzxzz/winter_voice)** — free, open-source voice dictation for macOS. Hold a key, speak, and your words land in any app — 100% offline Whisper speech-to-text. Built for vibe coding: dictate prompts straight into Claude Code, Cursor or ChatGPT instead of typing them.
 
-> Same house style, same privacy stance: native SwiftUI, on-device, no account. **Screenshot with MacScreenShot, dictate with WinterVoice.**
+Same house style, same privacy stance: native SwiftUI, on-device, no account. **Screenshot with MacScreenShot, dictate with WinterVoice.**
+
+</td>
+</tr>
+</table>
 
 ## 🤝 Contributing
 
